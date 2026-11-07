@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f1e3;
+  --foreground: #0b2d36;
+
+  /* Radical 2.0 Tropical Brand Kit Palette */
+  --radical-blue: #0b2d36;
+  --radical-teal: #00c7c7;
+  --radical-yellow: #ffc629;
+  --radical-orange: #ff6b00;
+  --radical-cream: #f8f1e3;
+  --radical-white: #ffffff;
+  --radical-dark: #0a0a0a;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Brand Colors */
+  --color-radical-blue: #0b2d36;
+  --color-radical-teal: #00c7c7;
+  --color-radical-yellow: #ffc629;
+  --color-radical-orange: #ff6b00;
+  --color-radical-cream: #f8f1e3;
+  --color-radical-dark: #0a0a0a;
+  --color-radical-white: #ffffff;
+
+  /* Brand Palette Spanish Aliases (matching Kit de Marca) */
+  --color-azul-profundo: #0b2d36;
+  --color-turquesa: #00c7c7;
+  --color-amarillo: #ffc629;
+  --color-naranja: #ff6b00;
+  --color-crema: #f8f1e3;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
