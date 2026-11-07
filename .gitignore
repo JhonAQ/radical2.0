@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# tmp — staging area for assets, documents, etc. (not for the repo)
+tmp/
