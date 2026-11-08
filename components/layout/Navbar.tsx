@@ -19,7 +19,6 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Cerrar menú con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsMobileOpen(false);
@@ -27,6 +26,21 @@ export function Navbar() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Bloquear scroll del body cuando el drawer está abierto
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileOpen]);
+
+  const toggleMenu = () => setIsMobileOpen((prev) => !prev);
+  const closeMenu = () => setIsMobileOpen(false);
 
   return (
     <>
@@ -42,7 +56,7 @@ export function Navbar() {
             {/* Logo Compacto */}
             <Link
               href="#inicio"
-              onClick={() => setIsMobileOpen(false)}
+              onClick={closeMenu}
               className="flex items-center transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-turquesa rounded-lg"
             >
               <BrandLogo
@@ -77,7 +91,7 @@ export function Navbar() {
               })}
             </nav>
 
-            {/* Right Action: CTA Button + Hamburger */}
+            {/* Right: CTA + Hamburger */}
             <div className="flex items-center gap-2 sm:gap-3">
               {/* CTA Inscríbete */}
               <Link
@@ -91,15 +105,16 @@ export function Navbar() {
               {/* Botón Hamburguesa (< 1024px) */}
               <button
                 type="button"
-                onClick={() => setIsMobileOpen((prev) => !prev)}
-                aria-label={isMobileOpen ? "Cerrar menú" : "Abrir menú de navegación"}
+                aria-label={isMobileOpen ? "Cerrar menú" : "Abrir menú"}
                 aria-expanded={isMobileOpen}
-                className="lg:hidden p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-turquesa cursor-pointer"
+                aria-controls="mobile-drawer"
+                onClick={toggleMenu}
+                className="lg:hidden p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-turquesa touch-manipulation"
               >
                 {isMobileOpen ? (
-                  <CloseIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <CloseIcon className="w-6 h-6" />
                 ) : (
-                  <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <MenuIcon className="w-6 h-6" />
                 )}
               </button>
             </div>
@@ -107,76 +122,85 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Backdrop & Drawer Menu */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex flex-col">
-          {/* Dark backdrop */}
-          <div
-            onClick={() => setIsMobileOpen(false)}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-          />
+      {/* Overlay backdrop — siempre en DOM, visible solo cuando open */}
+      <div
+        id="mobile-drawer-backdrop"
+        onClick={closeMenu}
+        aria-hidden="true"
+        className={`lg:hidden fixed inset-0 z-[49] bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
+          isMobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
 
-          {/* Slide-down Menu Panel */}
-          <div className="relative z-10 w-full bg-azul-profundo/98 backdrop-blur-2xl border-b border-white/15 shadow-2xl px-6 pt-4 pb-8 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-200">
-            {/* Top Bar with Logo & Close Button */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <BrandLogo
-                variant="secundario"
-                width={100}
-                priority
-                className="w-20 sm:w-24 h-auto"
-              />
-              <button
-                type="button"
-                onClick={() => setIsMobileOpen(false)}
-                aria-label="Cerrar menú"
-                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <CloseIcon className="w-6 h-6" />
-              </button>
-            </div>
+      {/* Drawer panel — siempre en DOM, desliza desde arriba */}
+      <div
+        id="mobile-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú de navegación"
+        className={`lg:hidden fixed top-0 left-0 right-0 z-50 bg-azul-profundo shadow-2xl transition-transform duration-300 ease-in-out ${
+          isMobileOpen ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <div className="px-6 pt-5 pb-8 flex flex-col gap-4">
+          {/* Top Bar con Logo y botón cerrar */}
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <BrandLogo
+              variant="secundario"
+              width={100}
+              priority
+              className="w-20 sm:w-24 h-auto"
+            />
+            <button
+              type="button"
+              onClick={closeMenu}
+              aria-label="Cerrar menú"
+              className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
+            >
+              <CloseIcon className="w-6 h-6" />
+            </button>
+          </div>
 
-            {/* Nav links list */}
-            <nav className="flex flex-col gap-1">
-              {CAMP_CONFIG.navItems.map((item) => {
-                const isActive = activeSection === item.id;
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onClick={() => {
-                      setActiveSection(item.id);
-                      setIsMobileOpen(false);
-                    }}
-                    className={`flex items-center justify-between px-3 py-3 rounded-xl text-sm font-extrabold uppercase tracking-wider transition-colors ${
-                      isActive
-                        ? "text-amarillo bg-white/10"
-                        : "text-white/85 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    {isActive && (
-                      <span className="w-2 h-2 rounded-full bg-amarillo shadow-xs" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+          {/* Nav links */}
+          <nav className="flex flex-col gap-1">
+            {CAMP_CONFIG.navItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    closeMenu();
+                  }}
+                  className={`flex items-center justify-between px-3 py-3 rounded-xl text-sm font-extrabold uppercase tracking-wider transition-colors ${
+                    isActive
+                      ? "text-amarillo bg-white/10"
+                      : "text-white/85 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <span className="w-2 h-2 rounded-full bg-amarillo" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
 
-            {/* Mobile CTA Button */}
-            <div className="pt-2">
-              <Link
-                href={CAMP_CONFIG.registrationUrl}
-                onClick={() => setIsMobileOpen(false)}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-[#fcc408] hover:bg-[#e6b007] text-azul-profundo font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(252,196,8,0.45)] hover:shadow-[0_0_28px_rgba(252,196,8,0.7)] transition-all active:scale-98"
-              >
-                <span>Inscribirme al Campamento</span>
-                <ArrowRightIcon className="w-4 h-4" />
-              </Link>
-            </div>
+          {/* CTA */}
+          <div className="pt-2">
+            <Link
+              href={CAMP_CONFIG.registrationUrl}
+              onClick={closeMenu}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-[#fcc408] hover:bg-[#e6b007] text-azul-profundo font-extrabold text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(252,196,8,0.45)] hover:shadow-[0_0_28px_rgba(252,196,8,0.7)] transition-all active:scale-95 touch-manipulation"
+            >
+              <span>Inscribirme al Campamento</span>
+              <ArrowRightIcon className="w-4 h-4" />
+            </Link>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }
