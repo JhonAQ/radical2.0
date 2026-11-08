@@ -1,184 +1,187 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { HeroCountdown } from "@/components/hero/HeroCountdown";
+import { CAMP_CONFIG } from "@/config/site";
 import {
+  CrownIcon,
+  UsersGroupIcon,
   WavesIcon,
   FireIcon,
-  UsersGroupIcon,
-  LightningIcon,
-  ArrowRightIcon,
 } from "@/components/common/Icons";
-import { CAMP_CONFIG } from "@/config/site";
 
-interface Pillar {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  icon: React.ReactNode;
-  accentColor: string;
-  bgGradient: string;
+interface TimeUnits {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
 }
 
-const PILLARS: Pillar[] = [
-  {
-    id: "playa",
-    title: "Playa & Desafíos",
-    subtitle: "Arena, olas y adrenalina",
-    description:
-      "Competencias por tribus, retos físicos en la orilla del mar de Mejía y dinámicas que pondrán a prueba tu espíritu de equipo.",
-    icon: <WavesIcon className="w-7 h-7 text-turquesa" />,
-    accentColor: "text-turquesa",
-    bgGradient: "from-turquesa/15 to-transparent",
-  },
-  {
-    id: "fogatas",
-    title: "Noches Radikales",
-    subtitle: "Música, plenarias y fuego",
-    description:
-      "Bajo el cielo costero, viviremos noches intensas de música en vivo, fogatas gigantes y mensajes directos al corazón que marcarán un antes y un después.",
-    icon: <FireIcon className="w-7 h-7 text-[#fcc408]" />,
-    accentColor: "text-[#fcc408]",
-    bgGradient: "from-[#fcc408]/15 to-transparent",
-  },
-  {
-    id: "comunidad",
-    title: "Hermandad Real",
-    subtitle: "Conexiones sin pantallas",
-    description:
-      "5 días para desconectarte del celular y reconectar con personas reales. Amistades de toda la vida forjadas en risas, carpas y experiencias compartidas.",
-    icon: <UsersGroupIcon className="w-7 h-7 text-naranja" />,
-    accentColor: "text-naranja",
-    bgGradient: "from-naranja/15 to-transparent",
-  },
-  {
-    id: "nextlevel",
-    title: "Next Level",
-    subtitle: "Crecimiento y propósito",
-    description:
-      "No regresas siendo el mismo. Sal de tu zona de confort, descubre tu verdadero potencial y prepárate para arrancar el año viviendo radikalmente.",
-    icon: <LightningIcon className="w-7 h-7 text-turquesa" />,
-    accentColor: "text-turquesa",
-    bgGradient: "from-turquesa/15 to-transparent",
-  },
-];
-
 export function CampAbout() {
+  const [timeLeft, setTimeLeft] = useState<TimeUnits>({
+    days: 45,
+    hours: 12,
+    minutes: 36,
+    seconds: 20,
+  });
+
+  useEffect(() => {
+    const target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
+
+    const calculateTime = () => {
+      const now = Date.now();
+      const diff = target - now;
+
+      if (diff > 0) {
+        setTimeLeft({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((diff / 1000 / 60) % 60),
+          seconds: Math.floor((diff / 1000) % 60),
+        });
+      }
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeUnits = [
+    { label: "DÍAS", value: timeLeft.days },
+    { label: "HORAS", value: timeLeft.hours },
+    { label: "MIN", value: timeLeft.minutes },
+    { label: "SEG", value: timeLeft.seconds },
+  ];
+
+  const pillars = [
+    {
+      id: "dios",
+      label: "DIOS",
+      icon: <CrownIcon className="w-8 h-8 text-[#fcc408]" />,
+    },
+    {
+      id: "comunidad",
+      label: "COMUNIDAD REAL",
+      icon: <UsersGroupIcon className="w-8 h-8 text-azul-profundo" />,
+    },
+    {
+      id: "naturaleza",
+      label: "NATURALEZA Y PLAYA",
+      icon: <WavesIcon className="w-8 h-8 text-turquesa" />,
+    },
+    {
+      id: "proposito",
+      label: "PROPÓSITO DE VIDA",
+      icon: <FireIcon className="w-8 h-8 text-naranja" />,
+    },
+  ];
+
   return (
-    <section
-      id="campamento"
-      className="relative w-full bg-azul-profundo text-white py-16 sm:py-24 lg:py-28 overflow-hidden"
-    >
-      {/* ── Background Tropical Textures & Moodboard Accents ── */}
-      <div className="absolute inset-0 pointer-events-none select-none z-0">
-        {/* Palm Frond Accent - Top Right */}
-        <div className="absolute -top-10 -right-16 w-64 sm:w-96 h-64 sm:h-96 opacity-15 rotate-45">
-          <Image
-            src="/assets/elements/elem-palm-frond-leaf.webp"
-            alt=""
-            fill
-            className="object-contain"
-          />
-        </div>
+    <section id="campamento" className="w-full bg-[#f8f1e3] text-azul-profundo">
+      {/* ── 02: COUNTDOWN TIMER (Fiel al Moodboard 02-countdown-timer.png) ── */}
+      <div className="relative w-full pt-12 pb-8 sm:pt-16 sm:pb-12 px-4 flex justify-center overflow-hidden">
+        {/* Banner de pincelada azul marino con salpicaduras */}
+        <div className="relative w-full max-w-xl py-8 px-6 sm:px-10 flex flex-col items-center">
+          {/* Fondo de brocha decorativo */}
+          <div className="absolute inset-0 -z-0">
+            <Image
+              src="/assets/textures/t3-03-navy-splatter-banner.webp"
+              alt=""
+              fill
+              className="object-cover object-center scale-105"
+              priority
+            />
+          </div>
 
-        {/* Monstera Leaf - Bottom Left */}
-        <div className="absolute -bottom-16 -left-16 w-72 sm:w-[420px] h-72 sm:h-[420px] opacity-15 -rotate-12">
-          <Image
-            src="/assets/elements/elem-monstera-leaf-painted.webp"
-            alt=""
-            fill
-            className="object-contain"
-          />
-        </div>
+          {/* Título sobre el banner de brocha */}
+          <h2 className="relative z-10 font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider text-center -rotate-1 drop-shadow-md mb-4">
+            — EL SIGUIENTE NIVEL TE ESPERA —
+          </h2>
 
-        {/* Paint Swipe Glow Accent - Center */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(0, 199, 199, 0.25) 0%, rgba(11, 45, 54, 0) 70%)",
-          }}
-        />
+          {/* Pastilla del Timer con separadores verticales */}
+          <div className="relative z-10 bg-azul-profundo/85 backdrop-blur-sm rounded-xl py-3 px-4 sm:px-8 shadow-xl flex items-center justify-center divide-x divide-white/20">
+            {timeUnits.map((unit) => (
+              <div
+                key={unit.label}
+                className="px-3 sm:px-5 flex flex-col items-center text-center first:pl-1 last:pr-1"
+              >
+                <span className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-none tracking-wider">
+                  {String(unit.value).padStart(2, "0")}
+                </span>
+                <span className="text-[10px] sm:text-xs font-bold text-white/80 uppercase tracking-widest mt-0.5">
+                  {unit.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-        {/* ── Transición 1: Countdown Bar ── */}
-        <div className="mb-14 sm:mb-20 flex justify-center">
-          <div className="w-full max-w-2xl bg-white/[0.04] backdrop-blur-xl rounded-2xl p-4 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-            <HeroCountdown />
+      {/* ── 03: EL CAMPAMENTO (Fiel al Moodboard 03-que-es-campamento.png) ── */}
+      <div className="w-full max-w-2xl mx-auto px-5 sm:px-6 pt-4 pb-16 sm:pb-24 flex flex-col">
+        {/* Título Principal */}
+        <h3 className="font-edosz text-4xl sm:text-5xl md:text-6xl text-azul-profundo uppercase tracking-wider -rotate-1 mb-4">
+          EL CAMPAMENTO
+        </h3>
+
+        {/* Párrafo Explicativo */}
+        <p className="font-sans text-sm sm:text-base md:text-lg text-azul-profundo/90 leading-relaxed font-normal mb-8">
+          Radikal 2.0 es un campamento cristiano de jóvenes donde vivirás días
+          inolvidables de playa, amistad, enseñanza y propósito. Un espacio para
+          desconectarte de la rutina, conectar con Dios y dar el siguiente nivel
+          en tu vida.
+        </p>
+
+        {/* Imagen Mock / Placeholder de la Experiencia con Frase Brush */}
+        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl mb-8 group bg-azul-profundo">
+          {/* Imagen de fondo (placeholder reemplazable) */}
+          <Image
+            src="/assets/hero/hero-desktop.webp"
+            alt="Experiencia en el campamento"
+            fill
+            className="object-cover object-center"
+          />
+
+          {/* Pinceladas y degradado inferior tipo moodboard */}
+          <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/80 via-transparent to-black/20" />
+
+          {/* Acento de brocha amarillo/turquesa en la base */}
+          <div className="absolute -bottom-4 -left-4 -right-4 h-16 opacity-80 pointer-events-none">
+            <Image
+              src="/assets/elements/elem-brush-banner-teal-yellow.webp"
+              alt=""
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* Texto Brush superpuesto en la esquina inferior izquierda */}
+          <div className="absolute bottom-5 left-5 sm:bottom-7 sm:left-7 z-10 max-w-[85%]">
+            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
+              EXPERIENCIAS REALES
+            </p>
+            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] mt-1">
+              QUE TRANSFORMAN
+            </p>
           </div>
         </div>
 
-        {/* ── Encabezado & Manifiesto ── */}
-        <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-20">
-          {/* Subtítulo Script estilo Kit de Marca */}
-          <span className="font-yellowtail text-2xl sm:text-3xl md:text-4xl text-[#fcc408] tracking-wide block mb-2 drop-shadow-sm">
-            Una experiencia que no se repite
-          </span>
-
-          {/* Título Principal */}
-          <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl lg:text-7xl uppercase tracking-wider text-white leading-none mb-6">
-            ¿QUÉ ES <span className="text-turquesa">RADICAL 2.0</span>?
-          </h2>
-
-          {/* Párrafo Manifiesto */}
-          <p className="text-crema/90 text-sm sm:text-base md:text-lg leading-relaxed font-sans font-medium">
-            Radical 2.0 es el campamento de verano más esperado del sur del Perú.
-            Durante <span className="text-white font-bold">5 días y 4 noches</span> en
-            las playas de <span className="text-[#fcc408] font-bold">Campel Mejía</span>,
-            cientos de jóvenes nos reunimos para desconectar de la rutina, superar
-            desafíos extremos, forjar amistades sinceras y encender una pasión que
-            llevará tu vida al siguiente nivel.
-          </p>
-        </div>
-
-        {/* ── Grid de 4 Pilares (Cards sin bordes duros, con soft elevation) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 mb-14 sm:mb-16">
-          {PILLARS.map((pillar) => (
+        {/* Fila Horizontal de 4 Pilares con Separadores Sutiles */}
+        <div className="w-full grid grid-cols-4 divide-x divide-azul-profundo/20 py-4">
+          {pillars.map((pillar) => (
             <div
               key={pillar.id}
-              className="group relative bg-white/[0.04] hover:bg-white/[0.07] backdrop-blur-md rounded-2xl p-6 sm:p-8 transition-all duration-300 shadow-[0_8px_30px_rgba(0,0,0,0.25)] hover:shadow-[0_14px_45px_rgba(0,0,0,0.4)] hover:-translate-y-1 flex flex-col justify-between"
+              className="flex flex-col items-center justify-start text-center px-1 sm:px-3"
             >
-              {/* Soft subtle corner glow on hover */}
-              <div
-                className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${pillar.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
-              />
-
-              <div className="relative z-10">
-                {/* Header Card: Icon Container */}
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.06] backdrop-blur-md flex items-center justify-center mb-5 shadow-inner">
-                  {pillar.icon}
-                </div>
-
-                {/* Subtitle / Micro Tag */}
-                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-crema/60 block mb-1">
-                  {pillar.subtitle}
-                </span>
-
-                {/* Title */}
-                <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase mb-3">
-                  {pillar.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-crema/80 text-sm sm:text-base leading-relaxed font-sans">
-                  {pillar.description}
-                </p>
+              <div className="mb-2 flex items-center justify-center">
+                {pillar.icon}
               </div>
+              <span className="font-bebas text-xs sm:text-sm md:text-base text-azul-profundo tracking-wider uppercase leading-tight font-normal">
+                {pillar.label}
+              </span>
             </div>
           ))}
-        </div>
-
-        {/* ── Bottom Section CTA ── */}
-        <div className="text-center pt-2">
-          <Link
-            href={CAMP_CONFIG.registrationUrl}
-            className="group inline-flex items-center gap-2.5 px-7 py-3.5 sm:px-8 sm:py-4 rounded-xl bg-[#fcc408] hover:bg-[#e6b007] text-azul-profundo font-sans font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(252,196,8,0.45)] hover:shadow-[0_0_30px_rgba(252,196,8,0.75)] hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#fcc408]/50"
-          >
-            <span>Quiero Vivir la Experiencia</span>
-            <ArrowRightIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
         </div>
       </div>
     </section>
