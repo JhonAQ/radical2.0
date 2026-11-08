@@ -149,8 +149,8 @@ export function CampAbout() {
             <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/70 via-transparent to-black/10" />
           </div>
 
-          {/* Brocha de acento amarillo diagonal sobresaliendo por la derecha inferior */}
-          <div className="absolute -bottom-5 right-0 w-[60%] h-14 sm:h-20 pointer-events-none rotate-2 opacity-95 z-10">
+          {/* Brocha de acento amarillo diagonal integrada en la base derecha */}
+          <div className="absolute -bottom-2 right-2 w-[55%] h-14 sm:h-18 pointer-events-none rotate-1 opacity-95 z-10">
             <Image
               src="/assets/textures/t1-04-yellow-horizontal.webp"
               alt=""
@@ -160,7 +160,7 @@ export function CampAbout() {
           </div>
 
           {/* Brocha de acento turquesa en la izquierda inferior */}
-          <div className="absolute -bottom-4 left-6 sm:left-10 w-[45%] h-12 sm:h-16 pointer-events-none -rotate-2 opacity-90 z-10">
+          <div className="absolute -bottom-1 left-2 w-[40%] h-12 sm:h-14 pointer-events-none -rotate-1 opacity-90 z-10">
             <Image
               src="/assets/textures/t1-06-cyan-horizontal.webp"
               alt=""
@@ -170,7 +170,7 @@ export function CampAbout() {
           </div>
 
           {/* Texto Brush superpuesto en la esquina inferior izquierda */}
-          <div className="absolute bottom-5 left-4 sm:bottom-7 sm:left-7 z-20 max-w-[85%] pointer-events-none">
+          <div className="absolute bottom-6 left-5 sm:bottom-8 sm:left-8 z-20 max-w-[85%] pointer-events-none">
             <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
               EXPERIENCIAS REALES
             </p>

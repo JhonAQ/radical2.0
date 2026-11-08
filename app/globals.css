@@ -107,10 +107,10 @@ body {
   animation: navbar-slide-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Organic brush mask utility with full WebKit and standard support */
+/* Organic brush mask utility matching the moodboard reference */
 .brush-masked-frame {
-  -webkit-mask-image: url('/assets/textures/brush-mask-clean.png');
-  mask-image: url('/assets/textures/brush-mask-clean.png');
+  -webkit-mask-image: url('/assets/textures/camp-exact-brush-mask.png');
+  mask-image: url('/assets/textures/camp-exact-brush-mask.png');
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
