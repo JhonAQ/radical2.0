@@ -82,7 +82,7 @@ export function Navbar() {
               {/* CTA Inscríbete */}
               <Link
                 href={CAMP_CONFIG.registrationUrl}
-                className="group inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-naranja hover:bg-[#e65f00] text-white text-[11px] sm:text-xs md:text-sm font-extrabold uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-naranja"
+                className="group inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#fcc408] hover:bg-[#e6b007] text-azul-profundo text-[11px] sm:text-xs md:text-sm font-extrabold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(252,196,8,0.45)] hover:shadow-[0_0_22px_rgba(252,196,8,0.75)] hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fcc408]"
               >
                 <span>Inscríbete</span>
                 <ArrowRightIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -168,7 +168,7 @@ export function Navbar() {
               <Link
                 href={CAMP_CONFIG.registrationUrl}
                 onClick={() => setIsMobileOpen(false)}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-naranja hover:bg-[#e65f00] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-98"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-[#fcc408] hover:bg-[#e6b007] text-azul-profundo font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(252,196,8,0.45)] hover:shadow-[0_0_28px_rgba(252,196,8,0.7)] transition-all active:scale-98"
               >
                 <span>Inscribirme al Campamento</span>
                 <ArrowRightIcon className="w-4 h-4" />

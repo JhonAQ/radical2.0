@@ -91,11 +91,11 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="sm:hidden flex flex-col items-center gap-4 mb-10">
+        <div className="sm:hidden flex flex-col items-center gap-12 mb-10">
           <div data-anim="details" style={{ opacity: 0 }}>
             <HeroEventDetails />
           </div>
-          <div data-anim="cta" style={{ opacity: 0 }} className="w-full">
+          <div data-anim="cta" style={{ opacity: 0 }}>
             <HeroCta />
           </div>
         </div>

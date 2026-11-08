@@ -88,8 +88,8 @@ body {
 }
 
 @keyframes cta-glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px 0px rgba(255, 107, 0, 0.4); }
-  50%       { box-shadow: 0 0 36px 6px rgba(255, 107, 0, 0.7); }
+  0%, 100% { box-shadow: 0 0 20px 0px rgba(252, 196, 8, 0.45); }
+  50%       { box-shadow: 0 0 36px 6px rgba(252, 196, 8, 0.75); }
 }
 
 .animate-bounce-slow { animation: var(--animate-bounce-slow); }
