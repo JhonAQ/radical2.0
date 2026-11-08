@@ -97,3 +97,12 @@ body {
 .animate-float       { animation: var(--animate-float); }
 .animate-shimmer     { animation: var(--animate-shimmer); }
 .animate-cta-glow    { animation: cta-glow-pulse 2.2s ease-in-out infinite; }
+
+/* Navbar entrance — CSS only, no JS transform on fixed element */
+@keyframes navbar-slide-down {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.navbar-animate {
+  animation: navbar-slide-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

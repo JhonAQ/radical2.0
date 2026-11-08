@@ -20,27 +20,41 @@ export function Hero() {
         .fromTo(
           "[data-anim='logo']",
           { opacity: 0, scale: 0.72, y: 40, filter: "blur(8px)" },
-          { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 1.1 }
+          {
+            opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 1.1,
+            onComplete: () => {
+              gsap.set("[data-anim='logo']", { clearProps: "transform,filter,opacity,scale,y" });
+            },
+          }
         )
         // Details: slide up
         .fromTo(
           "[data-anim='details']",
           { opacity: 0, y: 32 },
-          { opacity: 1, y: 0, duration: 0.7 },
+          {
+            opacity: 1, y: 0, duration: 0.7,
+            onComplete: () => gsap.set("[data-anim='details']", { clearProps: "all" }),
+          },
           "-=0.45"
         )
         // CTA: bounce in
         .fromTo(
           "[data-anim='cta']",
           { opacity: 0, y: 24, scale: 0.92 },
-          { opacity: 1, y: 0, scale: 1, duration: 0.65, ease: "back.out(1.6)" },
+          {
+            opacity: 1, y: 0, scale: 1, duration: 0.65, ease: "back.out(1.6)",
+            onComplete: () => gsap.set("[data-anim='cta']", { clearProps: "all" }),
+          },
           "-=0.3"
         )
         // Scroll cue: fade in
         .fromTo(
           "[data-anim='scroll-cue']",
           { opacity: 0, y: 8 },
-          { opacity: 1, y: 0, duration: 0.5 },
+          {
+            opacity: 1, y: 0, duration: 0.5,
+            onComplete: () => gsap.set("[data-anim='scroll-cue']", { clearProps: "all" }),
+          },
           "-=0.1"
         );
     }, containerRef);
