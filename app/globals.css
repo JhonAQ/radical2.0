@@ -46,6 +46,10 @@
 
   --font-yellowtail: var(--font-yellowtail), cursive;
   --font-radical-script: var(--font-yellowtail), cursive;
+
+  /* Condensed Event Font (Bebas Neue) */
+  --font-bebas: var(--font-bebas), sans-serif;
+  --font-condensed: var(--font-bebas), sans-serif;
 }
 
 body {
@@ -53,3 +57,4 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+

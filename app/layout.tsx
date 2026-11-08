@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Plus_Jakarta_Sans, Yellowtail } from "next/font/google";
+import { Plus_Jakarta_Sans, Yellowtail, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 
 // UI Base
@@ -29,6 +29,14 @@ const yellowtail = Yellowtail({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-yellowtail",
+  display: "swap",
+});
+
+// Condensada / Fechas y Eventos (Bebas Neue)
+const bebas = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bebas",
   display: "swap",
 });
 
@@ -97,7 +105,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`h-full antialiased ${sans.variable} ${edosz.variable} ${blowBrush.variable} ${yellowtail.variable}`}
+      className={`h-full antialiased ${sans.variable} ${edosz.variable} ${blowBrush.variable} ${yellowtail.variable} ${bebas.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

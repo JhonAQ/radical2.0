@@ -1,17 +1,11 @@
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { Navbar } from "@/components/layout/Navbar";
+import { Hero } from "@/components/hero/Hero";
 
-export default async function Page() {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
-
-  const { data: todos } = await supabase.from('todos').select()
-
+export default function HomePage() {
   return (
-    <ul>
-      {todos?.map((todo) => (
-        <li key={todo.id}>{todo.name}</li>
-      ))}
-    </ul>
-  )
+    <main className="relative min-h-screen bg-azul-profundo text-white overflow-x-hidden">
+      <Navbar />
+      <Hero />
+    </main>
+  );
 }
