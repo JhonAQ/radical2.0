@@ -136,17 +136,7 @@ export function CampAbout() {
         {/* Imagen Mock / Placeholder con Máscara de Pincel Texturizada */}
         <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] mb-10 select-none">
           {/* Contenedor enmascarado con la silueta de brocha orgánica */}
-          <div
-            className="relative w-full h-full overflow-hidden"
-            style={{
-              maskImage: "url('/assets/textures/brush-mask-hero.png')",
-              WebkitMaskImage: "url('/assets/textures/brush-mask-hero.png')",
-              maskSize: "100% 100%",
-              WebkitMaskSize: "100% 100%",
-              maskRepeat: "no-repeat",
-              WebkitMaskRepeat: "no-repeat",
-            }}
-          >
+          <div className="brush-masked-frame relative w-full h-full">
             {/* Imagen de fondo (placeholder reemplazable) */}
             <Image
               src="/assets/hero/hero-desktop.webp"

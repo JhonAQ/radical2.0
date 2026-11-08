@@ -106,3 +106,15 @@ body {
 .navbar-animate {
   animation: navbar-slide-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* Organic brush mask utility with full WebKit and standard support */
+.brush-masked-frame {
+  -webkit-mask-image: url('/assets/textures/brush-mask-clean.png');
+  mask-image: url('/assets/textures/brush-mask-clean.png');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
