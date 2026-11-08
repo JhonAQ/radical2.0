@@ -12,11 +12,11 @@ export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Safety: si GSAP no ejecuta, los elementos ya son visibles (sin opacity:0 inline)
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power3.out" }, delay: 0.1 });
 
       tl
-        // Logo: escala desde abajo con punch
         .fromTo(
           "[data-anim='logo']",
           { opacity: 0, scale: 0.72, y: 40, filter: "blur(8px)" },
@@ -27,7 +27,6 @@ export function Hero() {
             },
           }
         )
-        // Details: slide up
         .fromTo(
           "[data-anim='details']",
           { opacity: 0, y: 32 },
@@ -37,7 +36,6 @@ export function Hero() {
           },
           "-=0.45"
         )
-        // CTA: bounce in
         .fromTo(
           "[data-anim='cta']",
           { opacity: 0, y: 24, scale: 0.92 },
@@ -47,7 +45,6 @@ export function Hero() {
           },
           "-=0.3"
         )
-        // Scroll cue: fade in
         .fromTo(
           "[data-anim='scroll-cue']",
           { opacity: 0, y: 8 },
@@ -77,10 +74,10 @@ export function Hero() {
 
         {/* ── MOBILE LAYOUT ── */}
         <div className="flex-1 sm:hidden flex items-center justify-center">
+          {/* Sin opacity:0 inline — GSAP lo setea desde el fromTo */}
           <div
             data-anim="logo"
             className="w-full max-w-[85vw] flex items-center justify-center will-change-transform"
-            style={{ opacity: 0 }}
           >
             <BrandLogo
               variant="principal"
@@ -92,10 +89,10 @@ export function Hero() {
         </div>
 
         <div className="sm:hidden flex flex-col items-center gap-12 mb-10">
-          <div data-anim="details" style={{ opacity: 0 }}>
+          <div data-anim="details">
             <HeroEventDetails />
           </div>
-          <div data-anim="cta" style={{ opacity: 0 }}>
+          <div data-anim="cta">
             <HeroCta />
           </div>
         </div>
@@ -105,7 +102,6 @@ export function Hero() {
           <div
             data-anim="logo"
             className="w-full max-w-[380px] md:max-w-[430px] lg:max-w-[500px] flex items-center justify-center will-change-transform"
-            style={{ opacity: 0 }}
           >
             <BrandLogo
               variant="principal"
@@ -114,16 +110,16 @@ export function Hero() {
               className="w-full h-auto object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)]"
             />
           </div>
-          <div data-anim="details" style={{ opacity: 0 }}>
+          <div data-anim="details">
             <HeroEventDetails />
           </div>
-          <div data-anim="cta" style={{ opacity: 0 }}>
+          <div data-anim="cta">
             <HeroCta />
           </div>
         </div>
 
         {/* Scroll Cue */}
-        <div data-anim="scroll-cue" className="flex justify-center" style={{ opacity: 0 }}>
+        <div data-anim="scroll-cue" className="flex justify-center">
           <HeroScrollCue />
         </div>
 

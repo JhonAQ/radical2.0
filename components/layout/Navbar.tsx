@@ -31,7 +31,7 @@ export function Navbar() {
   return (
     <>
       <header
-        className={`navbar-animate fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
           isScrolled
             ? "bg-azul-profundo/90 backdrop-blur-md shadow-md py-1.5 sm:py-2"
             : "bg-gradient-to-b from-azul-profundo/80 via-azul-profundo/30 to-transparent py-2 sm:py-2.5"
