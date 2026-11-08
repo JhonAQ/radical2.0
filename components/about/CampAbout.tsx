@@ -169,8 +169,8 @@ export function CampAbout() {
             />
           </div>
 
-          {/* Texto Brush superpuesto en la esquina inferior izquierda */}
-          <div className="absolute bottom-6 left-5 sm:bottom-8 sm:left-8 z-20 max-w-[85%] pointer-events-none">
+          {/* Texto Brush superpuesto en la esquina inferior izquierda - con margen de sobra sobre el borde */}
+          <div className="absolute bottom-12 left-6 sm:bottom-16 sm:left-9 z-20 max-w-[85%] pointer-events-none">
             <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
               EXPERIENCIAS REALES
             </p>
