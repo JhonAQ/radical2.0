@@ -19,11 +19,11 @@ export function Hero() {
       tl
         .fromTo(
           "[data-anim='logo']",
-          { opacity: 0, scale: 0.72, y: 40, filter: "blur(8px)" },
+          { opacity: 0, scale: 0.85, y: 30 },
           {
-            opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 1.1,
+            opacity: 1, scale: 1, y: 0, duration: 0.9,
             onComplete: () => {
-              gsap.set("[data-anim='logo']", { clearProps: "transform,filter,opacity,scale,y" });
+              gsap.set("[data-anim='logo']", { clearProps: "all" });
             },
           }
         )
