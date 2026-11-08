@@ -97,42 +97,44 @@ export function CampAbout() {
   return (
     <section id="campamento" className="w-full bg-[#f8f1e3] text-azul-profundo">
       {/* ── 02: COUNTDOWN TIMER (Fiel al Moodboard 02-countdown-timer.png) ── */}
-      <div className="relative w-full pt-10 pb-8 sm:pt-16 sm:pb-12 px-4 flex justify-center overflow-hidden">
-        {/* Banner con brocha diagonal orgánica y acento amarillo/naranja */}
-        <div className="relative w-full max-w-xl sm:max-w-2xl py-12 sm:py-16 px-6 sm:px-12 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[270px]">
-          {/* Fondo de brocha decorativo del moodboard (diagonal marino con salpicaduras y acento cálido) */}
-          <div className="absolute inset-0 -z-0">
-            <Image
-              src="/assets/textures/countdown-brush-banner.webp"
-              alt=""
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 672px"
-              className="object-contain object-center scale-110 sm:scale-105 pointer-events-none select-none"
-              priority
-            />
+      <div className="relative w-full pt-8 pb-8 sm:pt-14 sm:pb-12 px-4 flex flex-col items-center justify-center overflow-hidden">
+        {/* Bloque del Título con el fondo de brocha centrado a la altura del texto */}
+        <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl flex items-center justify-center min-h-[110px] sm:min-h-[140px] px-4 py-5 sm:py-7">
+          {/* Fondo de brocha ajustado y centrado exactamente con el texto */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
+            <div className="relative w-full h-[155%] sm:h-[180%] translate-y-1 sm:translate-y-2">
+              <Image
+                src="/assets/textures/countdown-brush-banner.webp"
+                alt=""
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 672px"
+                className="object-contain object-center scale-105 pointer-events-none select-none"
+                priority
+              />
+            </div>
           </div>
 
-          {/* Título sobre el banner de brocha con rotación e inclinación dinámica */}
-          <h2 className="relative z-10 font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider text-center -rotate-2 sm:-rotate-3 drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)] mb-3 sm:mb-4">
+          {/* Título: ahora queda 100% contenido sobre el cuerpo azul de la brocha */}
+          <h2 className="relative z-10 font-edosz text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl uppercase tracking-wider text-center -rotate-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] px-4">
             — EL SIGUIENTE NIVEL TE ESPERA —
           </h2>
+        </div>
 
-          {/* Pastilla del Timer con separadores verticales */}
-          <div className="relative z-10 bg-[#061e25]/90 backdrop-blur-md rounded-2xl py-3 sm:py-3.5 px-4 sm:px-8 shadow-2xl border border-white/10 flex items-center justify-center divide-x divide-white/15 -rotate-1">
-            {timeUnits.map((unit) => (
-              <div
-                key={unit.label}
-                className="px-3 sm:px-5 flex flex-col items-center text-center first:pl-1 last:pr-1 min-w-[56px] sm:min-w-[68px]"
-              >
-                <span className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-none tracking-wider tabular-nums">
-                  {mounted ? String(unit.value).padStart(2, "0") : "--"}
-                </span>
-                <span className="text-[10px] sm:text-xs font-bold text-white/80 uppercase tracking-widest mt-1">
-                  {unit.label}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Pastilla del Timer: centrada justo abajo, con su propio fondo oscuro */}
+        <div className="relative z-10 -mt-1 sm:mt-1 bg-[#061e25]/90 backdrop-blur-md rounded-2xl py-3 sm:py-3.5 px-4 sm:px-8 shadow-2xl border border-white/10 flex items-center justify-center divide-x divide-white/15">
+          {timeUnits.map((unit) => (
+            <div
+              key={unit.label}
+              className="px-3 sm:px-5 flex flex-col items-center text-center first:pl-1 last:pr-1 min-w-[56px] sm:min-w-[68px]"
+            >
+              <span className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-none tracking-wider tabular-nums">
+                {mounted ? String(unit.value).padStart(2, "0") : "--"}
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-white/80 uppercase tracking-widest mt-1">
+                {unit.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
