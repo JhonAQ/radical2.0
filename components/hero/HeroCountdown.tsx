@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CAMP_CONFIG } from "@/config/site";
 import { ClockIcon } from "@/components/common/Icons";
 
@@ -11,8 +11,14 @@ interface TimeUnits {
   seconds: number;
 }
 
+const emptySubscribe = () => () => {};
+
 export function HeroCountdown() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const [timeLeft, setTimeLeft] = useState<TimeUnits>({
     days: 0,
     hours: 0,
@@ -21,7 +27,6 @@ export function HeroCountdown() {
   });
 
   useEffect(() => {
-    setMounted(true);
     const target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
 
     const calculateTime = () => {

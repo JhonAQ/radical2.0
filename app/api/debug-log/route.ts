@@ -7,8 +7,9 @@ export async function POST(req: NextRequest) {
     console.log(JSON.stringify(data, null, 2));
     console.log("===========================================================\n");
     return NextResponse.json({ ok: true, received: data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[DEBUG LOG ERROR]", err);
-    return NextResponse.json({ ok: false, error: err?.message }, { status: 400 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

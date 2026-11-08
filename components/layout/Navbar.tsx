@@ -1,235 +1,167 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { MenuIcon, CloseIcon, ArrowRightIcon } from "@/components/common/Icons";
 import { CAMP_CONFIG } from "@/config/site";
 
+const emptySubscribe = () => () => {};
+
+/**
+ * Navbar responsivo.
+ *
+ * - Header fijo (z-40) con logo, navegación desktop y botón hamburguesa.
+ * - Menú móvil renderizado en un portal a document.body con estado React,
+ *   condicionado por `isOpen`. Sin mutación imperativa del DOM.
+ */
 export function Navbar() {
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const openIconRef = useRef<HTMLSpanElement>(null);
-  const closeIconRef = useRef<HTMLSpanElement>(null);
-  const isOpenRef = useRef(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+  const toggleMenu = useCallback(() => setIsOpen((open) => !open), []);
+
+  // Bloquear scroll del body mientras el menú está abierto.
   useEffect(() => {
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
-  function openMenu() {
-    isOpenRef.current = true;
-    if (drawerRef.current) drawerRef.current.style.display = "block";
-    if (backdropRef.current) backdropRef.current.style.display = "block";
-    if (openIconRef.current) openIconRef.current.style.display = "none";
-    if (closeIconRef.current) closeIconRef.current.style.display = "block";
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-  }
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
 
-  function closeMenu() {
-    isOpenRef.current = false;
-    if (drawerRef.current) drawerRef.current.style.display = "none";
-    if (backdropRef.current) backdropRef.current.style.display = "none";
-    if (openIconRef.current) openIconRef.current.style.display = "block";
-    if (closeIconRef.current) closeIconRef.current.style.display = "none";
-    document.body.style.overflow = "";
-  }
+  // Cerrar con Escape.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, closeMenu]);
 
-  function toggleMenu() {
-    try {
-      fetch("/api/debug-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "NAVBAR_HAMBURGER_CLICKED", wasOpen: isOpenRef.current, time: new Date().toISOString() }),
-      }).catch(() => {});
-    } catch {}
-    if (isOpenRef.current) closeMenu();
-    else openMenu();
-  }
+  // Si se agranda la ventana a desktop con el menú abierto, cerrarlo
+  // para no dejar el scroll bloqueado ni el estilo huérfano.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onResize = () => {
+      if (window.innerWidth >= 1024) closeMenu();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [isOpen, closeMenu]);
 
   return (
     <>
       {/* ── HEADER ── */}
-      <header
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 40,
-          padding: "0.5rem 0",
-          background: "linear-gradient(to bottom, rgba(11,45,54,0.85), rgba(11,45,54,0.3), transparent)",
-        }}
-      >
-        <div style={{ maxWidth: "80rem", margin: "0 auto", padding: "0 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+      <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-azul-profundo/85 via-azul-profundo/30 to-transparent py-2">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           {/* Logo */}
-          <Link href="#inicio" style={{ display: "flex", alignItems: "center" }}>
+          <Link href="#inicio" className="flex items-center">
             <BrandLogo variant="secundario" width={110} priority className="w-28 h-auto" />
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-6">
+          {/* Navegación desktop */}
+          <nav aria-label="Navegación principal" className="hidden items-center gap-6 lg:flex">
             {CAMP_CONFIG.navItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.href}
-                className="text-xs font-extrabold uppercase tracking-wider text-white/85 hover:text-amarillo transition-colors"
+                className="text-xs font-extrabold uppercase tracking-wider text-white/85 transition-colors hover:text-amarillo"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {/* CTA + Hamburger */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {/* CTA + hamburguesa */}
+          <div className="flex items-center gap-2">
             <Link
               href={CAMP_CONFIG.registrationUrl}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                padding: "0.375rem 0.875rem",
-                borderRadius: "0.75rem",
-                background: "#fcc408",
-                color: "#0b2d36",
-                fontWeight: 800,
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                textDecoration: "none",
-              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amarillo px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-azul-profundo sm:px-4 sm:py-2 sm:text-xs"
             >
               <span>Inscríbete</span>
               <ArrowRightIcon className="w-3 h-3" />
             </Link>
 
-            {/* Botón hamburguesa — SIN React state, DOM directo */}
             <button
               type="button"
-              aria-label="Menú"
+              aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu"
               onClick={toggleMenu}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "0.5rem",
-                borderRadius: "0.75rem",
-                background: "rgba(255,255,255,0.1)",
-                border: "none",
-                color: "white",
-                cursor: "pointer",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              className="lg:hidden"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/20 lg:hidden"
             >
-              <span ref={openIconRef} style={{ display: "block" }}>
-                <MenuIcon className="w-6 h-6" />
-              </span>
-              <span ref={closeIconRef} style={{ display: "none" }}>
-                <CloseIcon className="w-6 h-6" />
-              </span>
+              {isOpen ? <CloseIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ── BACKDROP — siempre en DOM, oculto por defecto ── */}
-      <div
-        ref={backdropRef}
-        onClick={closeMenu}
-        style={{
-          display: "none",
-          position: "fixed",
-          inset: 0,
-          zIndex: 9998,
-          background: "rgba(0,0,0,0.75)",
-        }}
-      />
-
-      {/* ── DRAWER — siempre en DOM, oculto por defecto ── */}
-      <div
-        ref={drawerRef}
-        style={{
-          display: "none",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          background: "#0b2d36",
-          paddingTop: "1.25rem",
-          paddingBottom: "2rem",
-          paddingLeft: "1.5rem",
-          paddingRight: "1.5rem",
-        }}
-      >
-        {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "0.75rem", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: "0.5rem" }}>
-          <BrandLogo variant="secundario" width={100} priority className="w-20 h-auto" />
-          <button
-            type="button"
-            onClick={closeMenu}
-            style={{
-              padding: "0.5rem",
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
-              WebkitTapHighlightColor: "transparent",
-            }}
-          >
-            <CloseIcon className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Nav links */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginBottom: "1rem" }}>
-          {CAMP_CONFIG.navItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
+      {/* ── MENÚ MÓVIL (portal a body) ── */}
+      {mounted &&
+        isOpen &&
+        createPortal(
+          <>
+            <div
+              aria-hidden="true"
+              className="fixed inset-0 z-[9998] bg-black/75 lg:hidden"
               onClick={closeMenu}
-              style={{
-                display: "block",
-                padding: "0.75rem",
-                borderRadius: "0.75rem",
-                color: "rgba(255,255,255,0.85)",
-                fontWeight: 800,
-                fontSize: "0.875rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                textDecoration: "none",
-              }}
+            />
+            <div
+              id="mobile-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú de navegación"
+              className="fixed inset-x-0 top-0 z-[9999] max-h-[100dvh] overflow-y-auto bg-azul-profundo px-6 pb-8 pt-5 shadow-2xl lg:hidden"
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+              {/* Barra superior del menú */}
+              <div className="mb-2 flex items-center justify-between border-b border-white/10 pb-3">
+                <BrandLogo variant="secundario" width={100} priority className="w-20 h-auto" />
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  aria-label="Cerrar menú"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10 active:bg-white/10"
+                >
+                  <CloseIcon className="w-6 h-6" />
+                </button>
+              </div>
 
-        {/* CTA */}
-        <Link
-          href={CAMP_CONFIG.registrationUrl}
-          onClick={closeMenu}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            padding: "0.875rem 1.25rem",
-            borderRadius: "0.75rem",
-            background: "#fcc408",
-            color: "#0b2d36",
-            fontWeight: 800,
-            fontSize: "0.875rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            textDecoration: "none",
-          }}
-        >
-          <span>Inscribirme al Campamento</span>
-          <ArrowRightIcon className="w-4 h-4" />
-        </Link>
-      </div>
+              {/* Enlaces */}
+              <nav aria-label="Menú móvil" className="flex flex-col gap-1">
+                {CAMP_CONFIG.navItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-3 text-sm font-extrabold uppercase tracking-wider text-white/85 transition-colors hover:bg-white/5 hover:text-amarillo"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+
+              {/* CTA */}
+              <Link
+                href={CAMP_CONFIG.registrationUrl}
+                onClick={closeMenu}
+                className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-amarillo px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider text-azul-profundo"
+              >
+                <span>Inscribirme al Campamento</span>
+                <ArrowRightIcon className="w-4 h-4" />
+              </Link>
+            </div>
+          </>,
+          document.body,
+        )}
     </>
   );
 }

@@ -89,6 +89,7 @@ export function CampAbout() {
               src="/assets/textures/t3-03-navy-splatter-banner.webp"
               alt=""
               fill
+              sizes="(max-width: 640px) 100vw, 576px"
               className="object-cover object-center scale-105"
               priority
             />
@@ -142,6 +143,7 @@ export function CampAbout() {
               src="/assets/hero/hero-desktop.webp"
               alt="Experiencia en el campamento"
               fill
+              sizes="(max-width: 672px) 100vw, 672px"
               className="object-cover object-center"
             />
 
@@ -155,6 +157,7 @@ export function CampAbout() {
               src="/assets/textures/t1-04-yellow-horizontal.webp"
               alt=""
               fill
+              sizes="(max-width: 672px) 55vw, 370px"
               className="object-contain object-right-bottom"
             />
           </div>
@@ -165,6 +168,7 @@ export function CampAbout() {
               src="/assets/textures/t1-06-cyan-horizontal.webp"
               alt=""
               fill
+              sizes="(max-width: 672px) 40vw, 270px"
               className="object-contain object-left-bottom"
             />
           </div>
