@@ -133,35 +133,58 @@ export function CampAbout() {
           en tu vida.
         </p>
 
-        {/* Imagen Mock / Placeholder de la Experiencia con Frase Brush */}
-        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl mb-8 group bg-azul-profundo">
-          {/* Imagen de fondo (placeholder reemplazable) */}
-          <Image
-            src="/assets/hero/hero-desktop.webp"
-            alt="Experiencia en el campamento"
-            fill
-            className="object-cover object-center"
-          />
-
-          {/* Pinceladas y degradado inferior tipo moodboard */}
-          <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/80 via-transparent to-black/20" />
-
-          {/* Acento de brocha amarillo/turquesa en la base */}
-          <div className="absolute -bottom-4 -left-4 -right-4 h-16 opacity-80 pointer-events-none">
+        {/* Imagen Mock / Placeholder con Máscara de Pincel Texturizada */}
+        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] mb-10 select-none">
+          {/* Contenedor enmascarado con la silueta de brocha orgánica */}
+          <div
+            className="relative w-full h-full overflow-hidden"
+            style={{
+              maskImage: "url('/assets/textures/brush-mask-hero.png')",
+              WebkitMaskImage: "url('/assets/textures/brush-mask-hero.png')",
+              maskSize: "100% 100%",
+              WebkitMaskSize: "100% 100%",
+              maskRepeat: "no-repeat",
+              WebkitMaskRepeat: "no-repeat",
+            }}
+          >
+            {/* Imagen de fondo (placeholder reemplazable) */}
             <Image
-              src="/assets/elements/elem-brush-banner-teal-yellow.webp"
+              src="/assets/hero/hero-desktop.webp"
+              alt="Experiencia en el campamento"
+              fill
+              className="object-cover object-center"
+            />
+
+            {/* Sutil viñeta para contraste del texto */}
+            <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/70 via-transparent to-black/10" />
+          </div>
+
+          {/* Brocha de acento amarillo diagonal sobresaliendo por la derecha inferior */}
+          <div className="absolute -bottom-5 right-0 w-[60%] h-14 sm:h-20 pointer-events-none rotate-2 opacity-95 z-10">
+            <Image
+              src="/assets/textures/t1-04-yellow-horizontal.webp"
               alt=""
               fill
-              className="object-cover"
+              className="object-contain object-right-bottom"
+            />
+          </div>
+
+          {/* Brocha de acento turquesa en la izquierda inferior */}
+          <div className="absolute -bottom-4 left-6 sm:left-10 w-[45%] h-12 sm:h-16 pointer-events-none -rotate-2 opacity-90 z-10">
+            <Image
+              src="/assets/textures/t1-06-cyan-horizontal.webp"
+              alt=""
+              fill
+              className="object-contain object-left-bottom"
             />
           </div>
 
           {/* Texto Brush superpuesto en la esquina inferior izquierda */}
-          <div className="absolute bottom-5 left-5 sm:bottom-7 sm:left-7 z-10 max-w-[85%]">
-            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
+          <div className="absolute bottom-5 left-4 sm:bottom-7 sm:left-7 z-20 max-w-[85%] pointer-events-none">
+            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
               EXPERIENCIAS REALES
             </p>
-            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] mt-1">
+            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] mt-1">
               QUE TRANSFORMAN
             </p>
           </div>
