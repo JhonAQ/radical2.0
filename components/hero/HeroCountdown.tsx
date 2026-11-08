@@ -27,23 +27,29 @@ export function HeroCountdown() {
   });
 
   useEffect(() => {
-    const target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
+    const getTargetTime = () => {
+      const now = Date.now();
+      let target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
+      if (isNaN(target) || target <= now) {
+        const currentYear = new Date().getFullYear();
+        const candidate = new Date(`${currentYear}-12-30T09:00:00-05:00`).getTime();
+        target = candidate > now ? candidate : new Date(`${currentYear + 1}-12-30T09:00:00-05:00`).getTime();
+      }
+      return target;
+    };
+
+    const targetTime = getTargetTime();
 
     const calculateTime = () => {
       const now = Date.now();
-      const diff = target - now;
+      const diff = Math.max(0, targetTime - now);
 
-      if (diff > 0) {
-        setTimeLeft({
-          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((diff / 1000 / 60) % 60),
-          seconds: Math.floor((diff / 1000) % 60),
-        });
-      } else {
-        // Fallback dinámico si ya pasó la fecha
-        setTimeLeft({ days: 45, hours: 12, minutes: 36, seconds: 20 });
-      }
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
     };
 
     calculateTime();

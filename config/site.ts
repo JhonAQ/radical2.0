@@ -31,7 +31,7 @@ export const CAMP_CONFIG: CampEventConfig = {
   dates: {
     badge: "Campamento de Verano",
     range: "30 DIC — 03 ENE",
-    year: "2025 – 2026",
+    year: "2026 – 2027",
   },
   location: {
     venue: "Campel Mejía",
@@ -40,7 +40,7 @@ export const CAMP_CONFIG: CampEventConfig = {
     full: "Campel Mejía, Arequipa, Perú",
   },
   // Fecha objetivo del campamento
-  targetCountdownDate: "2025-12-30T09:00:00-05:00",
+  targetCountdownDate: "2026-12-30T09:00:00-05:00",
   registrationUrl: "#inscribirme",
   navItems: [
     { id: "inicio", label: "Inicio", href: "#inicio" },

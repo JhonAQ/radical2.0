@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { CAMP_CONFIG } from "@/config/site";
 import {
@@ -17,29 +17,46 @@ interface TimeUnits {
   seconds: number;
 }
 
+const emptySubscribe = () => () => {};
+
 export function CampAbout() {
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
   const [timeLeft, setTimeLeft] = useState<TimeUnits>({
-    days: 45,
-    hours: 12,
-    minutes: 36,
-    seconds: 20,
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
   });
 
   useEffect(() => {
-    const target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
+    const getTargetTime = () => {
+      const now = Date.now();
+      let target = new Date(CAMP_CONFIG.targetCountdownDate).getTime();
+      if (isNaN(target) || target <= now) {
+        const currentYear = new Date().getFullYear();
+        const candidate = new Date(`${currentYear}-12-30T09:00:00-05:00`).getTime();
+        target = candidate > now ? candidate : new Date(`${currentYear + 1}-12-30T09:00:00-05:00`).getTime();
+      }
+      return target;
+    };
+
+    const targetTime = getTargetTime();
 
     const calculateTime = () => {
       const now = Date.now();
-      const diff = target - now;
+      const diff = Math.max(0, targetTime - now);
 
-      if (diff > 0) {
-        setTimeLeft({
-          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((diff / 1000 / 60) % 60),
-          seconds: Math.floor((diff / 1000) % 60),
-        });
-      }
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
     };
 
     calculateTime();
@@ -80,37 +97,37 @@ export function CampAbout() {
   return (
     <section id="campamento" className="w-full bg-[#f8f1e3] text-azul-profundo">
       {/* ── 02: COUNTDOWN TIMER (Fiel al Moodboard 02-countdown-timer.png) ── */}
-      <div className="relative w-full pt-12 pb-8 sm:pt-16 sm:pb-12 px-4 flex justify-center overflow-hidden">
-        {/* Banner de pincelada azul marino con salpicaduras */}
-        <div className="relative w-full max-w-xl py-8 px-6 sm:px-10 flex flex-col items-center">
-          {/* Fondo de brocha decorativo */}
+      <div className="relative w-full pt-10 pb-8 sm:pt-16 sm:pb-12 px-4 flex justify-center overflow-hidden">
+        {/* Banner con brocha diagonal orgánica y acento amarillo/naranja */}
+        <div className="relative w-full max-w-xl sm:max-w-2xl py-12 sm:py-16 px-6 sm:px-12 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[270px]">
+          {/* Fondo de brocha decorativo del moodboard (diagonal marino con salpicaduras y acento cálido) */}
           <div className="absolute inset-0 -z-0">
             <Image
-              src="/assets/textures/t3-03-navy-splatter-banner.webp"
+              src="/assets/textures/countdown-brush-banner.webp"
               alt=""
               fill
-              sizes="(max-width: 640px) 100vw, 576px"
-              className="object-cover object-center scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 672px"
+              className="object-contain object-center scale-110 sm:scale-105 pointer-events-none select-none"
               priority
             />
           </div>
 
-          {/* Título sobre el banner de brocha */}
-          <h2 className="relative z-10 font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider text-center -rotate-1 drop-shadow-md mb-4">
+          {/* Título sobre el banner de brocha con rotación e inclinación dinámica */}
+          <h2 className="relative z-10 font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider text-center -rotate-2 sm:-rotate-3 drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)] mb-3 sm:mb-4">
             — EL SIGUIENTE NIVEL TE ESPERA —
           </h2>
 
           {/* Pastilla del Timer con separadores verticales */}
-          <div className="relative z-10 bg-azul-profundo/85 backdrop-blur-sm rounded-xl py-3 px-4 sm:px-8 shadow-xl flex items-center justify-center divide-x divide-white/20">
+          <div className="relative z-10 bg-[#061e25]/90 backdrop-blur-md rounded-2xl py-3 sm:py-3.5 px-4 sm:px-8 shadow-2xl border border-white/10 flex items-center justify-center divide-x divide-white/15 -rotate-1">
             {timeUnits.map((unit) => (
               <div
                 key={unit.label}
-                className="px-3 sm:px-5 flex flex-col items-center text-center first:pl-1 last:pr-1"
+                className="px-3 sm:px-5 flex flex-col items-center text-center first:pl-1 last:pr-1 min-w-[56px] sm:min-w-[68px]"
               >
-                <span className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-none tracking-wider">
-                  {String(unit.value).padStart(2, "0")}
+                <span className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white font-normal leading-none tracking-wider tabular-nums">
+                  {mounted ? String(unit.value).padStart(2, "0") : "--"}
                 </span>
-                <span className="text-[10px] sm:text-xs font-bold text-white/80 uppercase tracking-widest mt-0.5">
+                <span className="text-[10px] sm:text-xs font-bold text-white/80 uppercase tracking-widest mt-1">
                   {unit.label}
                 </span>
               </div>
