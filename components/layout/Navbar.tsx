@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { MenuIcon, CloseIcon, ArrowRightIcon } from "@/components/common/Icons";
 import { CAMP_CONFIG } from "@/config/site";
@@ -30,7 +31,10 @@ export function Navbar() {
 
   return (
     <>
-      <header
+      <motion.header
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
           isScrolled
             ? "bg-azul-profundo/90 backdrop-blur-md shadow-md py-1.5 sm:py-2"
@@ -105,7 +109,7 @@ export function Navbar() {
             </div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Mobile Backdrop & Drawer Menu */}
       {isMobileOpen && (

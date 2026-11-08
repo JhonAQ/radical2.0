@@ -50,6 +50,12 @@
   /* Condensed Event Font (Bebas Neue) */
   --font-bebas: var(--font-bebas), sans-serif;
   --font-condensed: var(--font-bebas), sans-serif;
+
+  /* Custom animation durations */
+  --animate-bounce-slow: bounce-slow 2s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s ease-in-out infinite;
+  --animate-float: float 4s ease-in-out infinite;
 }
 
 body {
@@ -58,3 +64,36 @@ body {
   font-family: var(--font-sans);
 }
 
+/* ── Custom Animations ─────────────────────────────────── */
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(6px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-6px) rotate(0.5deg); }
+  66%       { transform: translateY(-3px) rotate(-0.5deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes cta-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px 0px rgba(255, 107, 0, 0.4); }
+  50%       { box-shadow: 0 0 36px 6px rgba(255, 107, 0, 0.7); }
+}
+
+.animate-bounce-slow { animation: var(--animate-bounce-slow); }
+.animate-pulse-slow  { animation: var(--animate-pulse-slow); }
+.animate-float       { animation: var(--animate-float); }
+.animate-shimmer     { animation: var(--animate-shimmer); }
+.animate-cta-glow    { animation: cta-glow-pulse 2.2s ease-in-out infinite; }
