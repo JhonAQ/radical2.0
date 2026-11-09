@@ -65,6 +65,26 @@ body {
   font-family: var(--font-sans);
 }
 
+@media (min-width: 768px) and (max-width: 1000px) {
+  .activities-carousel-track {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 190px));
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .activities-carousel-card {
+    width: 100%;
+    max-width: 190px;
+    flex: none;
+  }
+
+  .activities-carousel-card[aria-hidden="true"],
+  .activities-carousel-arrow {
+    display: none;
+  }
+}
+
 /* ── Custom Animations ─────────────────────────────────── */
 
 @keyframes bounce-slow {

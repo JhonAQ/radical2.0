@@ -93,10 +93,10 @@ export function Activities() {
             ref={trackRef}
             onScroll={syncActiveCard}
             aria-label="Actividades del campamento"
-            className="relative flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="activities-carousel-track relative flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {[...activities, ...activities].map((activity, index) => (
-              <article key={`${activity.title}-${index}`} aria-hidden={index >= activities.length ? true : undefined} style={{ clipPath: `url(#activity-organic-${index % 3 === 2 ? "b" : "a"})` }} className="relative aspect-[4/5] basis-[77%] shrink-0 snap-start overflow-hidden bg-azul-profundo sm:basis-[238px] lg:basis-[calc((100%_-_4rem)/5)]">
+              <article key={`${activity.title}-${index}`} aria-hidden={index >= activities.length ? true : undefined} style={{ clipPath: `url(#activity-organic-${index % 3 === 2 ? "b" : "a"})` }} className="activities-carousel-card relative aspect-[4/5] basis-[77%] shrink-0 snap-start overflow-hidden bg-azul-profundo sm:basis-[238px] lg:basis-[calc((100%_-_4rem)/5)]">
                 <Image src={activity.image} alt={activity.alt} fill sizes="(max-width: 640px) 78vw, (max-width: 1024px) 310px, 22vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#031820]/95 via-[#031820]/10 to-transparent" />
                 <h3 className="absolute inset-x-3 bottom-4 font-edosz text-lg uppercase leading-tight text-white drop-shadow-md sm:text-xl lg:text-base xl:text-lg">
@@ -105,10 +105,10 @@ export function Activities() {
               </article>
             ))}
           </div>
-          <button type="button" onClick={() => slide(-1)} aria-label="Actividad anterior" className="absolute -left-5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-azul-profundo/90 text-white shadow-lg transition-colors hover:bg-turquesa/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amarillo lg:-left-6">
+          <button type="button" onClick={() => slide(-1)} aria-label="Actividad anterior" className="activities-carousel-arrow absolute -left-5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-azul-profundo/90 text-white shadow-lg transition-colors hover:bg-turquesa/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amarillo lg:-left-6">
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none"><path d="m14.5 5-7 7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <button type="button" onClick={() => slide(1)} aria-label="Siguiente actividad" className="absolute -right-5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-azul-profundo/90 text-white shadow-lg transition-colors hover:bg-turquesa/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amarillo lg:-right-6">
+          <button type="button" onClick={() => slide(1)} aria-label="Siguiente actividad" className="activities-carousel-arrow absolute -right-5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-azul-profundo/90 text-white shadow-lg transition-colors hover:bg-turquesa/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amarillo lg:-right-6">
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none"><path d="m9.5 5 7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <span className="sr-only" aria-live="polite">Actividad {activeIndex + 1} de {activities.length}</span>
