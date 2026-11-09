@@ -116,7 +116,7 @@ export function CampAbout() {
 
           {/* Título: ahora queda 100% contenido sobre el cuerpo azul de la brocha */}
           <h2 className="relative z-10 font-edosz text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl uppercase tracking-wider text-center -rotate-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] px-4">
-            — EL SIGUIENTE NIVEL TE ESPERA —
+            ¡EL SIGUIENTE NIVEL TE ESPERA!
           </h2>
         </div>
 
