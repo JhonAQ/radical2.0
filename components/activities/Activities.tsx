@@ -75,7 +75,7 @@ export function Activities() {
         className="pointer-events-none absolute bottom-10 -right-12 z-0 h-48 w-36 object-contain sm:h-64 sm:w-48 lg:bottom-16 lg:h-80 lg:w-60"
       />
       <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-8 lg:grid lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] lg:items-center lg:gap-4">
-        <div className="mb-5 flex flex-col items-center lg:mb-0 lg:items-center">
+        <div className="-mx-5 mb-5 flex flex-col items-center sm:-mx-8 lg:mb-0 lg:items-center">
           <h2 id="activities-heading" className="sr-only">Actividades Next Level</h2>
           <Image
             src="/assets/activities/activities-title.png"
