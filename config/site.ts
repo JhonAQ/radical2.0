@@ -46,7 +46,7 @@ export const CAMP_CONFIG: CampEventConfig = {
     { id: "inicio", label: "Inicio", href: "#inicio" },
     { id: "campamento", label: "El Campamento", href: "#campamento" },
     { id: "actividades", label: "Actividades", href: "#actividades" },
-    { id: "info", label: "Info", href: "#info" },
+    { id: "programa", label: "Programa", href: "#programa" },
     { id: "galeria", label: "Galería", href: "#galeria" },
     { id: "faq", label: "Preguntas", href: "#faq" },
   ],

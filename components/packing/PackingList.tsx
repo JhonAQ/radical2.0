@@ -31,17 +31,16 @@ function PackingIcon({ name }: { name: (typeof items)[number]["icon"] }) {
 
 export function PackingList() {
   return (
-    <section id="que-llevar" aria-labelledby="packing-heading" className="relative isolate z-10 overflow-visible bg-white px-5 py-14 text-azul-profundo sm:px-8 sm:py-20">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-[0.12] [background-image:radial-gradient(#967f57_0.7px,transparent_0.7px)] [background-size:11px_11px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute right-[-56px] top-[-36px] z-0 w-40 origin-bottom-right -rotate-12 opacity-70 sm:right-[-68px] sm:top-[-84px] sm:w-[13.333rem] lg:right-[-76px] lg:w-60">
+    <section id="que-llevar" aria-labelledby="packing-heading" className="relative isolate z-30 overflow-visible bg-white px-5 py-14 text-azul-profundo sm:px-8 sm:py-20 lg:min-w-0 lg:bg-transparent lg:px-0 lg:py-0">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-[0.12] [background-image:radial-gradient(#967f57_0.7px,transparent_0.7px)] [background-size:11px_11px] lg:hidden" />
+      <div aria-hidden="true" className="pointer-events-none absolute right-[-56px] top-[-36px] z-0 w-40 origin-bottom-right -rotate-12 opacity-70 sm:right-[-68px] sm:top-[-84px] sm:w-[13.333rem] lg:hidden">
         <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} className="h-auto w-full scale-x-[-1]" />
       </div>
-      <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="pointer-events-none absolute -left-20 -top-14 z-0 w-60 -rotate-12 sm:w-80" />
-      <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="pointer-events-none absolute bottom-[-24px] -left-28 z-0 w-64 -rotate-12 opacity-80 sm:w-80" />
-      <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} className="pointer-events-none absolute bottom-[-8px] -right-28 z-0 w-64 rotate-[-8deg] scale-y-[-1] opacity-80 sm:w-80" />
+      <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="pointer-events-none absolute bottom-[-24px] -left-28 z-0 w-64 -rotate-12 opacity-80 sm:w-80 lg:hidden" />
+      <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} className="pointer-events-none absolute bottom-[-8px] right-0 z-0 w-64 rotate-[-8deg] scale-y-[-1] opacity-80 sm:w-80 lg:hidden" />
 
-      <div className="relative z-10 mx-auto max-w-6xl">
-        <h2 id="packing-heading" aria-label="¿Qué llevar?" className="mb-10 font-edosz text-4xl uppercase leading-none sm:mb-12 sm:text-5xl lg:text-6xl">
+      <div className="relative z-10 mx-auto max-w-6xl lg:mx-0 lg:max-w-[540px]">
+        <h2 id="packing-heading" aria-label="¿Qué llevar?" className="mb-10 font-edosz text-4xl uppercase leading-none sm:mb-12 sm:text-5xl lg:mb-16 lg:text-center lg:text-5xl">
           <span aria-hidden="true" className="inline-flex whitespace-nowrap">
             {headingLetters.map((letter, index) => (
               <span
@@ -54,11 +53,11 @@ export function PackingList() {
             ))}
           </span>
         </h2>
-        <div className="grid grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-3">
           {items.map((item, index) => (
-            <div key={item.icon} className={`flex min-h-[154px] flex-col items-center justify-start px-1 py-5 text-center sm:min-h-[184px] sm:px-4 lg:min-h-[190px] ${index % 3 !== 2 ? "border-r-2 border-azul-profundo/15" : ""} ${index < 3 ? "border-b-2 border-azul-profundo/15 lg:border-b-0" : ""} ${index === 2 ? "lg:border-r-2 lg:border-azul-profundo/15" : ""}`}>
+            <div key={item.icon} className={`flex min-h-[154px] flex-col items-center justify-start px-1 py-5 text-center sm:min-h-[184px] sm:px-4 lg:min-h-[190px] lg:px-2 ${index % 3 !== 2 ? "border-r-2 border-azul-profundo/15" : ""} ${index < 3 ? "border-b-2 border-azul-profundo/15" : ""}`}>
               <div className="mb-4 flex h-14 items-center justify-center sm:mb-5 sm:h-16 lg:h-20"><PackingIcon name={item.icon} /></div>
-              <p className="font-sans text-[11px] font-semibold leading-snug text-azul-profundo sm:text-sm lg:text-base">{item.label}</p>
+              <p className="font-sans text-[11px] font-semibold leading-snug text-azul-profundo sm:text-sm lg:text-sm">{item.label}</p>
             </div>
           ))}
         </div>

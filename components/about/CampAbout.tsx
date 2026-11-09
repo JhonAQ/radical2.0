@@ -19,23 +19,31 @@ interface TimeUnits {
 }
 
 const emptySubscribe = () => () => {};
+const subscribeToMobileQuery = (callback: () => void) => {
+  const mediaQuery = window.matchMedia("(max-width: 639px)");
+  mediaQuery.addEventListener("change", callback);
+  return () => mediaQuery.removeEventListener("change", callback);
+};
+const getMobileSnapshot = () => window.matchMedia("(max-width: 639px)").matches;
 const MotionImage = motion.create(Image);
 
 function ExperiencesArtwork({
   className,
   isVisible,
   reduceMotion,
+  delay,
 }: {
   className: string;
   isVisible: boolean;
   reduceMotion: boolean;
+  delay: number;
 }) {
   return (
     <div className={className}>
       <motion.div
         initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : -96, scale: reduceMotion ? 1 : 0.94, rotate: reduceMotion ? 0 : -2 }}
         animate={isVisible || reduceMotion ? { opacity: 1, y: 0, scale: 1, rotate: 0 } : { opacity: 0, y: -96, scale: 0.94, rotate: -2 }}
-        transition={{ duration: reduceMotion ? 0 : 1.05, delay: reduceMotion ? 0 : 0.22, ease: [0.18, 0.82, 0.24, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 1.05, delay: reduceMotion ? 0 : delay, ease: [0.18, 0.82, 0.24, 1] }}
         className="relative mb-1 aspect-[1698/926] w-full select-none sm:mb-3"
       >
         <Image
@@ -51,13 +59,14 @@ function ExperiencesArtwork({
 }
 
 export function CampAbout() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const sectionIsInView = useInView(sectionRef, { once: true, amount: 0.15 });
+  const contentRef = useRef<HTMLDivElement>(null);
+  const sectionIsInView = useInView(contentRef, { once: true, amount: 0.25, margin: "0px 0px -22% 0px" });
   const reduceMotion = useReducedMotion();
-  const reveal = (delay: number, distance = 16) => ({
+  const isMobile = useSyncExternalStore(subscribeToMobileQuery, getMobileSnapshot, () => false);
+  const reveal = (desktopDelay: number, distance = 16, mobileDelay = desktopDelay) => ({
     initial: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : distance },
     animate: { opacity: sectionIsInView || reduceMotion ? 1 : 0, y: sectionIsInView || reduceMotion ? 0 : distance },
-    transition: { duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    transition: { duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : isMobile ? mobileDelay : desktopDelay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   });
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -134,7 +143,7 @@ export function CampAbout() {
   ];
 
   return (
-    <section ref={sectionRef} id="campamento" className="relative isolate z-10 w-full bg-white text-azul-profundo lg:pt-8">
+    <section id="campamento" className="relative isolate z-10 w-full bg-white text-azul-profundo lg:pt-8">
       <motion.div
         aria-hidden="true"
         initial={{ opacity: 0, y: 42, rotate: -5 }}
@@ -223,35 +232,59 @@ export function CampAbout() {
       </div>
 
       {/* ── 03: EL CAMPAMENTO ── */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[800px] flex-col px-5 pt-4 pb-6 sm:px-6 sm:pb-24 lg:min-h-[300px] lg:max-w-[1116px] lg:justify-center lg:gap-y-3 lg:px-0 lg:pt-0 lg:pb-8 xl:max-w-[1200px] xl:px-[38px]">
+      <div ref={contentRef} className="relative z-10 mx-auto flex w-full max-w-[800px] flex-col px-5 pt-4 pb-6 sm:px-6 sm:pb-24 lg:min-h-[300px] lg:max-w-[1116px] lg:justify-center lg:gap-y-3 lg:px-0 lg:pt-0 lg:pb-8 xl:max-w-[1200px] xl:px-[38px]">
         <div className="flex w-full max-w-[600px] flex-col lg:w-[calc(100%_-_524px)]">
           {/* Título Principal */}
           <div className="relative">
-            <motion.h3 {...reveal(0.2, 14)} className="relative z-10 mb-4 -rotate-1 font-edosz text-4xl uppercase tracking-wide text-azul-profundo sm:text-5xl md:text-6xl lg:text-5xl">
+            <motion.h3 {...reveal(0.2, 14, 0.1)} className="relative z-10 mb-4 -rotate-1 font-edosz text-4xl uppercase tracking-wide text-azul-profundo sm:text-5xl md:text-6xl lg:text-5xl">
               EL CAMPAMENTO
             </motion.h3>
-              <MotionImage
-                initial={{ opacity: 0, x: -24, y: 14, rotate: -8 }}
-                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -24, y: 14, rotate: -8 }}
-                transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
-                src="/assets/elements/elem-flying-bird-single-1.webp" alt="" aria-hidden="true" width={170} height={81} className="pointer-events-none absolute -right-1 -top-7 z-0 w-11 object-contain sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20"
-              />
-              <MotionImage
-                initial={{ opacity: 0, x: 22, y: 12, rotate: 8 }}
-                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 22, y: 12, rotate: 8 }}
-                transition={{ duration: reduceMotion ? 0 : 1, delay: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
-                src="/assets/elements/elem-flying-bird-single-2.webp" alt="" aria-hidden="true" width={137} height={62} className="pointer-events-none absolute right-9 -top-9 z-0 w-9 object-contain sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]"
-              />
-              <MotionImage
-                initial={{ opacity: 0, x: -18, y: 18, rotate: -6 }}
-                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -18, y: 18, rotate: -6 }}
-                transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.72, ease: [0.22, 1, 0.36, 1] }}
-                src="/assets/elements/elem-flying-bird-single-3.webp" alt="" aria-hidden="true" width={151} height={64} className="pointer-events-none absolute right-[4.5rem] -top-6 z-0 w-10 object-contain sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]"
-              />
+              <motion.div
+                aria-hidden="true"
+                initial={{ y: 0, rotate: 0 }}
+                animate={sectionIsInView && !reduceMotion ? { y: [0, -5, 0], rotate: [0, -1.5, 0] } : { y: 0, rotate: 0 }}
+                transition={{ duration: 3.2, delay: 1.55, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute -right-1 -top-7 z-0 w-11 sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20"
+              >
+                <MotionImage
+                  initial={{ opacity: 0, x: -24, y: 14, rotate: -8 }}
+                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -24, y: 14, rotate: -8 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  src="/assets/elements/elem-flying-bird-single-1.webp" alt="" aria-hidden="true" width={170} height={81} className="h-auto w-full object-contain"
+                />
+              </motion.div>
+              <motion.div
+                aria-hidden="true"
+                initial={{ y: 0, rotate: 0 }}
+                animate={sectionIsInView && !reduceMotion ? { y: [0, -7, 0], rotate: [0, 1.5, 0] } : { y: 0, rotate: 0 }}
+                transition={{ duration: 3.8, delay: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute right-9 -top-9 z-0 w-9 sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]"
+              >
+                <MotionImage
+                  initial={{ opacity: 0, x: 22, y: 12, rotate: 8 }}
+                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 22, y: 12, rotate: 8 }}
+                  transition={{ duration: reduceMotion ? 0 : 1, delay: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  src="/assets/elements/elem-flying-bird-single-2.webp" alt="" aria-hidden="true" width={137} height={62} className="h-auto w-full object-contain"
+                />
+              </motion.div>
+              <motion.div
+                aria-hidden="true"
+                initial={{ y: 0, rotate: 0 }}
+                animate={sectionIsInView && !reduceMotion ? { y: [0, -4, 0], rotate: [0, -1, 0] } : { y: 0, rotate: 0 }}
+                transition={{ duration: 3.5, delay: 2.05, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute right-[4.5rem] -top-6 z-0 w-10 sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]"
+              >
+                <MotionImage
+                  initial={{ opacity: 0, x: -18, y: 18, rotate: -6 }}
+                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -18, y: 18, rotate: -6 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.72, ease: [0.22, 1, 0.36, 1] }}
+                  src="/assets/elements/elem-flying-bird-single-3.webp" alt="" aria-hidden="true" width={151} height={64} className="h-auto w-full object-contain"
+                />
+              </motion.div>
           </div>
 
           {/* Párrafo Explicativo */}
-          <motion.p {...reveal(0.28, 12)} className="font-sans text-sm sm:text-base md:text-lg lg:text-base text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5 lg:mb-0">
+          <motion.p {...reveal(0.28, 12, 0.42)} className="font-sans text-sm sm:text-base md:text-lg lg:text-base text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5 lg:mb-0">
             Radikal 2.0 es un campamento cristiano de jóvenes donde vivirás cinco
             días inolvidables en la playa, con amistad, enseñanza y propósito.
             Además, <strong className="font-bold">¡Recibiremos juntos el Año Nuevo 2028!</strong>
@@ -260,13 +293,13 @@ export function CampAbout() {
           </motion.p>
         </div>
 
-        <ExperiencesArtwork isVisible={sectionIsInView} reduceMotion={Boolean(reduceMotion)} className="w-full lg:absolute lg:right-0 lg:top-1/2 lg:w-[492px] lg:max-w-[calc(50%_-_16px)] lg:-translate-y-1/2 xl:right-[38px]" />
+        <ExperiencesArtwork isVisible={sectionIsInView} reduceMotion={Boolean(reduceMotion)} delay={isMobile ? 0.8 : 0.22} className="w-full lg:absolute lg:right-0 lg:top-1/2 lg:w-[492px] lg:max-w-[calc(50%_-_16px)] lg:-translate-y-1/2 xl:right-[38px]" />
 
         {/* Fila Horizontal de 4 Pilares con Separadores Sutiles */}
         <div className="w-full max-w-[600px] grid grid-cols-4 divide-x divide-azul-profundo/20 py-1 sm:py-2 lg:w-[calc(100%_-_524px)] lg:max-w-[600px]">
           {pillars.map((pillar, index) => (
             <motion.div
-              {...reveal(0.2 + index * 0.08, 12)}
+              {...reveal(0.2 + index * 0.08, 12, 1.2 + index * 0.1)}
               key={pillar.id}
               className="flex flex-col items-center justify-start text-center px-1 sm:px-3"
             >

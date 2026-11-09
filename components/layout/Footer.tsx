@@ -3,7 +3,7 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 
 const footerLinks = [
   { label: "Inicio", href: "#inicio" },
-  { label: "Programa", href: "#actividades" },
+  { label: "Programa", href: "#programa" },
   { label: "Galería", href: "#galeria" },
   { label: "Preguntas", href: "#faq" },
 ];
