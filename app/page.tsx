@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Hero } from "@/components/hero/Hero";
+import { HeroDivider } from "@/components/hero/HeroDivider";
 import { CampAbout } from "@/components/about/CampAbout";
 
 export default function HomePage() {
@@ -10,6 +11,7 @@ export default function HomePage() {
       <Navbar />
       <main className="relative min-h-screen bg-azul-profundo text-white overflow-x-hidden">
         <Hero />
+        <HeroDivider />
         <CampAbout />
       </main>
     </>

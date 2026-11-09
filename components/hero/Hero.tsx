@@ -67,8 +67,8 @@ export function Hero() {
     >
       <HeroBackground />
 
-      {/* Gradiente inferior solo en mobile */}
-      <div className="sm:hidden absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-azul-profundo/80 via-azul-profundo/40 to-transparent z-[5] pointer-events-none" />
+      {/* Difuminación suave inferior en mobile para transición fluida */}
+      <div className="sm:hidden absolute bottom-0 left-0 right-0 h-[20%] bg-gradient-to-t from-azul-profundo/40 to-transparent z-[5] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-5 sm:px-6 h-full flex flex-col pt-16 sm:pt-20 md:pt-24 pb-5 sm:pb-8">
 

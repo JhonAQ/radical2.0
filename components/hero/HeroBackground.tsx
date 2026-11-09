@@ -29,8 +29,8 @@ export function HeroBackground() {
           className="object-cover object-center"
           quality={95}
         />
-        {/* Soft vignette and radial gradient for focal centering */}
-        <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/85 via-azul-profundo/20 to-azul-profundo/40" />
+        {/* Soft vignette and radial gradient for focal centering without harsh cuts */}
+        <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/40 via-transparent to-azul-profundo/30" />
         <div
           className="absolute inset-0 opacity-40 mix-blend-multiply"
           style={{
@@ -40,18 +40,6 @@ export function HeroBackground() {
         />
       </div>
 
-      {/* Brush Divider de transición entre el Hero y la siguiente sección */}
-      <div className="absolute -bottom-2 sm:-bottom-6 md:-bottom-10 left-0 right-0 w-full z-10 pointer-events-none">
-        <Image
-          src="/assets/textures/brush-divider-hero.webp"
-          alt=""
-          width={2172}
-          height={724}
-          priority
-          sizes="100vw"
-          className="w-full h-auto min-h-[60px] sm:min-h-[90px] md:min-h-[120px] object-cover object-center"
-        />
-      </div>
     </div>
   );
 }
