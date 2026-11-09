@@ -4,7 +4,7 @@ export function HeroDivider() {
   return (
     <div
       aria-hidden="true"
-      className="relative w-full z-20 -mt-8 sm:-mt-12 md:-mt-16 lg:-mt-20 pointer-events-none select-none leading-none overflow-hidden"
+      className="relative w-full z-20 -mt-6 sm:-mt-8 md:-mt-10 lg:-mt-12 pointer-events-none select-none leading-none overflow-hidden"
     >
       <Image
         src="/assets/textures/Teal and Gold Brushstroke Wave Divider.png"
