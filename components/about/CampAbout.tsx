@@ -100,15 +100,15 @@ export function CampAbout() {
       <div className="relative w-full pt-8 pb-8 sm:pt-14 sm:pb-12 px-4 flex flex-col items-center justify-center overflow-hidden">
         {/* Bloque del Título con el fondo de brocha centrado a la altura del texto */}
         <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl flex items-center justify-center min-h-[110px] sm:min-h-[140px] px-4 py-5 sm:py-7">
-          {/* Fondo de brocha ajustado y centrado exactamente con el texto */}
+          {/* Fondo de brocha elevado y centrado con el texto */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
-            <div className="relative w-full h-[155%] sm:h-[180%] translate-y-1 sm:translate-y-2">
+            <div className="relative w-[120%] sm:w-[115%] h-[200%] sm:h-[240%] -translate-y-6 sm:-translate-y-8">
               <Image
                 src="/assets/textures/countdown-brush-banner.webp"
                 alt=""
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 672px"
-                className="object-contain object-center scale-105 pointer-events-none select-none"
+                className="object-contain object-center pointer-events-none select-none"
                 priority
               />
             </div>
