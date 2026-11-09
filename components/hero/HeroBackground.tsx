@@ -39,6 +39,19 @@ export function HeroBackground() {
           }}
         />
       </div>
+
+      {/* Brush Divider de transición entre el Hero y la siguiente sección */}
+      <div className="absolute -bottom-2 sm:-bottom-6 md:-bottom-10 left-0 right-0 w-full z-10 pointer-events-none">
+        <Image
+          src="/assets/textures/brush-divider-hero.webp"
+          alt=""
+          width={2172}
+          height={724}
+          priority
+          sizes="100vw"
+          className="w-full h-auto min-h-[60px] sm:min-h-[90px] md:min-h-[120px] object-cover object-center"
+        />
+      </div>
     </div>
   );
 }
