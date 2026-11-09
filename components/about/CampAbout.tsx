@@ -102,7 +102,7 @@ export function CampAbout() {
         <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl flex items-center justify-center min-h-[130px] sm:min-h-[140px] px-2 py-5 sm:px-4 sm:py-7">
           {/* Fondo de brocha centrado con el texto */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
-            <div className="relative w-[170%] sm:w-[115%] h-[245%] sm:h-[210%] translate-y-4 sm:translate-y-5">
+            <div className="relative w-[170%] sm:w-[115%] h-[245%] sm:h-[210%] translate-y-5 sm:translate-y-6">
               <Image
                 src="/assets/textures/countdown-brush-banner.webp"
                 alt=""
@@ -146,7 +146,7 @@ export function CampAbout() {
         </h3>
 
         {/* Párrafo Explicativo */}
-        <p className="font-sans text-sm sm:text-base md:text-lg text-azul-profundo/90 leading-relaxed font-normal mb-3 sm:mb-8">
+        <p className="font-sans text-sm sm:text-base md:text-lg text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5">
           Radikal 2.0 es un campamento cristiano de jóvenes donde vivirás días
           inolvidables de playa, amistad, enseñanza y propósito. Un espacio para
           desconectarte de la rutina, conectar con Dios y dar el siguiente nivel
@@ -154,7 +154,7 @@ export function CampAbout() {
         </p>
 
         {/* Asset completo de experiencias reales: fotografía, brochas y tipografía integradas */}
-        <div className="relative w-full aspect-[1698/926] mb-2 sm:mb-10 select-none">
+        <div className="relative w-full aspect-[1698/926] mb-1 sm:mb-3 select-none">
           <Image
             src="/assets/about/radical-worship-transforming-experiences.png"
             alt="Experiencias reales que transforman en Radical 2.0"
@@ -165,7 +165,7 @@ export function CampAbout() {
         </div>
 
         {/* Fila Horizontal de 4 Pilares con Separadores Sutiles */}
-        <div className="w-full grid grid-cols-4 divide-x divide-azul-profundo/20 py-2 sm:py-4">
+        <div className="w-full grid grid-cols-4 divide-x divide-azul-profundo/20 py-1 sm:py-2">
           {pillars.map((pillar) => (
             <div
               key={pillar.id}

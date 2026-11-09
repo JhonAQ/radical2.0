@@ -108,6 +108,22 @@ body {
   animation: navbar-slide-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@keyframes mobile-menu-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mobile-menu-panel-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mobile-menu-backdrop { animation: mobile-menu-backdrop-in 180ms ease-out both; }
+.mobile-menu-panel { animation: mobile-menu-panel-in 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; transform-origin: top center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu-backdrop,
+  .mobile-menu-panel { animation: none; }
+}
+
 /* Organic brush mask utility matching the moodboard reference */
 .brush-masked-frame {
   -webkit-mask-image: url('/assets/textures/camp-exact-brush-mask.png');

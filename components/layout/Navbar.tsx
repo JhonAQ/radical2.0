@@ -18,6 +18,7 @@ const emptySubscribe = () => () => {};
  */
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -26,6 +27,13 @@ export function Navbar() {
 
   const closeMenu = useCallback(() => setIsOpen(false), []);
   const toggleMenu = useCallback(() => setIsOpen((open) => !open), []);
+
+  useEffect(() => {
+    const updateScrolled = () => setIsScrolled(window.scrollY > 12);
+    updateScrolled();
+    window.addEventListener("scroll", updateScrolled, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrolled);
+  }, []);
 
   // Bloquear scroll del body mientras el menú está abierto.
   useEffect(() => {
@@ -61,7 +69,7 @@ export function Navbar() {
   return (
     <>
       {/* ── HEADER ── */}
-      <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-azul-profundo/85 via-azul-profundo/30 to-transparent py-2">
+      <header className={`fixed inset-x-0 top-0 z-40 py-2 transition-all duration-300 ${isScrolled ? "bg-azul-profundo/55 shadow-md backdrop-blur-sm" : "bg-gradient-to-b from-azul-profundo/85 via-azul-profundo/30 to-transparent"}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           {/* Logo */}
           <Link href="#inicio" className="flex items-center">
@@ -112,7 +120,7 @@ export function Navbar() {
           <>
             <div
               aria-hidden="true"
-              className="fixed inset-0 z-[9998] bg-black/75 lg:hidden"
+              className="mobile-menu-backdrop fixed inset-0 z-[9998] bg-black/75 lg:hidden"
               onClick={closeMenu}
             />
             <div
@@ -120,7 +128,7 @@ export function Navbar() {
               role="dialog"
               aria-modal="true"
               aria-label="Menú de navegación"
-              className="fixed inset-x-0 top-0 z-[9999] max-h-[100dvh] overflow-y-auto bg-azul-profundo px-6 pb-8 pt-5 shadow-2xl lg:hidden"
+              className="mobile-menu-panel fixed inset-x-0 top-0 z-[9999] max-h-[100dvh] overflow-y-auto bg-azul-profundo px-6 pb-8 pt-5 shadow-2xl lg:hidden"
             >
               {/* Barra superior del menú */}
               <div className="mb-2 flex items-center justify-between border-b border-white/10 pb-3">
@@ -129,7 +137,7 @@ export function Navbar() {
                   type="button"
                   onClick={closeMenu}
                   aria-label="Cerrar menú"
-                  className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10 active:bg-white/10"
+                  className="flex h-11 w-11 min-h-11 min-w-11 items-center justify-center rounded-xl bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/20"
                 >
                   <CloseIcon className="w-6 h-6" />
                 </button>
