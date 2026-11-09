@@ -10,9 +10,9 @@ const sans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// Estilo 01: Display / Logo (Edo SZ)
+// Estilo 01: Display / Logo (Protest Riot)
 const edosz = localFont({
-  src: "../public/fonts/edosz.ttf",
+  src: "../public/fonts/protest-riot.ttf",
   variable: "--font-edosz",
   display: "swap",
 });
