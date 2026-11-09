@@ -19,6 +19,7 @@ const emptySubscribe = () => () => {};
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("inicio");
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -33,6 +34,33 @@ export function Navbar() {
     updateScrolled();
     window.addEventListener("scroll", updateScrolled, { passive: true });
     return () => window.removeEventListener("scroll", updateScrolled);
+  }, []);
+
+  useEffect(() => {
+    const sections = CAMP_CONFIG.navItems
+      .map((item) => document.getElementById(item.id))
+      .filter((section): section is HTMLElement => section !== null);
+
+    const updateActiveSection = () => {
+      const marker = window.innerHeight * 0.35;
+      let current = sections[0]?.id ?? "inicio";
+
+      for (const section of sections) {
+        const bounds = section.getBoundingClientRect();
+        if (bounds.top <= marker) current = section.id;
+        if (bounds.top <= marker && bounds.bottom > marker) break;
+      }
+
+      setActiveSection(current);
+    };
+
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection);
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
+    };
   }, []);
 
   // Bloquear scroll del body mientras el menú está abierto.
@@ -82,9 +110,11 @@ export function Navbar() {
               <Link
                 key={item.id}
                 href={item.href}
-                className="text-xs font-extrabold uppercase tracking-wider text-white/85 transition-colors hover:text-amarillo"
+                aria-current={activeSection === item.id ? "location" : undefined}
+                className={`relative inline-flex flex-col items-center py-2 text-xs font-extrabold uppercase tracking-wider transition-colors hover:text-amarillo ${activeSection === item.id ? "text-amarillo" : "text-white/85"}`}
               >
                 {item.label}
+                <span aria-hidden="true" className={`absolute inset-x-0 bottom-0 h-0.5 origin-left bg-amarillo transition-transform duration-300 ${activeSection === item.id ? "scale-x-100" : "scale-x-0"}`} />
               </Link>
             ))}
           </nav>
@@ -150,9 +180,13 @@ export function Navbar() {
                     key={item.id}
                     href={item.href}
                     onClick={closeMenu}
-                    className="block rounded-xl px-3 py-3 text-sm font-extrabold uppercase tracking-wider text-white/85 transition-colors hover:bg-white/5 hover:text-amarillo"
+                    aria-current={activeSection === item.id ? "location" : undefined}
+                    className={`group block rounded-xl px-3 py-3 text-sm font-extrabold uppercase tracking-wider transition-colors hover:bg-white/5 hover:text-amarillo ${activeSection === item.id ? "text-amarillo" : "text-white/85"}`}
                   >
-                    {item.label}
+                    <span className="relative inline-flex flex-col pb-1">
+                      {item.label}
+                      <span aria-hidden="true" className={`absolute inset-x-0 bottom-0 h-0.5 origin-left bg-amarillo transition-transform duration-300 ${activeSection === item.id ? "scale-x-100" : "scale-x-0"}`} />
+                    </span>
                   </Link>
                 ))}
               </nav>
