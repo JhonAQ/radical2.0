@@ -102,7 +102,7 @@ export function CampAbout() {
         <div className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl flex items-center justify-center min-h-[110px] sm:min-h-[140px] px-4 py-5 sm:py-7">
           {/* Fondo de brocha centrado con el texto */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
-            <div className="relative w-[120%] sm:w-[115%] h-[180%] sm:h-[210%] -translate-y-2 sm:-translate-y-3">
+            <div className="relative w-[120%] sm:w-[115%] h-[180%] sm:h-[210%] -translate-y-2 sm:-translate-y-3 rotate-[30deg] transform">
               <Image
                 src="/assets/textures/countdown-brush-banner.webp"
                 alt=""
