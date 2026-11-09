@@ -33,9 +33,9 @@ function ExperiencesArtwork({
   return (
     <div className={className}>
       <motion.div
-        initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 20 }}
-        animate={isVisible || reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: reduceMotion ? 0 : 0.7, delay: reduceMotion ? 0 : 2.2, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : -96, scale: reduceMotion ? 1 : 0.94, rotate: reduceMotion ? 0 : -2 }}
+        animate={isVisible || reduceMotion ? { opacity: 1, y: 0, scale: 1, rotate: 0 } : { opacity: 0, y: -96, scale: 0.94, rotate: -2 }}
+        transition={{ duration: reduceMotion ? 0 : 1.05, delay: reduceMotion ? 0 : 0.22, ease: [0.18, 0.82, 0.24, 1] }}
         className="relative mb-1 aspect-[1698/926] w-full select-none sm:mb-3"
       >
         <Image
@@ -139,15 +139,15 @@ export function CampAbout() {
         aria-hidden="true"
         initial={{ opacity: 0, y: 42, rotate: -5 }}
         animate={sectionIsInView ? { opacity: 0.65, y: 0, rotate: -12 } : { opacity: 0, y: 42, rotate: -5 }}
-        transition={{ duration: reduceMotion ? 0 : 0.85, delay: 0, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 0.85, delay: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute left-[45px] top-[68.6%] z-0 hidden h-[390px] w-[140px] -translate-y-1/2 opacity-[0.65] lg:block"
       >
         <Image src="/assets/elements/elem-surfboard-tropical-stripes.webp" alt="" fill sizes="140px" className="object-contain" />
       </motion.div>
       <motion.div
         aria-hidden="true"
-        initial={{ opacity: 0, y: 30 }}
-        animate={sectionIsInView ? { opacity: 0.65, y: 0 } : { opacity: 0, y: 30 }}
+        initial={{ opacity: 0, x: -58, y: 8, rotate: -16 }}
+        animate={sectionIsInView ? { opacity: 0.65, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -58, y: 8, rotate: -16 }}
         transition={{ duration: reduceMotion ? 0 : 0.85, delay: 0, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute bottom-[-125px] left-[-14px] z-0 hidden h-[256px] w-[260px] opacity-[0.65] lg:block"
       >
@@ -155,8 +155,8 @@ export function CampAbout() {
       </motion.div>
       <motion.div
         aria-hidden="true"
-        initial={{ opacity: 0, y: 34 }}
-        animate={sectionIsInView ? { opacity: 0.65, y: 0 } : { opacity: 0, y: 34 }}
+        initial={{ opacity: 0, x: 54, y: 8, rotate: 16 }}
+        animate={sectionIsInView ? { opacity: 0.65, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 54, y: 8, rotate: 16 }}
         transition={{ duration: reduceMotion ? 0 : 0.85, delay: 0, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute bottom-[-115px] left-[62px] z-0 hidden h-[210px] w-[214px] scale-x-[-1] opacity-[0.65] lg:block"
       >
@@ -166,7 +166,7 @@ export function CampAbout() {
         aria-hidden="true"
         initial={{ opacity: 0, y: 34 }}
         animate={sectionIsInView ? { opacity: 0.65, y: 0 } : { opacity: 0, y: 34 }}
-        transition={{ duration: reduceMotion ? 0 : 0.85, delay: 0, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 0.85, delay: reduceMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute right-[-64px] top-auto bottom-[-84px] z-0 hidden h-[384px] w-[245px] origin-bottom scale-x-[-1] rotate-[-10deg] lg:block"
       >
         <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" fill sizes="245px" className="object-contain" />
@@ -175,7 +175,7 @@ export function CampAbout() {
         aria-hidden="true"
         initial={{ opacity: 0, y: 30 }}
         animate={sectionIsInView ? { opacity: 0.65, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: reduceMotion ? 0 : 0.85, delay: 0, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 0.85, delay: reduceMotion ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none absolute right-[-64px] bottom-[-64px] z-0 hidden h-[330px] w-[260px] origin-bottom scale-x-[-1] rotate-[8deg] lg:block"
       >
         <Image src="/assets/elements/elem-palm-tree-medium-straight.webp" alt="" fill sizes="260px" className="object-contain" />
@@ -227,16 +227,31 @@ export function CampAbout() {
         <div className="flex w-full max-w-[600px] flex-col lg:w-[calc(100%_-_524px)]">
           {/* Título Principal */}
           <div className="relative">
-            <motion.h3 {...reveal(0.95, 14)} className="relative z-10 mb-4 -rotate-1 font-edosz text-4xl uppercase tracking-wide text-azul-profundo sm:text-5xl md:text-6xl lg:text-5xl">
+            <motion.h3 {...reveal(0.2, 14)} className="relative z-10 mb-4 -rotate-1 font-edosz text-4xl uppercase tracking-wide text-azul-profundo sm:text-5xl md:text-6xl lg:text-5xl">
               EL CAMPAMENTO
             </motion.h3>
-              <MotionImage {...reveal(0, 8)} src="/assets/elements/elem-flying-bird-single-1.webp" alt="" aria-hidden="true" width={170} height={81} className="pointer-events-none absolute -right-1 -top-7 z-0 w-11 object-contain sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20" />
-              <MotionImage {...reveal(0, 8)} src="/assets/elements/elem-flying-bird-single-2.webp" alt="" aria-hidden="true" width={137} height={62} className="pointer-events-none absolute right-9 -top-9 z-0 w-9 object-contain sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]" />
-              <MotionImage {...reveal(0, 8)} src="/assets/elements/elem-flying-bird-single-3.webp" alt="" aria-hidden="true" width={151} height={64} className="pointer-events-none absolute right-[4.5rem] -top-6 z-0 w-10 object-contain sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]" />
+              <MotionImage
+                initial={{ opacity: 0, x: -24, y: 14, rotate: -8 }}
+                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -24, y: 14, rotate: -8 }}
+                transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                src="/assets/elements/elem-flying-bird-single-1.webp" alt="" aria-hidden="true" width={170} height={81} className="pointer-events-none absolute -right-1 -top-7 z-0 w-11 object-contain sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20"
+              />
+              <MotionImage
+                initial={{ opacity: 0, x: 22, y: 12, rotate: 8 }}
+                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 22, y: 12, rotate: 8 }}
+                transition={{ duration: reduceMotion ? 0 : 1, delay: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
+                src="/assets/elements/elem-flying-bird-single-2.webp" alt="" aria-hidden="true" width={137} height={62} className="pointer-events-none absolute right-9 -top-9 z-0 w-9 object-contain sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]"
+              />
+              <MotionImage
+                initial={{ opacity: 0, x: -18, y: 18, rotate: -6 }}
+                animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -18, y: 18, rotate: -6 }}
+                transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.72, ease: [0.22, 1, 0.36, 1] }}
+                src="/assets/elements/elem-flying-bird-single-3.webp" alt="" aria-hidden="true" width={151} height={64} className="pointer-events-none absolute right-[4.5rem] -top-6 z-0 w-10 object-contain sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]"
+              />
           </div>
 
           {/* Párrafo Explicativo */}
-          <motion.p {...reveal(1.12, 12)} className="font-sans text-sm sm:text-base md:text-lg lg:text-base text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5 lg:mb-0">
+          <motion.p {...reveal(0.28, 12)} className="font-sans text-sm sm:text-base md:text-lg lg:text-base text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5 lg:mb-0">
             Radikal 2.0 es un campamento cristiano de jóvenes donde vivirás cinco
             días inolvidables en la playa, con amistad, enseñanza y propósito.
             Además, <strong className="font-bold">¡Recibiremos juntos el Año Nuevo 2028!</strong>
@@ -251,7 +266,7 @@ export function CampAbout() {
         <div className="w-full max-w-[600px] grid grid-cols-4 divide-x divide-azul-profundo/20 py-1 sm:py-2 lg:w-[calc(100%_-_524px)] lg:max-w-[600px]">
           {pillars.map((pillar, index) => (
             <motion.div
-              {...reveal(1.48 + index * 0.1, 12)}
+              {...reveal(0.2 + index * 0.08, 12)}
               key={pillar.id}
               className="flex flex-col items-center justify-start text-center px-1 sm:px-3"
             >
