@@ -115,8 +115,9 @@ export function CampAbout() {
           </div>
 
           {/* Título: ahora queda 100% contenido sobre el cuerpo azul de la brocha */}
-          <h2 className="relative z-10 font-edosz text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl uppercase tracking-wider text-center -rotate-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] px-4">
-            ¡EL SIGUIENTE NIVEL TE ESPERA!
+          <h2 className="relative z-10 font-edosz text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl uppercase tracking-wider text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] px-4">
+            <span className="block">¡EL SIGUIENTE NIVEL</span>
+            <span className="block">TE ESPERA!</span>
           </h2>
         </div>
 
@@ -141,7 +142,7 @@ export function CampAbout() {
       {/* ── 03: EL CAMPAMENTO (Fiel al Moodboard 03-que-es-campamento.png) ── */}
       <div className="w-full max-w-2xl mx-auto px-5 sm:px-6 pt-4 pb-16 sm:pb-24 flex flex-col">
         {/* Título Principal */}
-        <h3 className="font-edosz text-4xl sm:text-5xl md:text-6xl text-azul-profundo uppercase tracking-wider -rotate-1 mb-4">
+        <h3 className="font-edosz text-4xl sm:text-5xl md:text-6xl text-azul-profundo uppercase tracking-wide -rotate-1 mb-4">
           EL CAMPAMENTO
         </h3>
 
@@ -153,54 +154,15 @@ export function CampAbout() {
           en tu vida.
         </p>
 
-        {/* Imagen Mock / Placeholder con Máscara de Pincel Texturizada */}
-        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] mb-10 select-none">
-          {/* Contenedor enmascarado con la silueta de brocha orgánica */}
-          <div className="brush-masked-frame relative w-full h-full">
-            {/* Imagen de fondo (placeholder reemplazable) */}
-            <Image
-              src="/assets/hero/hero-desktop.webp"
-              alt="Experiencia en el campamento"
-              fill
-              sizes="(max-width: 672px) 100vw, 672px"
-              className="object-cover object-center"
-            />
-
-            {/* Sutil viñeta para contraste del texto */}
-            <div className="absolute inset-0 bg-gradient-to-t from-azul-profundo/70 via-transparent to-black/10" />
-          </div>
-
-          {/* Brocha de acento amarillo diagonal integrada en la base derecha */}
-          <div className="absolute -bottom-2 right-2 w-[55%] h-14 sm:h-18 pointer-events-none rotate-1 opacity-95 z-10">
-            <Image
-              src="/assets/textures/t1-04-yellow-horizontal.webp"
-              alt=""
-              fill
-              sizes="(max-width: 672px) 55vw, 370px"
-              className="object-contain object-right-bottom"
-            />
-          </div>
-
-          {/* Brocha de acento turquesa en la izquierda inferior */}
-          <div className="absolute -bottom-1 left-2 w-[40%] h-12 sm:h-14 pointer-events-none -rotate-1 opacity-90 z-10">
-            <Image
-              src="/assets/textures/t1-06-cyan-horizontal.webp"
-              alt=""
-              fill
-              sizes="(max-width: 672px) 40vw, 270px"
-              className="object-contain object-left-bottom"
-            />
-          </div>
-
-          {/* Texto Brush superpuesto en la esquina inferior izquierda - con margen de sobra sobre el borde */}
-          <div className="absolute bottom-12 left-6 sm:bottom-16 sm:left-9 z-20 max-w-[85%] pointer-events-none">
-            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
-              EXPERIENCIAS REALES
-            </p>
-            <p className="font-edosz text-white text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider leading-none -rotate-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] mt-1">
-              QUE TRANSFORMAN
-            </p>
-          </div>
+        {/* Asset completo de experiencias reales: fotografía, brochas y tipografía integradas */}
+        <div className="relative w-full aspect-[1698/926] mb-10 select-none">
+          <Image
+            src="/assets/about/radical-worship-transforming-experiences.png"
+            alt="Experiencias reales que transforman en Radical 2.0"
+            fill
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="object-contain object-center"
+          />
         </div>
 
         {/* Fila Horizontal de 4 Pilares con Separadores Sutiles */}
