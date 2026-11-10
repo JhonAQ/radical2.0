@@ -64,9 +64,10 @@ export function Hero() {
   }, []);
 
   return (
+    // Keep the hero height stable when mobile browser toolbars expand or collapse.
     <section
       id="inicio"
-      className="relative w-full h-[100dvh] flex flex-col overflow-hidden"
+      className="relative w-full h-[100svh] flex flex-col overflow-hidden"
       ref={containerRef}
     >
       <HeroBackground />

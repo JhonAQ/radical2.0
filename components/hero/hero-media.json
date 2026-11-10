@@ -1,0 +1,16 @@
+{
+  "mobile": {
+    "width": 720,
+    "height": 1280,
+    "poster": "/assets/hero/video/hero-mobile-9bdc078d5950.webp",
+    "webm": "/assets/hero/video/hero-mobile-33aa5444c221.webm",
+    "mp4": "/assets/hero/video/hero-mobile-a167c2a9500d.mp4"
+  },
+  "desktop": {
+    "width": 1280,
+    "height": 720,
+    "poster": "/assets/hero/video/hero-desktop-69cbb791cea8.webp",
+    "webm": "/assets/hero/video/hero-desktop-4320aaa59f2d.webm",
+    "mp4": "/assets/hero/video/hero-desktop-5c39fb071610.mp4"
+  }
+}
