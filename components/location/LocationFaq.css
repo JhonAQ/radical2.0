@@ -1,0 +1,91 @@
+.location-heading {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  font-size: clamp(1.7rem, 6vw, 2.5rem);
+}
+
+.location-visuals { min-width: 0; }
+.location-photo { display: none; }
+.location-faq-list { border-top: 1px solid rgb(11 45 54 / 15%); }
+.location-faq-item { border-bottom: 1px solid rgb(11 45 54 / 15%); }
+
+@media (min-width: 1024px) {
+  .location-content { max-width: 1400px; padding-right: clamp(80px, 7vw, 130px); }
+  .location-heading {
+    width: min(100%, 440px);
+    height: 120px;
+    margin: -10px 0 5px;
+    font-size: clamp(2rem, 3vw, 3rem);
+  }
+
+  .location-heading::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  .location-heading--yellow::before { background-image: url('/assets/elements/elem-brush-banner-yellow.webp'); transform: rotate(3deg) scale(1.04); }
+  .location-heading--teal { width: min(100%, 520px); color: white; }
+  .location-heading--teal::before { background-image: url('/assets/elements/elem-brush-banner-teal-yellow.webp'); transform: translateY(10px) rotate(3deg) scale(1.04); }
+
+  .location-visuals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 1rem;
+    padding: 10px 4px 15px;
+  }
+
+  .location-photo, .location-map {
+    position: relative;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    align-self: center;
+  }
+
+  .location-photo, .location-map {
+    border: 9px solid white;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 12px 24px rgb(11 45 54 / 20%);
+  }
+
+  .location-photo { display: block; transform: rotate(-4deg); overflow: hidden; }
+  .location-map { transform: rotate(3deg); }
+  .location-map-link { display: flex; width: fit-content; margin-inline: auto; }
+
+  .location-faq-list {
+    display: grid;
+    gap: 0.4rem;
+    border: 0;
+  }
+
+  .location-faq-item {
+    overflow: hidden;
+    border: 1px solid rgb(11 45 54 / 7%);
+    border-radius: 14px;
+    background: #fbf7f0;
+    box-shadow: 0 3px 0 rgb(110 145 156 / 25%), 0 8px 14px rgb(11 45 54 / 7%);
+  }
+
+  .location-faq-section > .footer-beach-scene {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    height: auto;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .location-content { max-width: 1180px; padding-right: 90px; }
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .location-content { max-width: calc(100% - 40px); padding-right: 100px; }
+}

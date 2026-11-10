@@ -7,6 +7,7 @@ import { Activities } from "@/components/activities/Activities";
 import { ProgramDays } from "@/components/program/ProgramDays";
 import { PackingList } from "@/components/packing/PackingList";
 import { PricingPlans } from "@/components/pricing/PricingPlans";
+import { LocationFaq } from "@/components/location/LocationFaq";
 import { Footer } from "@/components/layout/Footer";
 
 export default function HomePage() {
@@ -47,12 +48,13 @@ export default function HomePage() {
             <Image src="/assets/elements/elem-tropical-leaf-green-yellow.webp" alt="" width={331} height={183} className="absolute -bottom-4 -right-16 w-64 rotate-[28deg] scale-x-[-1]" />
             <Image src="/assets/elements/elem-hibiscus-flower-yellow.webp" alt="" width={214} height={197} className="absolute bottom-10 right-14 w-16 -rotate-12" />
           </div>
-          <div className="relative z-30 lg:mx-auto lg:grid lg:max-w-7xl lg:grid-cols-2 lg:items-stretch lg:gap-8 lg:px-8 lg:py-16">
+          <div className="relative z-30 lg:mx-auto lg:grid lg:max-w-7xl lg:grid-cols-2 lg:items-stretch lg:gap-8 lg:px-8 lg:py-[21.333px]">
             <ProgramDays />
             <PackingList />
           </div>
         </div>
         <PricingPlans />
+        <LocationFaq />
       </main>
       <Footer />
     </>

@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 const footerLinks = [
   { label: "Inicio", href: "#inicio" },
   { label: "Programa", href: "#programa" },
-  { label: "Galería", href: "#galeria" },
+  { label: "Ubicación", href: "#lugar" },
   { label: "Preguntas", href: "#faq" },
 ];
 
@@ -18,8 +18,8 @@ function SocialMark({ name, children }: { name: string; children: React.ReactNod
 
 export function Footer() {
   return (
-    <footer className="relative isolate overflow-hidden bg-white text-azul-profundo">
-      <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.22] [background-image:radial-gradient(#9c8760_0.7px,transparent_0.7px)] [background-size:9px_9px]" />
+    <footer className="relative isolate overflow-hidden bg-[#efb77d] text-azul-profundo">
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/assets/footer/arena-textura.webp')] bg-repeat opacity-[0.12] [background-size:1086px_36px]" />
       <div className="relative z-10 mx-auto flex min-h-[330px] max-w-7xl flex-col items-center px-6 pt-8 pb-10 sm:min-h-[360px] sm:pt-10 lg:grid lg:min-h-0 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-x-12 lg:px-10 lg:py-12">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <BrandLogo variant="black" width={210} className="w-36 sm:w-44 lg:w-40" />
