@@ -9,6 +9,7 @@ import { PackingList } from "@/components/packing/PackingList";
 import { PricingPlans } from "@/components/pricing/PricingPlans";
 import { LocationFaq } from "@/components/location/LocationFaq";
 import { Footer } from "@/components/layout/Footer";
+import { WhatsAppFloating } from "@/components/common/WhatsAppFloating";
 
 export default function HomePage() {
   return (
@@ -57,6 +58,7 @@ export default function HomePage() {
         <LocationFaq />
       </main>
       <Footer />
+      <WhatsAppFloating />
     </>
   );
 }

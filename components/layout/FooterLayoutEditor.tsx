@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 type Item = { id: string; label: string; src: string; x: number; y: number; width: number; rotation: number; z: number };
 
@@ -18,27 +18,61 @@ const initialItems: Item[] = [
   { id: "lantern", label: "Lámpara", src: "/assets/footer/lampara-radical.webp", x: 76, y: 58, width: 4, rotation: 0, z: 6 },
 ];
 
+const STORAGE_KEY = "radical-footer-layout";
+let cachedStorageValue: string | null | undefined;
+let cachedItems = initialItems;
+const storageSubscribers = new Set<() => void>();
+
+function getStoredItemsSnapshot() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw === cachedStorageValue) return cachedItems;
+  cachedStorageValue = raw;
+  if (!raw) {
+    cachedItems = initialItems;
+    return cachedItems;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Item[];
+    cachedItems = Array.isArray(parsed) && parsed.length === initialItems.length ? parsed : initialItems;
+  } catch {
+    cachedItems = initialItems;
+  }
+  return cachedItems;
+}
+
+function subscribeToStoredItems(onChange: () => void) {
+  storageSubscribers.add(onChange);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    cachedStorageValue = undefined;
+    onChange();
+  };
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    storageSubscribers.delete(onChange);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+function saveItems(items: Item[]) {
+  const raw = JSON.stringify(items);
+  localStorage.setItem(STORAGE_KEY, raw);
+  cachedStorageValue = raw;
+  cachedItems = items;
+  storageSubscribers.forEach((onChange) => onChange());
+}
+
 export function FooterLayoutEditor() {
-  const [items, setItems] = useState(initialItems);
+  const items = useSyncExternalStore(subscribeToStoredItems, getStoredItemsSnapshot, () => initialItems);
   const [selectedId, setSelectedId] = useState(initialItems[0].id);
   const [copied, setCopied] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; x: number; y: number } | null>(null);
   const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? items[0], [items, selectedId]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("radical-footer-layout");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as Item[];
-        if (Array.isArray(parsed) && parsed.length === initialItems.length) setItems(parsed);
-      } catch { localStorage.removeItem("radical-footer-layout"); }
-    }
-  }, []);
-  useEffect(() => { localStorage.setItem("radical-footer-layout", JSON.stringify(items)); }, [items]);
-
   function update(id: string, patch: Partial<Item>) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
+    saveItems(items.map((item) => item.id === id ? { ...item, ...patch } : item));
   }
   function beginDrag(event: React.PointerEvent<HTMLImageElement>, item: Item) {
     if (!stageRef.current) return;
@@ -72,7 +106,7 @@ export function FooterLayoutEditor() {
       <header className="mx-auto mb-4 flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-xl font-extrabold">Ajuste de la escena del footer</h1><p className="text-sm text-[#0b2d36]/65">Arrastra los assets. Selecciona uno para cambiar su escala, giro y capa.</p></div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => { setItems(initialItems); setSelectedId(initialItems[0].id); }} className="rounded-lg border border-[#0b2d36]/20 bg-white px-4 py-2 text-sm font-bold">Restablecer</button>
+          <button type="button" onClick={() => { saveItems(initialItems); setSelectedId(initialItems[0].id); }} className="rounded-lg border border-[#0b2d36]/20 bg-white px-4 py-2 text-sm font-bold">Restablecer</button>
           <button type="button" onClick={() => void exportConfig()} className="rounded-lg bg-[#0b2d36] px-4 py-2 text-sm font-bold text-white">{copied ? "Copiado" : "Copiar configuración"}</button>
         </div>
       </header>

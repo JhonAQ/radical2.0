@@ -1,4 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
+import { CAMP_CONFIG } from "@/config/site";
+import "./PricingPlans.css";
 
 const plans = [
   { name: "Preventa", price: "200", date: "Hasta el 15 de diciembre", brush: "/assets/elements/brush-planes-amarillo.png" },
@@ -33,6 +40,10 @@ function Benefits({ className = "" }: { className?: string }) {
 }
 
 export function PricingPlans() {
+  const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[number]["name"] | null>(null);
+  const selectedPlanDetails = plans.find((plan) => plan.name === selectedPlan);
+  const registrationConfigured = CAMP_CONFIG.registrationUrl !== "#inscribirme";
+
   return (
     <section id="inscribirme" aria-labelledby="pricing-heading" className="relative isolate bg-white px-4 py-16 text-azul-profundo sm:px-8 sm:py-20 lg:px-8 lg:py-24">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 hidden -scale-x-100 -scale-y-100 bg-[url('/assets/activities/brush-background.png')] bg-center bg-[length:130%_190%] bg-no-repeat lg:block" />
@@ -54,9 +65,23 @@ export function PricingPlans() {
           <p className="mt-4 hidden max-w-60 text-base leading-relaxed lg:block">Un tiempo diseñado completo, a un precio accesible. ¡No te quedes fuera!</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:contents">
+        <div role="radiogroup" aria-label="Selecciona tu plan de inscripción" className="grid grid-cols-2 gap-3 sm:gap-5 lg:contents">
           {plans.map((plan, index) => (
-            <article key={plan.name} className={`min-w-0 overflow-hidden rounded-xl bg-[#fffdf7] pb-3 shadow-[0_6px_20px_rgba(9,47,57,0.16)] lg:scale-90 lg:overflow-visible lg:pb-7 ${index === 1 ? "lg:-translate-x-2 lg:bg-[#105466] lg:text-white" : "lg:translate-x-2"}`}>
+            <motion.label
+              key={plan.name}
+              whileTap={{ scale: 0.985 }}
+              className={`relative block min-w-0 cursor-pointer overflow-hidden rounded-xl border-2 pb-3 transition-[border-color,box-shadow,transform] duration-200 focus-within:outline focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-azul-profundo lg:scale-90 lg:overflow-visible lg:pb-7 ${selectedPlan === plan.name ? index === 0 ? "border-[#ffbf00] ring-2 ring-[#ffbf00]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-[#00aeb8] ring-2 ring-[#00aeb8]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-transparent shadow-[0_6px_20px_rgba(9,47,57,0.16)]"} ${index === 1 ? "bg-[#fffdf7] lg:-translate-x-2 lg:bg-[#105466] lg:text-white" : "bg-[#fffdf7] lg:translate-x-2"}`}
+            >
+              <input
+                type="radio"
+                name="camp-plan"
+                value={plan.name}
+                checked={selectedPlan === plan.name}
+                onChange={() => setSelectedPlan(plan.name)}
+                aria-label={`${plan.name}, S/${plan.price}, ${plan.date}`}
+                className="sr-only"
+              />
+              {selectedPlan === plan.name && <span aria-hidden="true" className={`absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-md ${index === 0 ? "bg-[#d99f00]" : "bg-[#008c97]"}`}><Check className="h-4 w-4" strokeWidth={3} /></span>}
               <div className="relative -mx-1 flex h-12 items-center justify-center sm:h-14 lg:mx-0 lg:h-auto lg:pt-6">
                 <Image src={plan.brush} alt="" fill sizes="(max-width: 1023px) 50vw, 1px" className={`object-fill lg:hidden ${index === 0 ? "-scale-x-150 scale-y-150 -translate-y-[3px] -rotate-[9deg]" : "scale-150"}`} />
                 <h3 className={`relative font-bebas text-2xl uppercase tracking-wide sm:text-3xl lg:text-2xl lg:text-inherit ${index === 0 ? "text-azul-profundo" : "text-white"}`}>{plan.name}</h3>
@@ -71,7 +96,7 @@ export function PricingPlans() {
               <div className="mx-3 mt-2 border-t border-azul-profundo/10 pt-2 sm:mx-5 lg:hidden">
                 <Benefits className="space-y-2" />
               </div>
-            </article>
+            </motion.label>
           ))}
         </div>
 
@@ -80,14 +105,14 @@ export function PricingPlans() {
           <Benefits className="space-y-4" />
         </div>
         <div className="mt-4 text-center lg:hidden">
-          <button type="button" disabled aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white sm:max-w-md">
+          <button type="button" disabled={!selectedPlan || !registrationConfigured} aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white transition-[filter,transform] enabled:active:scale-[0.98] enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 sm:max-w-md">
             <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 inset-x-[6%]"><Image src="/assets/elements/asset-boton-xd.png" alt="" fill sizes="(max-width: 640px) 88vw, 394px" className="object-fill" /></span>
             <span className="relative inline-flex translate-y-[3px] items-center justify-center gap-3 leading-none">
-              <span>Inscribirme ahora</span>
+              <span>{selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}</span>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 shrink-0"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
             </span>
           </button>
-          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">Cupos limitados</p>
+          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">{!selectedPlan ? "Selecciona un plan para continuar" : !registrationConfigured ? "Canal de inscripción pendiente" : "Cupos limitados"}</p>
         </div>
       </div>
     </section>

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { WhatsAppMark } from "@/components/common/WhatsAppMark";
+import { WHATSAPP_URL } from "@/config/contact";
 
 const footerLinks = [
   { label: "Inicio", href: "#inicio" },
@@ -41,9 +43,9 @@ export function Footer() {
             <SocialMark name="Instagram">
               <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
             </SocialMark>
-            <SocialMark name="YouTube">
-              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M23.2 7a3 3 0 0 0-2.1-2.1C19.2 4.4 12 4.4 12 4.4s-7.2 0-9.1.5A3 3 0 0 0 .8 7 31 31 0 0 0 .3 12a31 31 0 0 0 .5 5 3 3 0 0 0 2.1 2.1c1.9.5 9.1.5 9.1.5s7.2 0 9.1-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-5 31 31 0 0 0-.5-5ZM9.6 15.5v-7l6.2 3.5-6.2 3.5Z" /></svg>
-            </SocialMark>
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="flex h-10 w-10 items-center justify-center text-azul-profundo transition-colors hover:text-[#168c4b] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul-profundo">
+              <WhatsAppMark className="h-[23px] w-[23px]" />
+            </a>
             <SocialMark name="TikTok">
               <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M19.6 7.2a6.2 6.2 0 0 1-4.1-1.6v8.1a6 6 0 1 1-5.2-5.9v3.2a2.8 2.8 0 1 0 2 2.7V2.5h3.2a6.1 6.1 0 0 0 4.1 4.1v.6Z" /></svg>
             </SocialMark>

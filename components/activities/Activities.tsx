@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 
@@ -19,6 +19,18 @@ const activities = [
   { title: "COMUNIDAD DE NOCHE", image: "/assets/activities/night-community.jpg", alt: "Jóvenes compartiendo al aire libre durante la noche" },
 ];
 
+const MOBILE_CAROUSEL_QUERY = "(max-width: 639px)";
+
+function subscribeToMobileCarousel(onChange: () => void) {
+  const query = window.matchMedia(MOBILE_CAROUSEL_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function getMobileCarouselSnapshot() {
+  return window.matchMedia(MOBILE_CAROUSEL_QUERY).matches;
+}
+
 export function Activities() {
   const sectionRef = useRef<HTMLElement>(null);
   const sectionIsInView = useInView(sectionRef, { once: true, amount: 0.2, margin: "0px 0px -20% 0px" });
@@ -26,7 +38,10 @@ export function Activities() {
   const trackRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressCardClickRef = useRef(false);
-  const [activeIndex, setActiveIndex] = useState(8);
+  const isMobileCarousel = useSyncExternalStore(subscribeToMobileCarousel, getMobileCarouselSnapshot, () => false);
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(8);
+  const [desktopActiveIndex, setDesktopActiveIndex] = useState(0);
+  const activeIndex = isMobileCarousel ? mobileActiveIndex : desktopActiveIndex;
   const [isPaused, setIsPaused] = useState(false);
   const reveal = (delay: number, distance = 18) => ({
     initial: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : distance },
@@ -35,15 +50,11 @@ export function Activities() {
   });
 
   useEffect(() => {
-    if (!window.matchMedia("(max-width: 639px)").matches) setActiveIndex(0);
-  }, []);
-
-  useEffect(() => {
     if (isPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
       if (window.matchMedia("(max-width: 639px)").matches) {
-        setActiveIndex((index) => (index + 1) % activities.length);
+        setMobileActiveIndex((index) => (index + 1) % activities.length);
         return;
       }
       if (window.matchMedia("(min-width: 768px) and (max-width: 1000px)").matches) return;
@@ -57,7 +68,7 @@ export function Activities() {
   }, [isPaused]);
 
   const slideMobile = (direction: number) => {
-    setActiveIndex((index) => (index + direction + activities.length) % activities.length);
+    setMobileActiveIndex((index) => (index + direction + activities.length) % activities.length);
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -106,7 +117,7 @@ export function Activities() {
     const firstCard = track?.children[0] as HTMLElement | undefined;
     if (!track || !firstCard) return;
     const step = firstCard.offsetWidth + 16;
-    setActiveIndex(Math.round(track.scrollLeft / step) % activities.length);
+    setDesktopActiveIndex(Math.round(track.scrollLeft / step) % activities.length);
   };
 
   return (
@@ -200,7 +211,7 @@ export function Activities() {
                       suppressCardClickRef.current = false;
                       return;
                     }
-                    if (!isCenter) setActiveIndex(index);
+                    if (!isCenter) setMobileActiveIndex(index);
                   }}
                   initial={false}
                   animate={{
@@ -249,12 +260,13 @@ export function Activities() {
                 key={`${activity.title}-${index}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.97 }}
                 animate={sectionIsInView || reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.97 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.035, y: -5, zIndex: 5, boxShadow: "0 18px 36px rgba(3, 24, 32, 0.28)" }}
                 transition={{ duration: reduceMotion ? 0 : 0.68, delay: reduceMotion ? 0 : 0.38 + (index % activities.length) * 0.14, ease: [0.22, 1, 0.36, 1] }}
                 aria-hidden={index >= activities.length ? true : undefined}
-                className="activities-carousel-card relative aspect-[4/5] basis-[238px] shrink-0 snap-start overflow-hidden bg-azul-profundo lg:basis-[calc((100%_-_4rem)/5)]"
+                className="activities-carousel-card group relative aspect-[4/5] basis-[238px] shrink-0 snap-start overflow-hidden bg-azul-profundo lg:basis-[calc((100%_-_4rem)/5)]"
                 style={{ clipPath: `url(#activity-organic-${index % 3 === 2 ? "b" : "a"})` }}
               >
-                <Image src={activity.image} alt={activity.alt} fill sizes="(max-width: 640px) 200px, (max-width: 1024px) 310px, 22vw" className="object-cover" />
+                <Image src={activity.image} alt={activity.alt} fill sizes="(max-width: 640px) 200px, (max-width: 1024px) 310px, 22vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045] motion-reduce:transition-none" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#031820]/95 via-[#031820]/10 to-transparent" />
                 <h3 className="absolute inset-x-3 bottom-3 max-w-[calc(100%-1.5rem)] font-edosz text-[13px] uppercase leading-tight text-white drop-shadow-md sm:inset-x-3 sm:bottom-4 sm:text-xl lg:text-base xl:text-lg">
                   {activity.title}

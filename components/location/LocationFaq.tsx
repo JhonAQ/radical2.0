@@ -30,6 +30,10 @@ export function LocationFaq() {
     <div className="location-faq-section relative isolate bg-white text-azul-profundo">
       <div className="location-content relative z-10 mx-auto flex max-w-[1500px] flex-col gap-16 px-5 pt-16 pb-5 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 lg:px-12 lg:pt-16 lg:pb-36 xl:gap-16">
         <section id="lugar" aria-labelledby="location-heading" className="min-w-0 scroll-mt-40 lg:border-r lg:border-azul-profundo/20 lg:pr-8">
+          <div aria-hidden="true" className="location-brush-background">
+            <Image src="/assets/activities/brush-background-mobile.png" alt="" fill sizes="100vw" className="object-cover object-center" style={{ transform: "translateY(-37px) scaleX(1.2) scaleY(1.1)" }} />
+            <div className="location-brush-fade" />
+          </div>
           <SectionHeading id="location-heading" text="¿Dónde será?" tone="yellow" />
           <div className="mb-5 flex items-center gap-3 lg:mb-4">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-10 w-10 shrink-0 text-[#00aeb8]"><path fillRule="evenodd" d="M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Zm0 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" /></svg>
@@ -37,7 +41,7 @@ export function LocationFaq() {
           </div>
           <div className="location-visuals">
             <div className="location-photo" aria-label="Campamento nocturno en CAMPEL">
-              <Image src="/assets/location/campel-noche.webp" alt="Mesas iluminadas durante una noche de campamento en CAMPEL" fill sizes="(min-width: 1024px) 260px, 1px" className="object-cover object-center" />
+              <Image src="/assets/location/campel-noche.webp" alt="Mesas iluminadas durante una noche de campamento en CAMPEL" fill sizes="(min-width: 1024px) 260px, (min-width: 768px) 45vw, 90vw" className="object-cover object-center" />
             </div>
             <div className="location-map overflow-hidden rounded-xl border border-azul-profundo/10 bg-[#e8f2f1] shadow-[0_8px_28px_rgba(9,47,57,0.08)]">
               <iframe title="Mapa de Campel Mejía en Google Maps" src={`https://www.google.com/maps?q=${mapQuery}&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen className="block h-64 w-full border-0 sm:h-80 lg:h-full" />

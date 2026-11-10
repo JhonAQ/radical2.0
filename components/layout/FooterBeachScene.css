@@ -72,7 +72,8 @@
 
 @media (max-width: 767px) {
   .footer-beach-scene { height: 220px; }
-  .footer-beach-left-group, .footer-beach-right-palm, .footer-beach-lantern, .footer-beach-bird-flock { display: none; }
+  .footer-beach-left-group, .footer-beach-lantern, .footer-beach-bird-flock { display: none; }
+  .footer-beach-right-palm { display: none; }
   .footer-beach-right-bush { width: 235px; right: -34px; bottom: -12px; }
   .footer-beach-surfboard { width: 86px; right: 9px; bottom: 20px; }
   .footer-beach-backpack { width: 72px; right: 39px; bottom: 8px; }
