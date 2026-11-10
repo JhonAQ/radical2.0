@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "framer-motion-react": {
+      "source": "c-jeril/framer-motion-skills",
+      "sourceType": "github",
+      "skillPath": "skills/framer-motion-react/SKILL.md",
+      "computedHash": "3d3fc832d8a3e3729919c316d3cdc6c7e7e3235e2e0c6868929b3565c8941ae8"
+    },
+    "motion": {
+      "source": "secondsky/claude-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/motion/skills/motion/SKILL.md",
+      "computedHash": "7b293f2fd97c563bbe9835ba0010ef6771aa0493493fb9c31cfa704a556da8aa"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",

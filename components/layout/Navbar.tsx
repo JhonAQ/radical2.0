@@ -105,7 +105,7 @@ export function Navbar() {
           </Link>
 
           {/* Navegación desktop */}
-          <nav aria-label="Navegación principal" className="hidden items-center gap-6 lg:flex">
+          <nav aria-label="Navegación principal" className="hidden items-center gap-3 lg:flex xl:gap-6">
             {CAMP_CONFIG.navItems.map((item) => (
               <Link
                 key={item.id}

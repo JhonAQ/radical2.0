@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { CAMP_CONFIG } from "@/config/site";
+import { AnimatedSeabird } from "@/components/common/AnimatedSeabird";
 import {
   CrownIcon,
   UsersGroupIcon,
@@ -25,7 +26,6 @@ const subscribeToMobileQuery = (callback: () => void) => {
   return () => mediaQuery.removeEventListener("change", callback);
 };
 const getMobileSnapshot = () => window.matchMedia("(max-width: 639px)").matches;
-const MotionImage = motion.create(Image);
 
 function ExperiencesArtwork({
   className,
@@ -60,6 +60,8 @@ function ExperiencesArtwork({
 
 export function CampAbout() {
   const contentRef = useRef<HTMLDivElement>(null);
+  const birdsRef = useRef<HTMLDivElement>(null);
+  const birdsActive = useInView(birdsRef, { amount: 0.1 });
   const sectionIsInView = useInView(contentRef, { once: true, amount: 0.25, margin: "0px 0px -22% 0px" });
   const reduceMotion = useReducedMotion();
   const isMobile = useSyncExternalStore(subscribeToMobileQuery, getMobileSnapshot, () => false);
@@ -235,52 +237,28 @@ export function CampAbout() {
       <div ref={contentRef} className="relative z-10 mx-auto flex w-full max-w-[800px] flex-col px-5 pt-4 pb-6 sm:px-6 sm:pb-24 lg:min-h-[300px] lg:max-w-[1116px] lg:justify-center lg:gap-y-3 lg:px-0 lg:pt-0 lg:pb-8 xl:max-w-[1200px] xl:px-[38px]">
         <div className="flex w-full max-w-[600px] flex-col lg:w-[calc(100%_-_524px)]">
           {/* Título Principal */}
-          <div className="relative">
+          <div ref={birdsRef} className="relative">
             <motion.h3 {...reveal(0.2, 14, 0.1)} className="relative z-10 mb-4 -rotate-1 font-edosz text-4xl uppercase tracking-wide text-azul-profundo sm:text-5xl md:text-6xl lg:text-5xl">
               EL CAMPAMENTO
             </motion.h3>
-              <motion.div
-                aria-hidden="true"
-                initial={{ y: 0, rotate: 0 }}
-                animate={sectionIsInView && !reduceMotion ? { y: [0, -5, 0], rotate: [0, -1.5, 0] } : { y: 0, rotate: 0 }}
-                transition={{ duration: 3.2, delay: 1.55, repeat: Infinity, ease: "easeInOut" }}
-                className="pointer-events-none absolute -right-1 -top-7 z-0 w-11 sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20"
-              >
-                <MotionImage
-                  initial={{ opacity: 0, x: -24, y: 14, rotate: -8 }}
-                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -24, y: 14, rotate: -8 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
-                  src="/assets/elements/elem-flying-bird-single-1.webp" alt="" aria-hidden="true" width={170} height={81} className="h-auto w-full object-contain"
-                />
-              </motion.div>
-              <motion.div
-                aria-hidden="true"
-                initial={{ y: 0, rotate: 0 }}
-                animate={sectionIsInView && !reduceMotion ? { y: [0, -7, 0], rotate: [0, 1.5, 0] } : { y: 0, rotate: 0 }}
-                transition={{ duration: 3.8, delay: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                className="pointer-events-none absolute right-9 -top-9 z-0 w-9 sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]"
-              >
-                <MotionImage
-                  initial={{ opacity: 0, x: 22, y: 12, rotate: 8 }}
-                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 22, y: 12, rotate: 8 }}
-                  transition={{ duration: reduceMotion ? 0 : 1, delay: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  src="/assets/elements/elem-flying-bird-single-2.webp" alt="" aria-hidden="true" width={137} height={62} className="h-auto w-full object-contain"
-                />
-              </motion.div>
-              <motion.div
-                aria-hidden="true"
-                initial={{ y: 0, rotate: 0 }}
-                animate={sectionIsInView && !reduceMotion ? { y: [0, -4, 0], rotate: [0, -1, 0] } : { y: 0, rotate: 0 }}
-                transition={{ duration: 3.5, delay: 2.05, repeat: Infinity, ease: "easeInOut" }}
-                className="pointer-events-none absolute right-[4.5rem] -top-6 z-0 w-10 sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]"
-              >
-                <MotionImage
-                  initial={{ opacity: 0, x: -18, y: 18, rotate: -6 }}
-                  animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -18, y: 18, rotate: -6 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 0.72, ease: [0.22, 1, 0.36, 1] }}
-                  src="/assets/elements/elem-flying-bird-single-3.webp" alt="" aria-hidden="true" width={151} height={64} className="h-auto w-full object-contain"
-                />
-              </motion.div>
+            <AnimatedSeabird
+              src="/assets/elements/elem-flying-bird-single-1.webp" style={{}} seed={0}
+              revealed={sectionIsInView} active={birdsActive} width={170} height={81}
+              sizes="(min-width: 1024px) 80px, (min-width: 640px) 64px, 44px"
+              className="pointer-events-none -right-1 -top-7 z-0 w-11 sm:-right-2 sm:-top-9 sm:w-16 lg:right-[3rem] lg:-top-4 lg:w-20"
+            />
+            <AnimatedSeabird
+              src="/assets/elements/elem-flying-bird-single-2.webp" style={{}} seed={1}
+              revealed={sectionIsInView} active={birdsActive} width={137} height={62}
+              sizes="(min-width: 1024px) 72px, (min-width: 640px) 56px, 36px"
+              className="pointer-events-none right-9 -top-9 z-0 w-9 sm:right-12 sm:-top-11 sm:w-14 lg:right-[7rem] lg:-top-5 lg:w-[4.5rem]"
+            />
+            <AnimatedSeabird
+              src="/assets/elements/elem-flying-bird-single-3.webp" style={{}} seed={2}
+              revealed={sectionIsInView} active={birdsActive} width={151} height={64}
+              sizes="(min-width: 1024px) 72px, (min-width: 640px) 56px, 40px"
+              className="pointer-events-none right-[4.5rem] -top-6 z-0 w-10 sm:right-[5.5rem] sm:-top-7 sm:w-14 lg:right-[10rem] lg:-top-2 lg:w-[4.5rem]"
+            />
           </div>
 
           {/* Párrafo Explicativo */}

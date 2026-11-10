@@ -1,4 +1,9 @@
+"use client";
+
+import { useRef } from "react";
+import { useInView, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import { AnimatedSeabird } from "@/components/common/AnimatedSeabird";
 import "./FooterBeachScene.css";
 
 const asset = "/assets/footer/";
@@ -32,26 +37,30 @@ const birdFlocks = [
   },
 ];
 
-export function FooterBeachScene() {
+function BirdFlock({ className, birds, flockIndex }: (typeof birdFlocks)[number] & { flockIndex: number }) {
+  const flockRef = useRef<HTMLDivElement>(null);
+  const visible = useInView(flockRef, { once: true, amount: 0.25, margin: "0px 0px -12% 0px" });
+  const active = useInView(flockRef, { amount: 0.05 });
+  const reduceMotion = useReducedMotion();
   return (
-    <div className="footer-beach-scene" aria-hidden="true">
+    <div ref={flockRef} data-revealed={visible || Boolean(reduceMotion)} className={`footer-beach-bird-flock ${className}`}>
+      {birds.map(({ src, left, top, width, rotate }, index) => (
+        <AnimatedSeabird key={`${src}-${index}`} src={`/assets/elements/${src}`} style={{ left, top, width }} rotate={rotate} seed={flockIndex * 4 + index} revealed={visible || Boolean(reduceMotion)} active={active} />
+      ))}
+    </div>
+  );
+}
+
+export function FooterBeachScene() {
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const visible = useInView(triggerRef, { once: true, amount: 0.2, margin: "0px 0px -10% 0px" });
+  const reduceMotion = useReducedMotion();
+  return (
+    <div className="footer-beach-scene" aria-hidden="true" data-revealed={visible || Boolean(reduceMotion)}>
+      <div ref={triggerRef} className="footer-beach-animation-trigger" />
       <Image src={`${asset}arena-footer.webp`} alt="" width={2172} height={244} sizes="100vw" className="footer-beach-sand" />
 
-      {birdFlocks.map(({ className, birds }) => (
-        <div key={className} className={`footer-beach-bird-flock ${className}`}>
-          {birds.map(({ src, left, top, width, rotate }, index) => (
-            <Image
-              key={`${src}-${index}`}
-              src={`/assets/elements/${src}`}
-              alt=""
-              width={170}
-              height={81}
-              sizes={`${width}px`}
-              style={{ left, top, width, transform: `rotate(${rotate}deg)` }}
-            />
-          ))}
-        </div>
-      ))}
+      {birdFlocks.map((flock, index) => <BirdFlock key={flock.className} {...flock} flockIndex={index} />)}
 
       <div className="footer-beach-left-group">
         <Image src={`${asset}follaje-lateral-izquierdo.webp`} alt="" width={933} height={1400} sizes="(min-width: 1440px) 190px, 130px" className="footer-beach-left-foliage" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { HeroBackground } from "./HeroBackground";
 import { BrandLogo } from "@/components/common/BrandLogo";
@@ -11,9 +11,15 @@ import { HeroScrollCue } from "./HeroScrollCue";
 export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Safety: si GSAP no ejecuta, los elementos ya son visibles (sin opacity:0 inline)
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
+      const targets = "[data-anim='logo'], [data-anim='details'], [data-anim='cta'], [data-anim='scroll-cue']";
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        gsap.set(targets, { opacity: 1, clearProps: "transform" });
+        return;
+      }
+
       const tl = gsap.timeline({ defaults: { ease: "power3.out" }, delay: 0.1 });
 
       tl
@@ -22,9 +28,7 @@ export function Hero() {
           { opacity: 0, scale: 0.85, y: 30 },
           {
             opacity: 1, scale: 1, y: 0, duration: 0.9,
-            onComplete: () => {
-              gsap.set("[data-anim='logo']", { clearProps: "all" });
-            },
+            onComplete: () => gsap.set("[data-anim='logo']", { clearProps: "transform" }),
           }
         )
         .fromTo(
@@ -32,7 +36,7 @@ export function Hero() {
           { opacity: 0, y: 32 },
           {
             opacity: 1, y: 0, duration: 0.7,
-            onComplete: () => gsap.set("[data-anim='details']", { clearProps: "all" }),
+            onComplete: () => gsap.set("[data-anim='details']", { clearProps: "transform" }),
           },
           "-=0.45"
         )
@@ -41,7 +45,7 @@ export function Hero() {
           { opacity: 0, y: 24, scale: 0.92 },
           {
             opacity: 1, y: 0, scale: 1, duration: 0.65, ease: "back.out(1.6)",
-            onComplete: () => gsap.set("[data-anim='cta']", { clearProps: "all" }),
+            onComplete: () => gsap.set("[data-anim='cta']", { clearProps: "transform" }),
           },
           "-=0.3"
         )
@@ -50,7 +54,7 @@ export function Hero() {
           { opacity: 0, y: 8 },
           {
             opacity: 1, y: 0, duration: 0.5,
-            onComplete: () => gsap.set("[data-anim='scroll-cue']", { clearProps: "all" }),
+            onComplete: () => gsap.set("[data-anim='scroll-cue']", { clearProps: "transform" }),
           },
           "-=0.1"
         );
@@ -77,6 +81,7 @@ export function Hero() {
           {/* Sin opacity:0 inline — GSAP lo setea desde el fromTo */}
           <div
             data-anim="logo"
+            style={{ opacity: 0 }}
             className="w-full max-w-[85vw] flex items-center justify-center will-change-transform"
           >
             <BrandLogo
@@ -89,10 +94,10 @@ export function Hero() {
         </div>
 
         <div className="sm:hidden flex flex-col items-center gap-12 mb-10">
-          <div data-anim="details">
+          <div data-anim="details" style={{ opacity: 0 }}>
             <HeroEventDetails />
           </div>
-          <div data-anim="cta">
+          <div data-anim="cta" style={{ opacity: 0 }}>
             <HeroCta />
           </div>
         </div>
@@ -101,6 +106,7 @@ export function Hero() {
         <div className="hidden sm:flex flex-1 flex-col items-center justify-center text-center gap-6 md:gap-7">
           <div
             data-anim="logo"
+            style={{ opacity: 0 }}
             className="w-full max-w-[380px] md:max-w-[430px] lg:max-w-[500px] flex items-center justify-center will-change-transform"
           >
             <BrandLogo
@@ -110,16 +116,16 @@ export function Hero() {
               className="w-full h-auto object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)]"
             />
           </div>
-          <div data-anim="details">
+          <div data-anim="details" style={{ opacity: 0 }}>
             <HeroEventDetails />
           </div>
-          <div data-anim="cta">
+          <div data-anim="cta" style={{ opacity: 0 }}>
             <HeroCta />
           </div>
         </div>
 
         {/* Scroll Cue */}
-        <div data-anim="scroll-cue" className="flex justify-center">
+        <div data-anim="scroll-cue" style={{ opacity: 0 }} className="flex justify-center">
           <HeroScrollCue />
         </div>
 

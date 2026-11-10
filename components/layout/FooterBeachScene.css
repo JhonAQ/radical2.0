@@ -9,6 +9,45 @@
 
 .footer-beach-scene img { position: absolute; max-width: none; height: auto; }
 
+.footer-beach-animation-trigger { position: absolute; inset: 0; pointer-events: none; }
+
+.footer-beach-scene[data-revealed="false"] > .footer-beach-sand,
+.footer-beach-scene[data-revealed="false"] .footer-beach-left-group img,
+.footer-beach-scene[data-revealed="false"] .footer-beach-right-group img { opacity: 0; }
+
+/* Individual translate/rotate preserve the existing positioning and mirroring. */
+@keyframes beach-assemble {
+  from { opacity: 0; translate: var(--entry-x, 0px) var(--entry-y, 16px); rotate: var(--entry-rotate, 0deg); }
+  to { opacity: 1; translate: 0px 0px; rotate: 0deg; }
+}
+
+.footer-beach-scene[data-revealed="true"] > .footer-beach-sand,
+.footer-beach-scene[data-revealed="true"] .footer-beach-left-group img,
+.footer-beach-scene[data-revealed="true"] .footer-beach-right-group img {
+  animation: beach-assemble 850ms cubic-bezier(0.22, 1, 0.36, 1) var(--entry-delay, 0s) both;
+}
+
+.footer-beach-left-rocks { --entry-x: -18px; --entry-rotate: -2deg; --entry-delay: 0.08s; }
+.footer-beach-right-rocks { --entry-x: 18px; --entry-rotate: 2deg; --entry-delay: 0.14s; }
+.footer-beach-left-bush { --entry-x: -22px; --entry-rotate: -5deg; --entry-delay: 0.22s; }
+.footer-beach-right-bush { --entry-x: 22px; --entry-rotate: 5deg; --entry-delay: 0.28s; }
+.footer-beach-left-foliage { --entry-x: -25px; --entry-rotate: -7deg; --entry-delay: 0.38s; }
+.footer-beach-right-palm { --entry-x: 24px; --entry-rotate: 8deg; --entry-delay: 0.42s; }
+.footer-beach-surfboard { --entry-y: 24px; --entry-rotate: 7deg; --entry-delay: 0.52s; }
+.footer-beach-backpack { --entry-y: 14px; --entry-rotate: -3deg; --entry-delay: 0.68s; }
+.footer-beach-lantern { --entry-y: 10px; --entry-rotate: -9deg; --entry-delay: 0.8s; }
+
+@media (min-width: 1024px) {
+  .footer-beach-animation-trigger { top: 58%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-beach-scene[data-revealed] img,
+  .footer-beach-scene[data-revealed] .footer-beach-bird-flock { animation: none; }
+  .footer-beach-scene[data-revealed] img { opacity: 1; }
+  .footer-beach-bird-flock[data-revealed] { opacity: 0.64; }
+}
+
 .footer-beach-sand {
   z-index: 0;
   bottom: 0;

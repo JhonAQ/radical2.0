@@ -1,4 +1,8 @@
+"use client";
+
 import Image from "next/image";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
 
 const items = [
   { label: <>Ropa cómoda<br />y de playa</>, icon: "backpack" },
@@ -30,17 +34,63 @@ function PackingIcon({ name }: { name: (typeof items)[number]["icon"] }) {
 }
 
 export function PackingList() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const sectionIsInView = useInView(sectionRef, { once: true, amount: 0.16, margin: "0px 0px -16% 0px" });
+  const reduceMotion = Boolean(useReducedMotion());
+
+  const reveal = (delay: number, distance = 7) => ({
+    initial: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : distance },
+    animate: sectionIsInView || reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: distance },
+    transition: { duration: reduceMotion ? 0 : 0.48, delay: reduceMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  });
+
   return (
-    <section id="que-llevar" aria-labelledby="packing-heading" className="relative isolate z-30 overflow-visible bg-white px-5 py-14 text-azul-profundo sm:px-8 sm:py-20 lg:min-w-0 lg:bg-transparent lg:px-0 lg:py-0">
+    <section ref={sectionRef} id="que-llevar" aria-labelledby="packing-heading" className="relative isolate z-30 overflow-visible bg-white px-5 py-14 text-azul-profundo sm:px-8 sm:py-20 lg:min-w-0 lg:bg-transparent lg:px-0 lg:py-0">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-[0.12] [background-image:radial-gradient(#967f57_0.7px,transparent_0.7px)] [background-size:11px_11px] lg:hidden" />
-      <div aria-hidden="true" className="pointer-events-none absolute right-[-56px] top-[-36px] z-0 w-40 origin-bottom-right -rotate-12 opacity-70 sm:right-[-68px] sm:top-[-84px] sm:w-[13.333rem] lg:hidden">
-        <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} className="h-auto w-full scale-x-[-1]" />
-      </div>
-      <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="pointer-events-none absolute bottom-[-24px] -left-28 z-0 w-64 -rotate-12 opacity-80 sm:w-80 lg:hidden" />
-      <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} className="pointer-events-none absolute bottom-[-8px] right-0 z-0 w-64 rotate-[-8deg] scale-y-[-1] opacity-80 sm:w-80 lg:hidden" />
+      <motion.div
+        aria-hidden="true"
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={sectionIsInView || reduceMotion ? { opacity: 0.7 } : { opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8, delay: reduceMotion ? 0 : 0.28 }}
+        className="pointer-events-none absolute right-[-56px] top-[-36px] z-0 w-40 origin-bottom-right -rotate-12 sm:right-[-68px] sm:top-[-84px] sm:w-[13.333rem] lg:hidden"
+      >
+        <motion.div
+          animate={sectionIsInView && !reduceMotion ? { y: [0, -5, 0], rotate: [0, 1, 0] } : { y: 0, rotate: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 7.2, delay: reduceMotion ? 0 : 1.05, repeat: reduceMotion ? 0 : Infinity, ease: "easeInOut" }}
+        >
+          <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} className="h-auto w-full scale-x-[-1]" />
+        </motion.div>
+      </motion.div>
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, x: -72, y: 18 }}
+        animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -72, y: 18 }}
+        transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 1.22, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute bottom-[-24px] -left-28 z-0 w-64 sm:w-80 lg:hidden"
+      >
+        <div className="-rotate-12 opacity-80">
+          <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="h-auto w-full" />
+        </div>
+      </motion.div>
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, x: 72, y: 18 }}
+        animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: 72, y: 18 }}
+        transition={{ duration: reduceMotion ? 0 : 0.9, delay: reduceMotion ? 0 : 1.38, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute bottom-[-8px] right-0 z-0 w-64 sm:w-80 lg:hidden"
+      >
+        <div className="rotate-[-8deg] scale-y-[-1] opacity-80">
+          <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} className="h-auto w-full" />
+        </div>
+      </motion.div>
 
       <div className="relative z-10 mx-auto max-w-6xl lg:mx-0 lg:max-w-[540px]">
-        <h2 id="packing-heading" aria-label="¿Qué llevar?" className="mb-10 font-edosz text-4xl uppercase leading-none sm:mb-12 sm:text-5xl lg:mb-16 lg:text-center lg:text-5xl">
+        <motion.h2
+          id="packing-heading"
+          aria-label="¿Qué llevar?"
+          initial={reduceMotion ? { opacity: 1, clipPath: "inset(-0.18em 0 -0.18em 0)" } : { opacity: 0, clipPath: "inset(-0.18em 100% -0.18em 0)" }}
+          animate={sectionIsInView || reduceMotion ? { opacity: 1, clipPath: "inset(-0.18em 0 -0.18em 0)" } : { opacity: 0, clipPath: "inset(-0.18em 100% -0.18em 0)" }}
+          transition={{ duration: reduceMotion ? 0 : 0.78, delay: reduceMotion ? 0 : 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-10 overflow-visible py-1 font-edosz text-4xl uppercase leading-[1.15] sm:mb-12 sm:text-5xl lg:mb-16 lg:text-center lg:text-5xl"
+        >
           <span aria-hidden="true" className="inline-flex whitespace-nowrap">
             {headingLetters.map((letter, index) => (
               <span
@@ -52,13 +102,29 @@ export function PackingList() {
               </span>
             ))}
           </span>
-        </h2>
+        </motion.h2>
         <div className="grid grid-cols-3">
           {items.map((item, index) => (
-            <div key={item.icon} className={`flex min-h-[154px] flex-col items-center justify-start px-1 py-5 text-center sm:min-h-[184px] sm:px-4 lg:min-h-[190px] lg:px-2 ${index % 3 !== 2 ? "border-r-2 border-azul-profundo/15" : ""} ${index < 3 ? "border-b-2 border-azul-profundo/15" : ""}`}>
-              <div className="mb-4 flex h-14 items-center justify-center sm:mb-5 sm:h-16 lg:h-20"><PackingIcon name={item.icon} /></div>
-              <p className="font-sans text-[11px] font-semibold leading-snug text-azul-profundo sm:text-sm lg:text-sm">{item.label}</p>
-            </div>
+            <motion.div
+              key={item.icon}
+              {...reveal(0.66 + index * 0.15, 10)}
+              className={`flex min-h-[154px] flex-col items-center justify-start px-1 py-5 text-center sm:min-h-[184px] sm:px-4 lg:min-h-[190px] lg:px-2 ${index % 3 !== 2 ? "border-r-2 border-azul-profundo/15" : ""} ${index < 3 ? "border-b-2 border-azul-profundo/15" : ""}`}
+            >
+              <motion.div
+                initial={reduceMotion ? { opacity: 1, scale: 1, rotate: 0 } : { opacity: 0, scale: 0.72, rotate: -8 }}
+                animate={sectionIsInView || reduceMotion ? { opacity: 1, scale: 1, rotate: 0 } : { opacity: 0, scale: 0.72, rotate: -8 }}
+                transition={{ type: "spring", stiffness: 230, damping: 20, delay: reduceMotion ? 0 : 0.76 + index * 0.15 }}
+                className="mb-4 flex h-14 items-center justify-center sm:mb-5 sm:h-16 lg:h-20"
+              >
+                <PackingIcon name={item.icon} />
+              </motion.div>
+              <motion.p
+                {...reveal(0.86 + index * 0.15, 6)}
+                className="font-sans text-[11px] font-semibold leading-snug text-azul-profundo sm:text-sm lg:text-sm"
+              >
+                {item.label}
+              </motion.p>
+            </motion.div>
           ))}
         </div>
       </div>
