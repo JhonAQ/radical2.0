@@ -4,18 +4,58 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, CreditCard, FileText, IdCard, Ticket, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, Copy, Download, FileText, IdCard, Mail, Ticket, Trash2, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import "./RegistrationFlow.css";
 
 type PlanId = "preventa" | "regular";
 type Participant = { firstName: string; lastName: string; document: string; birthDate: string; gender: string };
-type Contact = { phone: string; emergencyName: string; emergencyRelation: string; emergencyPhone: string };
+type Contact = { phone: string; email: string; emergencyName: string; emergencyRelation: string; emergencyPhone: string };
+type RegistrationDraft = { version: 1; step: number; plan: PlanId | null; participant: Participant; contact: Contact; payment: "reserve" | "full"; reserveAmount: number; receiptName: string; consent: boolean };
+const registrationDraftDatabase = "radical-registration-drafts";
+const registrationDraftStore = "files";
+
+function openRegistrationDraftDatabase() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB is unavailable"));
+    const request = indexedDB.open(registrationDraftDatabase, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(registrationDraftStore);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error("Could not open local draft storage"));
+  });
+}
+
+async function storeReceiptLocally(userId: string, file: Blob | null) {
+  const database = await openRegistrationDraftDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(registrationDraftStore, "readwrite");
+    const store = transaction.objectStore(registrationDraftStore);
+    if (file) store.put(file, `${userId}:receipt`);
+    else store.delete(`${userId}:receipt`);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Could not save the local receipt"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("Local receipt save was interrupted"));
+  }).finally(() => database.close());
+}
+
+async function loadReceiptLocally(userId: string) {
+  const database = await openRegistrationDraftDatabase();
+  return new Promise<Blob | null>((resolve, reject) => {
+    const transaction = database.transaction(registrationDraftStore, "readonly");
+    const request = transaction.objectStore(registrationDraftStore).get(`${userId}:receipt`);
+    request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : null);
+    request.onerror = () => reject(request.error ?? new Error("Could not load the local receipt"));
+    transaction.oncomplete = () => database.close();
+    transaction.onerror = () => database.close();
+  });
+}
+
 const plans = {
   preventa: { name: "Preventa", price: 200, date: "Hasta el 15 de diciembre", brush: "/assets/elements/brush-planes-amarillo.png", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
   regular: { name: "Regular", price: 250, date: "Desde el 16 de diciembre", brush: "/assets/elements/brush-planes-turquesa.png", desktopBrush: "/assets/elements/brush-planes-turquesa.png" },
 } as const;
 const benefits = ["Hospedaje", "Alimentación completa", "Programación y materiales", "Amistad del evento", "Acceso a todas las actividades"];
+const yapePhoneNumber = "999123456";
 function FieldValidationMessage({ id, message }: { id: string; message?: string }) {
   return message ? <span id={id} className="registration-field-error" role="alert">{message}</span> : null;
 }
@@ -33,7 +73,7 @@ const steps = [
   { label: "Mi entrada", icon: CheckCircle2 },
 ] as const;
 const titles = ["ELIGE TU PLAN\nDE INSCRIPCIÓN", "INFORMACIÓN\nPERSONAL", "CONTACTO Y\nEMERGENCIA", "ELIGE TU ABONO", "REVISA TUS DATOS", "TU ESPACIO RADICAL"];
-const subtitles = ["Asegura tu cupo y vive el siguiente nivel en Radical 2.0.", "Datos del campista", "Cómo comunicarnos contigo y a quién llamar en una emergencia.", "Puedes separar tu cupo con S/50 o pagar el plan completo.", "Confirma que todo esté listo antes de enviar tu inscripción.", "Así se verá el estado de tu inscripción y tu entrada digital."];
+const subtitles = ["Asegura tu cupo y vive el siguiente nivel en Radical 2.0.", "Datos del campista", "Cómo comunicarnos contigo y a quién llamar en una emergencia.", "Separa tu cupo con un abono desde S/50 o paga el plan completo.", "Confirma que todo esté listo antes de enviar tu inscripción.", "Así se verá el estado de tu inscripción y tu entrada digital."];
 const previousCampPhotoSources = [
   "/assets/previous-camp/01-lugar-letrero-carretera-campel.jpg",
   "/assets/previous-camp/02-fogata-noche-tarjeta-2timoteo.jpg",
@@ -142,24 +182,30 @@ function RegistrationProgress({ currentStep, className }: { currentStep: number;
   })}</nav>;
 }
 
-export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }) {
+export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName }: { initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string }) {
   const [step, setStep] = useState(0);
+  const [draftReady, setDraftReady] = useState(false);
   const navigationLocked = useRef(false);
   const navigationTimer = useRef<number | null>(null);
   const [plan, setPlan] = useState<PlanId | null>(initialPlan ?? "preventa");
-  const [participant, setParticipant] = useState<Participant>({ firstName: "", lastName: "", document: "", birthDate: "", gender: "" });
-  const [contact, setContact] = useState<Contact>({ phone: "", emergencyName: "", emergencyRelation: "", emergencyPhone: "" });
+  const [participant, setParticipant] = useState<Participant>({ firstName: initialFirstName, lastName: initialLastName, document: "", birthDate: "", gender: "" });
+  const [contact, setContact] = useState<Contact>({ phone: "", email: userEmail, emergencyName: "", emergencyRelation: "", emergencyPhone: "" });
   const [payment, setPayment] = useState<"reserve" | "full">("reserve");
+  const [reserveAmount, setReserveAmount] = useState(50);
+  const [paymentError, setPaymentError] = useState("");
+  const [yapePhoneCopied, setYapePhoneCopied] = useState(false);
   const [receiptName, setReceiptName] = useState("");
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [receiptError, setReceiptError] = useState("");
   const receiptPreviewRef = useRef<string | null>(null);
+  const receiptBlobRef = useRef<Blob | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const receiptSelectionRef = useRef(0);
   const [consent, setConsent] = useState(false);
   const [validationStep, setValidationStep] = useState<number | null>(null);
   const [birthDateInvalid, setBirthDateInvalid] = useState(false);
   const selected = plan ? plans[plan] : null;
-  const amount = payment === "reserve" ? 50 : selected?.price ?? 0;
+  const amount = payment === "reserve" ? Math.min(reserveAmount, selected?.price ?? reserveAmount) : selected?.price ?? 0;
   const remaining = selected ? selected.price - amount : 0;
   const dataComplete = Object.values(participant).every((value) => value.trim()) && /^[a-zA-Z0-9]{6,12}$/.test(participant.document.replace(/\s/g, "")) && !Number.isNaN(Date.parse(participant.birthDate));
   const contactComplete = Object.values(contact).every((value) => value.trim()) && /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) && /^\d{9,15}$/.test(contact.emergencyPhone.replace(/[\s+()-]/g, ""));
@@ -172,11 +218,64 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
     gender: participant.gender ? "" : "Selecciona una opción.",
   } : {};
   const contactErrors: Partial<Record<keyof Contact, string>> = showStepErrors && step === 2 ? {
-    phone: !contact.phone.trim() ? "Ingresa el celular del campista." : /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) ? "" : "Ingresa un celular válido.",
+    phone: !contact.phone.trim() ? "Ingresa tu número de WhatsApp." : /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) ? "" : "Ingresa un celular válido.",
+    email: contact.email.trim() ? "" : "No encontramos el correo de tu cuenta.",
     emergencyName: contact.emergencyName.trim() ? "" : "Ingresa el nombre del contacto.",
     emergencyRelation: contact.emergencyRelation ? "" : "Selecciona el parentesco.",
     emergencyPhone: !contact.emergencyPhone.trim() ? "Ingresa el celular de emergencia." : /^\d{9,15}$/.test(contact.emergencyPhone.replace(/[\s+()-]/g, "")) ? "" : "Ingresa un celular válido.",
   } : {};
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restoreDraft() {
+      try {
+        const saved = window.localStorage.getItem(`radical-registration-draft:v1:${userId}`);
+        if (saved) {
+          const draft = JSON.parse(saved) as Partial<RegistrationDraft>;
+          if (draft.version === 1) {
+            if (Number.isInteger(draft.step) && (draft.step ?? -1) >= 0 && (draft.step ?? 6) <= 5) setStep(draft.step!);
+            if (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular") setPlan(draft.plan);
+            if (draft.participant && Object.values(draft.participant).every((value) => typeof value === "string")) setParticipant(draft.participant);
+            if (draft.contact && Object.values(draft.contact).every((value) => typeof value === "string")) setContact({ ...draft.contact, email: userEmail });
+            if (draft.payment === "reserve" || draft.payment === "full") setPayment(draft.payment);
+            if (typeof draft.reserveAmount === "number" && Number.isFinite(draft.reserveAmount)) setReserveAmount(draft.reserveAmount);
+            if (typeof draft.consent === "boolean") setConsent(draft.consent);
+
+            const receipt = draft.receiptName ? await loadReceiptLocally(userId) : null;
+            if (cancelled) return;
+            if (receipt && ["image/jpeg", "image/png", "image/webp"].includes(receipt.type) && receipt.size <= 10 * 1024 * 1024) {
+              const previewUrl = URL.createObjectURL(receipt);
+              receiptBlobRef.current = receipt;
+              receiptPreviewRef.current = previewUrl;
+              setReceiptPreviewUrl(previewUrl);
+              setReceiptName(draft.receiptName ?? "Comprobante guardado");
+            }
+          }
+        }
+      } catch {
+        // Si el almacenamiento local falla, el formulario sigue disponible en esta sesión.
+      } finally {
+        if (!cancelled) setDraftReady(true);
+      }
+    }
+    void restoreDraft();
+    return () => { cancelled = true; };
+  }, [userEmail, userId]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const draft: RegistrationDraft = { version: 1, step, plan, participant, contact: { ...contact, email: userEmail }, payment, reserveAmount, receiptName, consent };
+    try {
+      window.localStorage.setItem(`radical-registration-draft:v1:${userId}`, JSON.stringify(draft));
+    } catch {
+      // El formulario conserva su estado aunque el navegador no permita guardar más datos.
+    }
+  }, [consent, contact, draftReady, participant, payment, plan, receiptName, reserveAmount, step, userEmail, userId]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    void storeReceiptLocally(userId, receiptPreviewUrl ? receiptBlobRef.current : null).catch(() => {});
+  }, [draftReady, receiptName, receiptPreviewUrl, userId]);
 
   useEffect(() => () => {
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
@@ -189,11 +288,13 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
     if (!file) return;
     const selection = ++receiptSelectionRef.current;
     setReceiptError("");
+    setPaymentError("");
 
     const rejectFile = (message: string) => {
       if (selection !== receiptSelectionRef.current) return;
       if (receiptPreviewRef.current) URL.revokeObjectURL(receiptPreviewRef.current);
       receiptPreviewRef.current = null;
+      receiptBlobRef.current = null;
       setReceiptPreviewUrl(null);
       setReceiptName("");
       setReceiptError(message);
@@ -228,9 +329,23 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
     if (receiptPreviewRef.current) URL.revokeObjectURL(receiptPreviewRef.current);
     const previewUrl = URL.createObjectURL(file);
     receiptPreviewRef.current = previewUrl;
+    receiptBlobRef.current = file;
     setReceiptPreviewUrl(previewUrl);
     setReceiptName(file.name);
+    setPaymentError("");
     input.value = "";
+  }
+
+  function removeReceipt() {
+    receiptSelectionRef.current += 1;
+    if (receiptPreviewRef.current) URL.revokeObjectURL(receiptPreviewRef.current);
+    receiptPreviewRef.current = null;
+    receiptBlobRef.current = null;
+    setReceiptPreviewUrl(null);
+    setReceiptName("");
+    setReceiptError("");
+    setPaymentError("");
+    if (receiptInputRef.current) receiptInputRef.current.value = "";
   }
 
   function lockNavigation(duration: number) {
@@ -245,6 +360,7 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
 
   function next(event?: FormEvent) {
     event?.preventDefault();
+    if (!draftReady) return;
     if (step === 0 && !plan) {
       setValidationStep(step);
       return;
@@ -261,6 +377,10 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
       setValidationStep(step);
       return;
     }
+    if (step === 3 && (!receiptPreviewUrl || Boolean(receiptError) || (payment === "reserve" && (!selected || !Number.isFinite(reserveAmount) || reserveAmount < 50 || reserveAmount > selected.price)))) {
+      setPaymentError(!receiptPreviewUrl || receiptError ? "Sube el comprobante de pago para continuar." : `El abono debe ser desde S/50 y no superar S/${selected?.price ?? 0}.`);
+      return;
+    }
     if (step === 4 && !consent) {
       setValidationStep(step);
       return;
@@ -271,6 +391,7 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function back() {
+    if (!draftReady) return;
     if (!lockNavigation(1150)) return;
     setValidationStep(null);
     setStep((current) => Math.max(current - 1, 0));
@@ -283,13 +404,21 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
   function updateContact(field: keyof Contact, value: string) {
     setContact((current) => ({ ...current, [field]: value }));
   }
+  async function copyYapePhone() {
+    try {
+      await navigator.clipboard.writeText(yapePhoneNumber);
+      setYapePhoneCopied(true);
+    } catch {
+      setPaymentError("No se pudo copiar el número. Puedes seleccionarlo manualmente.");
+    }
+  }
 
   return (
     <main className="registration-page">
       <div className="registration-shell">
         <header className="registration-header">
           <Link href="/" aria-label="Volver al inicio de Radical 2.0" className="registration-logo"><BrandLogo variant="secundario" width={150} priority /></Link>
-          <Link href="/#inscribirme" className="registration-home"><ArrowLeft size={16} /> <span>Volver</span></Link>
+          <div className="flex items-center gap-3 sm:gap-6"><Link href="/login" className="registration-home registration-account" aria-label={`Mi cuenta${userEmail ? `: ${userEmail}` : ""}`}>{avatarUrl ? <Image src={avatarUrl} alt="" width={34} height={34} unoptimized className="registration-account-avatar" /> : <span aria-hidden="true" className="registration-account-avatar registration-account-avatar--fallback">{(userEmail[0] ?? "R").toUpperCase()}</span>}<span>Mi cuenta</span></Link><Link href="/#inscribirme" className="registration-home"><ArrowLeft size={16} /> <span>Volver</span></Link></div>
         </header>
 
         <div className="registration-content">
@@ -297,7 +426,7 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
             <section className="registration-main" aria-labelledby="registration-title">
               <RegistrationProgress currentStep={step} className="registration-progress--desktop" />
               <RegistrationProgress currentStep={step} className="registration-progress--mobile" />
-              <div className="registration-heading" key={step}>
+              <div className="registration-heading">
                 <h1 id="registration-title" aria-label={titles[step].replace("\n", " ")}><StaggeredTitle text={titles[step]} /></h1>
                 <p>{subtitles[step]}</p>
                 <div className="registration-film-reels-slot">
@@ -352,17 +481,26 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
               {step === 2 && <form id="registration-contact-form" className="registration-form registration-contact-form" onSubmit={next} noValidate>
                 <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">Continuar</button>
                 <h2>Datos de contacto</h2>
-                <div className="registration-form-grid"><label className={`registration-field-wide ${contactErrors.phone ? "registration-field-invalid" : ""}`}><span className="registration-field-label"><Phone /> Celular del campista</span><input aria-required="true" aria-invalid={contactErrors.phone ? true : undefined} aria-describedby={contactErrors.phone ? "participant-phone-error" : undefined} type="tel" autoComplete="tel" value={contact.phone} onChange={(e) => updateContact("phone", e.target.value)} placeholder="+51 987 654 321" /><FieldValidationMessage id="participant-phone-error" message={contactErrors.phone} /></label></div>
+                <div className="registration-form-grid registration-contact-identity">
+                  <label className={`${contactErrors.email ? "registration-field-invalid" : ""}`}><span className="registration-field-label"><Mail /> Correo de tu cuenta</span><input aria-required="true" aria-readonly="true" aria-invalid={contactErrors.email ? true : undefined} aria-describedby={contactErrors.email ? "account-email-error" : undefined} type="email" autoComplete="email" value={contact.email} readOnly />{contactErrors.email && <FieldValidationMessage id="account-email-error" message={contactErrors.email} />}</label>
+                  <label className={`${contactErrors.phone ? "registration-field-invalid" : ""}`}><span className="registration-field-label"><Phone /> Número de WhatsApp</span><input aria-required="true" aria-invalid={contactErrors.phone ? true : undefined} aria-describedby={contactErrors.phone ? "participant-phone-error" : undefined} type="tel" autoComplete="tel" value={contact.phone} onChange={(e) => updateContact("phone", e.target.value)} placeholder="+51 987 654 321" /><FieldValidationMessage id="participant-phone-error" message={contactErrors.phone} /></label>
+                </div>
                 <div className="registration-emergency"><h2>Contacto de emergencia</h2><div className="registration-form-grid"><label className={contactErrors.emergencyName ? "registration-field-invalid" : ""}><span className="registration-field-label"><UserRound /> Nombre completo</span><input aria-required="true" aria-invalid={contactErrors.emergencyName ? true : undefined} aria-describedby={contactErrors.emergencyName ? "emergency-name-error" : undefined} autoComplete="off" value={contact.emergencyName} onChange={(e) => updateContact("emergencyName", e.target.value)} placeholder="Nombre y apellidos" /><FieldValidationMessage id="emergency-name-error" message={contactErrors.emergencyName} /></label><label className={contactErrors.emergencyRelation ? "registration-field-invalid" : ""}><span className="registration-field-label"><UsersRound /> Parentesco</span><select aria-required="true" aria-invalid={contactErrors.emergencyRelation ? true : undefined} aria-describedby={contactErrors.emergencyRelation ? "emergency-relation-error" : undefined} value={contact.emergencyRelation} onChange={(e) => updateContact("emergencyRelation", e.target.value)}><option value="">Selecciona</option><option>Madre</option><option>Padre</option><option>Familiar</option><option>Apoderado</option><option>Otro</option></select><FieldValidationMessage id="emergency-relation-error" message={contactErrors.emergencyRelation} /></label><label className={`registration-field-wide ${contactErrors.emergencyPhone ? "registration-field-invalid" : ""}`}><span className="registration-field-label"><Phone /> Celular de emergencia</span><input aria-required="true" aria-invalid={contactErrors.emergencyPhone ? true : undefined} aria-describedby={contactErrors.emergencyPhone ? "emergency-phone-error" : undefined} type="tel" value={contact.emergencyPhone} onChange={(e) => updateContact("emergencyPhone", e.target.value)} placeholder="+51 987 987 654" /><FieldValidationMessage id="emergency-phone-error" message={contactErrors.emergencyPhone} /></label></div></div>
               </form>}
 
-              {step === 3 && <div className="registration-payment">
-                <div className="registration-payment-choices" role="radiogroup" aria-label="Monto del abono">
-                  <label className={payment === "reserve" ? "is-selected" : ""}><input type="radio" name="payment" checked={payment === "reserve"} onChange={() => setPayment("reserve")} /><span className="registration-radio" /><span><strong>Reserva tu cupo</strong><small>Paga el saldo después</small></span><b>S/50</b></label>
-                  <label className={payment === "full" ? "is-selected" : ""}><input type="radio" name="payment" checked={payment === "full"} onChange={() => setPayment("full")} /><span className="registration-radio" /><span><strong>Pago completo</strong><small>Todo listo de una vez</small></span><b>S/{selected?.price}</b></label>
+              {step === 3 && <div className="registration-payment-composition">
+                <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Yape</strong><p>Escanea el QR o usa el número de celular.</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Yape para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details"><strong>John Doe</strong><div className="registration-yape-number"><span>999 123 456</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div><a href="/assets/registration/payment-qr.png" download="qr-yape-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
+                <div className="registration-payment">
+                  <div className="registration-payment-options">
+                    <p className="registration-payment-step-label"><span>1</span> Elige cómo pagar</p>
+                    <div className="registration-payment-choices" role="radiogroup" aria-label="Monto del abono">
+                      <label className={payment === "reserve" ? "is-selected" : ""}><input type="radio" name="payment" checked={payment === "reserve"} onChange={() => setPayment("reserve")} /><span className="registration-radio" /><span><strong>Reserva tu cupo</strong><small>Abono desde S/50 · paga el saldo después</small></span><b>Desde S/50</b></label>
+                      <label className={payment === "full" ? "is-selected" : ""}><input type="radio" name="payment" checked={payment === "full"} onChange={() => setPayment("full")} /><span className="registration-radio" /><span><strong>Pago completo</strong><small>Todo listo de una vez</small></span><b>S/{selected?.price}</b></label>
+                    </div>
+                    {payment === "reserve" && <label className="registration-deposit-amount">Monto de tu abono (S/)<input type="number" min={50} max={selected?.price} step={1} inputMode="numeric" value={reserveAmount} aria-invalid={showStepErrors && (reserveAmount < 50 || reserveAmount > (selected?.price ?? 0))} onChange={(event) => setReserveAmount(event.currentTarget.value === "" ? 0 : Number(event.currentTarget.value))} /><small>Desde S/50 hasta el precio total de tu plan.</small></label>}
+                  </div>
+                  <section className="registration-receipt" aria-labelledby="receipt-title"><span id="receipt-title" className="registration-receipt-title"><b>3</b><strong>Sube tu comprobante de pago</strong></span><input ref={receiptInputRef} id="receipt-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Selecciona una imagen del comprobante de pago" aria-invalid={receiptError || paymentError || (showStepErrors && !receiptPreviewUrl) ? true : undefined} aria-describedby={[receiptError ? "receipt-error" : "", paymentError ? "payment-error" : "", !receiptError && !paymentError && !receiptPreviewUrl ? "receipt-hint" : ""].filter(Boolean).join(" ") || undefined} onChange={handleReceiptChange} />{receiptPreviewUrl ? <div className="registration-receipt-selected"><div className="registration-receipt-preview"><Image src={receiptPreviewUrl} alt={`Vista previa del comprobante ${receiptName}`} width={800} height={600} unoptimized /></div><div className="registration-receipt-file-info"><strong title={receiptName}>{receiptName}</strong><div><button type="button" onClick={() => receiptInputRef.current?.click()}><FileText size={16} /> Cambiar imagen</button><button type="button" className="registration-receipt-remove" onClick={removeReceipt}><Trash2 size={16} /> Eliminar</button></div></div></div> : <label id="receipt-hint" htmlFor="receipt-file" className="registration-receipt-drop"><FileText size={20} /> Elegir imagen</label>}{receiptError && <span id="receipt-error" className="registration-receipt-error" role="alert">{receiptError}</span>}{paymentError && <span id="payment-error" className="registration-receipt-error" role="alert">{paymentError}</span>}</section>
                 </div>
-                <div className="registration-payment-info"><CreditCard size={23} /><div><strong>Pago por Yape y validación manual</strong><p>El QR oficial y el envío del comprobante se habilitarán al conectar el sistema de inscripciones. Aquí puedes explorar cómo funcionará el flujo.</p></div></div>
-                <label className="registration-receipt">Comprobante de pago <span>Imagen JPG, PNG o WebP · máximo 10 MB. La vista previa queda en este dispositivo.</span><input type="file" accept="image/jpeg,image/png,image/webp" aria-invalid={receiptError ? true : undefined} aria-describedby={receiptError ? "receipt-error" : "receipt-hint"} onChange={handleReceiptChange} /><span id="receipt-hint" className="registration-receipt-drop">{receiptName ? <><FileText size={20} /> Cambiar imagen · {receiptName}</> : <><FileText size={20} /> Elegir imagen</>}</span>{receiptPreviewUrl && <span className="registration-receipt-preview"><Image src={receiptPreviewUrl} alt={`Vista previa del comprobante ${receiptName}`} width={800} height={600} unoptimized /></span>}{receiptError && <span id="receipt-error" className="registration-receipt-error" role="alert">{receiptError}</span>}</label>
               </div>}
 
               {step === 4 && <div className="registration-review">
@@ -370,6 +508,7 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
                 <div className="registration-review-row"><span>Documento</span><strong>{participant.document}</strong></div>
                 <div className="registration-review-row"><span>Nacimiento</span><strong>{participant.birthDate}</strong></div>
                 <div className="registration-review-row"><span>Contacto</span><strong>{contact.phone}</strong></div>
+                <div className="registration-review-row"><span>Correo</span><strong>{contact.email}</strong></div>
                 <div className="registration-review-row"><span>Emergencia</span><strong>{contact.emergencyName} · {contact.emergencyRelation}<br />{contact.emergencyPhone}</strong></div>
                 <div className="registration-review-row"><span>Plan</span><strong>{selected?.name} · S/{selected?.price}</strong></div>
                 <div className="registration-review-row"><span>Primer abono</span><strong>S/{amount}</strong></div>
@@ -387,7 +526,7 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
 
               <div className="registration-actions">
                 {step > 0 && <button type="button" className="registration-back" onClick={back}><ArrowLeft size={18} /> Atrás</button>}
-                {step < 5 && <button type="button" className="registration-next" onClick={() => next()}><span>{step === 4 ? "Ver vista previa" : "Continuar"}</span><ArrowRight size={23} /></button>}
+                {step < 5 && <button type="button" className="registration-next" disabled={!draftReady} onClick={() => next()}><span>{step === 4 ? "Ver vista previa" : "Continuar"}</span><ArrowRight size={23} /></button>}
               </div>
             </section>
 
@@ -416,6 +555,12 @@ export function RegistrationFlow({ initialPlan }: { initialPlan: PlanId | null }
           <Image className="registration-scene-lantern" src="/assets/footer/lampara-radical.webp" alt="" width={933} height={1400} />
         </div>
         <Image className="registration-ambient-birds" src="/assets/elements/elem-flying-birds-flock.webp" alt="" width={459} height={190} />
+      </div>
+      <div className="registration-corners" aria-hidden="true">
+        <Image className="registration-corner registration-corner-palm" src="/assets/registration/corner-palm.webp" alt="" width={1536} height={1024} sizes="(min-width: 1440px) 470px, 32vw" />
+        <Image className="registration-corner registration-corner-turquoise" src="/assets/registration/corner-turquoise-brush.webp" alt="" width={1774} height={887} sizes="(min-width: 1440px) 500px, 36vw" />
+        <Image className="registration-corner registration-corner-yellow" src="/assets/registration/corner-yellow-brush.webp" alt="" width={1536} height={1024} sizes="(min-width: 1440px) 410px, 30vw" />
+        <Image className="registration-corner registration-corner-surfboard" src="/assets/registration/corner-surfboard-garden.webp" alt="" width={1127} height={1396} sizes="(min-width: 1440px) 390px, 28vw" />
       </div>
     </main>
   );
