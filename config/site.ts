@@ -41,7 +41,7 @@ export const CAMP_CONFIG: CampEventConfig = {
   },
   // Fecha objetivo del campamento
   targetCountdownDate: "2026-12-30T09:00:00-05:00",
-  registrationUrl: "#inscribirme",
+  registrationUrl: "/inscripcion",
   navItems: [
     { id: "inicio", label: "Inicio", href: "#inicio" },
     { id: "campamento", label: "El Campamento", href: "#campamento" },

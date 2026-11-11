@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
-import { CAMP_CONFIG } from "@/config/site";
 import "./PricingPlans.css";
 
 const plans = [
@@ -42,14 +42,35 @@ function Benefits({ className = "", animated = false }: { className?: string; an
   );
 }
 
+function PlanCardWatermark() {
+  return (
+    <span className="pricing-plan-watermark" aria-hidden="true">
+      <span className="pricing-plan-watermark-birds">
+        <Image className="pricing-plan-bird pricing-plan-bird-1" src="/assets/elements/elem-flying-bird-single-1.webp" alt="" width={170} height={81} sizes="25px" />
+        <Image className="pricing-plan-bird pricing-plan-bird-2" src="/assets/elements/elem-flying-bird-single-2.webp" alt="" width={137} height={62} sizes="18px" />
+        <Image className="pricing-plan-bird pricing-plan-bird-3" src="/assets/elements/elem-flying-bird-single-3.webp" alt="" width={151} height={64} sizes="17px" />
+        <Image className="pricing-plan-bird pricing-plan-bird-4" src="/assets/elements/elem-flying-bird-single-4.webp" alt="" width={154} height={71} sizes="15px" />
+        <Image className="pricing-plan-bird pricing-plan-bird-5" src="/assets/elements/elem-flying-bird-single-2.webp" alt="" width={137} height={62} sizes="14px" />
+      </span>
+      <span className="pricing-plan-watermark-vegetation">
+        <Image className="pricing-plan-plant pricing-plan-plant-bush" src="/assets/elements/elem-tropical-bush-large.webp" alt="" width={343} height={337} sizes="100px" />
+        <Image className="pricing-plan-plant pricing-plan-plant-frond" src="/assets/elements/elem-palm-frond-leaf.webp" alt="" width={294} height={250} sizes="80px" />
+        <Image className="pricing-plan-plant pricing-plan-plant-leaf" src="/assets/elements/elem-tropical-leaf-green-yellow.webp" alt="" width={331} height={183} sizes="90px" />
+        <Image className="pricing-plan-plant pricing-plan-plant-palm" src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} sizes="100px" />
+        <Image className="pricing-plan-plant pricing-plan-plant-flower" src="/assets/elements/elem-hibiscus-flower-red.webp" alt="" width={197} height={183} sizes="35px" />
+      </span>
+    </span>
+  );
+}
+
 export function PricingPlans() {
+  const router = useRouter();
   const headingRef = useRef<HTMLDivElement>(null);
   const headingVisible = useInView(headingRef, { once: true, amount: 0.4, margin: "0px 0px -18% 0px" });
   const reduceMotion = Boolean(useReducedMotion());
   const showHeading = headingVisible || reduceMotion;
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[number]["name"] | null>(null);
   const selectedPlanDetails = plans.find((plan) => plan.name === selectedPlan);
-  const registrationConfigured = CAMP_CONFIG.registrationUrl !== "#inscribirme";
 
   return (
     <section id="inscribirme" aria-labelledby="pricing-heading" className="relative isolate bg-white px-4 py-16 text-azul-profundo sm:px-8 sm:py-20 lg:px-8 lg:py-24">
@@ -86,7 +107,9 @@ export function PricingPlans() {
                 animate={{ y: !reduceMotion && selectedPlan === plan.name ? -3 : 0 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 transition={{ duration: reduceMotion ? 0 : 0.2, ease: entranceEase }}
-                className={`relative block h-full min-w-0 cursor-pointer overflow-hidden rounded-xl border-2 pb-3 transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none focus-within:outline focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-azul-profundo lg:overflow-visible lg:pb-7 ${selectedPlan === plan.name ? index === 0 ? "border-[#ffbf00] ring-2 ring-[#ffbf00]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-[#00aeb8] ring-2 ring-[#00aeb8]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-transparent shadow-[0_6px_20px_rgba(9,47,57,0.16)]"} ${index === 1 ? "bg-[#fffdf7] lg:bg-[#105466] lg:text-white" : "bg-[#fffdf7]"}`}
+                data-tone={index === 0 ? "yellow" : "teal"}
+                data-selected={selectedPlan === plan.name}
+                className={`pricing-plan-card relative block h-full min-w-0 cursor-pointer overflow-hidden rounded-xl border-2 pb-3 transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none lg:focus-within:outline lg:focus-within:outline-2 lg:focus-within:outline-offset-4 lg:focus-within:outline-azul-profundo lg:overflow-visible lg:pb-7 ${selectedPlan === plan.name ? index === 0 ? "border-[#ffbf00] ring-2 ring-[#ffbf00]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-[#00aeb8] ring-2 ring-[#00aeb8]/30 shadow-[0_10px_28px_rgba(9,47,57,0.24)]" : "border-transparent shadow-[0_6px_20px_rgba(9,47,57,0.16)]"} ${index === 1 ? "bg-[#fffdf7] lg:bg-[#105466] lg:text-white" : "bg-[#fffdf7]"}`}
               >
                 <input
                   type="radio"
@@ -97,21 +120,22 @@ export function PricingPlans() {
                   aria-label={`${plan.name}, S/${plan.price}, ${plan.date}`}
                   className="sr-only"
                 />
+                <PlanCardWatermark />
                 <AnimatePresence>
                   {selectedPlan === plan.name && <motion.span key="selected" initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.85 }} transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 440, damping: 24 }} aria-hidden="true" className={`absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-md ${index === 0 ? "bg-[#d99f00]" : "bg-[#008c97]"}`}><Check className="h-4 w-4" strokeWidth={3} /></motion.span>}
                 </AnimatePresence>
-                <div className="relative -mx-1 flex h-12 items-center justify-center sm:h-14 lg:mx-0 lg:h-auto lg:pt-6">
+                <div className="relative z-10 -mx-1 flex h-12 items-center justify-center sm:h-14 lg:mx-0 lg:h-auto lg:pt-6">
                   <Image src={plan.brush} alt="" fill sizes="(max-width: 1023px) 50vw, 1px" className={`object-fill lg:hidden ${index === 0 ? "-scale-x-150 scale-y-150 -translate-y-[3px] -rotate-[9deg]" : "scale-150"}`} />
                   <h3 className={`relative font-bebas text-2xl uppercase tracking-wide sm:text-3xl lg:text-2xl lg:text-inherit ${index === 0 ? "text-azul-profundo" : "text-white"}`}>{plan.name}</h3>
                 </div>
-                <div className="px-2 pt-2 text-center sm:px-4 lg:pt-2">
+                <div className="relative z-10 px-2 pt-2 text-center sm:px-4 lg:pt-2">
                   <p className="whitespace-nowrap font-bebas text-5xl leading-none sm:text-6xl lg:text-6xl xl:text-7xl"><span className="mr-1 text-2xl sm:text-3xl">S/</span>{plan.price}</p>
                   <p className="relative isolate mt-1 min-h-8 text-xs font-semibold leading-tight sm:text-sm lg:mt-4 lg:flex lg:min-h-9 lg:items-center lg:justify-center lg:text-base">
                     {index === 0 && <span aria-hidden="true" className="pointer-events-none absolute -inset-y-3 inset-x-[15%] -z-10 hidden lg:block lg:scale-x-125 lg:scale-y-150 lg:rotate-[7deg]"><Image src={plan.brush} alt="" fill sizes="220px" className="object-fill" /></span>}
                     {index === 0 ? <><span className="lg:hidden">{plan.date}</span><span className="hidden lg:block lg:font-extrabold lg:uppercase">Hasta el 15<br />de diciembre</span></> : plan.date}
                   </p>
                 </div>
-                <div className="mx-3 mt-2 border-t border-azul-profundo/10 pt-2 sm:mx-5 lg:hidden">
+                <div className="relative z-10 mx-3 mt-2 border-t border-azul-profundo/10 pt-2 sm:mx-5 lg:hidden">
                   <Benefits className="space-y-2" />
                 </div>
               </motion.label>
@@ -122,9 +146,13 @@ export function PricingPlans() {
         <div className="hidden text-white lg:block">
           <h3 className="sr-only">Ambos planes incluyen</h3>
           <Benefits className="space-y-4" animated />
+          <button type="button" disabled={!selectedPlan} onClick={() => { if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff6b00] to-[#ffbf00] px-4 font-bebas text-xl uppercase tracking-wide text-white shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+            {selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
+          </button>
         </div>
         <motion.div initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4, margin: "0px 0px -10% 0px" }} transition={{ duration: reduceMotion ? 0 : 0.55, delay: reduceMotion ? 0 : 0.12, ease: entranceEase }} className="mt-4 text-center lg:hidden">
-          <button type="button" disabled={!selectedPlan || !registrationConfigured} aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white transition-[filter,transform] enabled:active:scale-[0.98] enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 sm:max-w-md">
+          <button type="button" disabled={!selectedPlan} onClick={() => { if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white transition-[filter,transform] enabled:active:scale-[0.98] enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 sm:max-w-md">
             <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 inset-x-[6%]"><Image src="/assets/elements/asset-boton-xd.png" alt="" fill sizes="(max-width: 640px) 88vw, 394px" className="object-fill" /></span>
             <span className="relative inline-flex translate-y-[3px] items-center justify-center gap-3 leading-none">
               <span aria-live="polite" aria-atomic="true" className="inline-grid">
@@ -135,7 +163,7 @@ export function PricingPlans() {
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 shrink-0"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
             </span>
           </button>
-          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">{!selectedPlan ? "Selecciona un plan para continuar" : !registrationConfigured ? "Canal de inscripción pendiente" : "Cupos limitados"}</p>
+          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">{!selectedPlan ? "Selecciona un plan para continuar" : "Cupos limitados"}</p>
         </motion.div>
       </div>
     </section>

@@ -1,3 +1,62 @@
 @media (max-width: 767px) {
   #inscribirme { padding-bottom: 2rem; }
 }
+
+.pricing-plan-watermark{display:none}
+
+@media (max-width: 1023px) {
+  .pricing-plan-watermark{
+    position:absolute;
+    z-index:0;
+    inset:0;
+    display:block;
+    overflow:hidden;
+    pointer-events:none;
+    --pricing-watermark-filter:grayscale(.94) sepia(1) saturate(5.2) hue-rotate(350deg) brightness(1.22) contrast(.82);
+  }
+  .pricing-plan-card[data-tone="teal"] .pricing-plan-watermark{
+    --pricing-watermark-filter:grayscale(.84) sepia(.8) saturate(3.05) hue-rotate(118deg) brightness(1.1) contrast(.78);
+  }
+  .pricing-plan-watermark img{
+    position:absolute;
+    height:auto;
+    filter:var(--pricing-watermark-filter);
+    mix-blend-mode:multiply;
+    user-select:none;
+  }
+  .pricing-plan-watermark-birds{
+    position:absolute;
+    right:4px;
+    top:78px;
+    width:104px;
+    height:61px;
+    opacity:.23;
+    transform:rotate(-4deg) scale(.72);
+    transform-origin:right top;
+  }
+  .pricing-plan-bird-1{left:38px;top:0;width:34px}
+  .pricing-plan-bird-2{left:17px;top:17px;width:25px;transform:rotate(-10deg)}
+  .pricing-plan-bird-3{left:65px;top:17px;width:23px;transform:rotate(7deg)}
+  .pricing-plan-bird-4{left:3px;top:34px;width:20px;transform:rotate(12deg)}
+  .pricing-plan-bird-5{left:86px;top:34px;width:18px;transform:rotate(-12deg)}
+  .pricing-plan-watermark-vegetation{
+    position:absolute;
+    right:-59px;
+    bottom:-32px;
+    width:205px;
+    height:224px;
+    transform:scaleX(-1) scale(.507);
+    transform-origin:center bottom;
+  }
+  .pricing-plan-plant-bush{z-index:2;left:-4px;bottom:-25px;width:198px;opacity:.23}
+  .pricing-plan-plant-frond{z-index:3;left:48px;bottom:-8px;width:151px;opacity:.24;transform:rotate(-12deg)}
+  .pricing-plan-plant-leaf{z-index:4;left:-31px;bottom:3px;width:176px;opacity:.23;transform:rotate(-28deg)}
+  .pricing-plan-plant-palm{z-index:1;left:-22px;bottom:38px;width:198px;opacity:.25;transform:rotate(-6deg)}
+  .pricing-plan-plant-flower{z-index:6;left:48px;bottom:58px;width:68px;opacity:.32;transform:rotate(12deg)}
+  .pricing-plan-card[data-selected="true"] .pricing-plan-watermark-birds{opacity:.29}
+  .pricing-plan-card[data-selected="true"] .pricing-plan-plant-bush,
+  .pricing-plan-card[data-selected="true"] .pricing-plan-plant-frond,
+  .pricing-plan-card[data-selected="true"] .pricing-plan-plant-leaf{opacity:.28}
+  .pricing-plan-card[data-selected="true"] .pricing-plan-plant-palm{opacity:.3}
+  .pricing-plan-card[data-selected="true"] .pricing-plan-plant-flower{opacity:.38}
+}
