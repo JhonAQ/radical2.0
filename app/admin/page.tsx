@@ -14,6 +14,7 @@ import {
   createAdmin,
   removeAdmin,
   grantExistingAdmin,
+  resetAdminPassword,
 } from "./actions";
 
 export const metadata = {
@@ -79,6 +80,7 @@ const successes: Record<string, string> = {
   review: "Revisión actualizada.",
   password: "Contraseña actualizada.",
   admin_existing: "Se concedió acceso a la cuenta existente.",
+  admin_password: "Contraseña de la cuenta administradora actualizada.",
   admin: "Administrador creado. Comparte sus credenciales por un canal seguro.",
   removed: "Acceso de administrador retirado.",
 };
@@ -817,22 +819,56 @@ export default async function AdminPage({
                 {admins.map((a) => (
                   <div
                     key={a.user_id}
-                    className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm"
+                    className="rounded-xl bg-slate-50 px-3 py-3 text-sm"
                   >
-                    <span className="break-all">
-                      {a.email}{" "}
-                      <small className="font-bold text-[#008e98]">
-                        {a.role === "master" ? "· Maestra" : "· Admin"}
-                      </small>
-                    </span>
-                    {a.role === "admin" && (
-                      <form action={removeAdmin}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="break-all">
+                        {a.email}{" "}
+                        <small className="font-bold text-[#008e98]">
+                          {a.role === "master" ? "· Maestra" : "· Admin"}
+                        </small>
+                      </span>
+                      {a.role === "admin" && (
+                        <form action={removeAdmin}>
+                          <input type="hidden" name="id" value={a.user_id} />
+                          <button className="font-bold text-red-700">
+                            Quitar
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer font-bold text-[#008e98]">
+                        Asignar nueva contraseña
+                      </summary>
+                      <form
+                        action={resetAdminPassword}
+                        className="mt-3 space-y-2"
+                      >
                         <input type="hidden" name="id" value={a.user_id} />
-                        <button className="font-bold text-red-700">
-                          Quitar
+                        <input
+                          type="password"
+                          name="password"
+                          minLength={12}
+                          required
+                          autoComplete="new-password"
+                          placeholder="Nueva contraseña"
+                          className={input}
+                        />
+                        <input
+                          type="password"
+                          name="confirm"
+                          minLength={12}
+                          required
+                          autoComplete="new-password"
+                          placeholder="Repite la contraseña"
+                          className={input}
+                        />
+                        <button className={button}>
+                          Actualizar contraseña
                         </button>
                       </form>
-                    )}
+                    </details>
                   </div>
                 ))}
               </div>

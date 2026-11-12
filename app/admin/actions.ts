@@ -189,6 +189,31 @@ export async function removeAdmin(form: FormData) {
   redirect("/admin?success=removed");
 }
 
+export async function resetAdminPassword(form: FormData) {
+  const context = await adminContext(true);
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  const password = String(form.get("password") || "");
+  if (
+    !/^[0-9a-f-]{36}$/i.test(id) ||
+    password.length < 12 ||
+    password !== String(form.get("confirm") || "")
+  )
+    redirect("/admin?error=password");
+  const service = serviceClient();
+  if (!service) redirect("/admin?error=configuration");
+  const { data: member, error: memberError } = await service
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", id)
+    .maybeSingle();
+  if (memberError || !member) redirect("/admin?error=admin_not_found");
+  const { error } = await service.auth.admin.updateUserById(id, { password });
+  if (error) redirect("/admin?error=password");
+  revalidatePath("/admin");
+  redirect("/admin?success=admin_password");
+}
+
 export async function grantExistingAdmin(form: FormData) {
   const context = await adminContext(true);
   if (!context) redirect("/admin?error=access");
