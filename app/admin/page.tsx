@@ -4,6 +4,20 @@ import Image from "next/image";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { AdminDialog } from "./AdminDialog";
+import {
+  LayoutDashboard,
+  UsersRound,
+  WalletCards,
+  ShieldCheck,
+  Settings,
+  ArrowUpRight,
+  ClipboardCheck,
+  LogOut,
+  ChevronRight,
+  Clock3,
+  CircleDollarSign,
+} from "lucide-react";
 import {
   login,
   logout,
@@ -94,6 +108,8 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{
     selected?: string;
+    view?: string;
+    dialog?: string;
     status?: string;
     q?: string;
     error?: string;
@@ -323,7 +339,12 @@ export default async function AdminPage({
   const secret =
     process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   let admins: { user_id: string; role: string; email: string }[] = [];
-  if (master && secret && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  if (
+    master &&
+    params.view === "team" &&
+    secret &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+  ) {
     const service = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       secret,
@@ -339,80 +360,394 @@ export default async function AdminPage({
       }),
     );
   }
+  const requestedView = params.view || "overview";
+  const view =
+    ["overview", "registrations", "payments", "team", "account"].includes(
+      requestedView,
+    ) &&
+    (requestedView !== "team" || master)
+      ? requestedView
+      : "overview";
+  const returnParams = new URLSearchParams({ view });
+  if (params.q) returnParams.set("q", params.q);
+  if (params.status) returnParams.set("status", params.status);
+  const closeHref = `/admin?${returnParams.toString()}`;
+  const detailHref = (id: string) =>
+    `${closeHref}&selected=${encodeURIComponent(id)}`;
+  const pendingRegistrations = rows.filter((r) => r.status === "pending");
+  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const approvedTotal =
+    rows
+      .filter((r) => r.status === "approved")
+      .reduce((n, r) => n + r.amount, 0) +
+    payments
+      .filter((p) => p.status === "approved" && p.kind === "additional")
+      .reduce((n, p) => n + p.amount, 0);
+  const nav = [
+    { id: "overview", label: "Resumen", icon: LayoutDashboard },
+    {
+      id: "registrations",
+      label: "Inscripciones",
+      icon: UsersRound,
+      badge: pendingRegistrations.length,
+    },
+    {
+      id: "payments",
+      label: "Pagos y comprobantes",
+      icon: WalletCards,
+      badge: pendingRegistrations.length + pendingPayments.length,
+    },
+    ...(master ? [{ id: "team", label: "Equipo", icon: ShieldCheck }] : []),
+    { id: "account", label: "Mi cuenta", icon: Settings },
+  ];
+  const viewInfo: Record<string, { title: string; subtitle: string }> = {
+    overview: {
+      title: "Resumen general",
+      subtitle: "Todo lo que sucede en tu campamento, en un solo lugar.",
+    },
+    registrations: {
+      title: "Inscripciones",
+      subtitle:
+        "Consulta participantes, datos de contacto y estado de inscripción.",
+    },
+    payments: {
+      title: "Pagos y comprobantes",
+      subtitle: "Revisa los pagos recibidos y lleva el control de cada abono.",
+    },
+    team: {
+      title: "Equipo administrador",
+      subtitle: "Gestiona los accesos de las personas que trabajan contigo.",
+    },
+    account: {
+      title: "Mi cuenta",
+      subtitle: "Administra tus credenciales de acceso.",
+    },
+  };
+  const paymentItems = [
+    ...rows.map((r) => ({
+      id: `initial-${r.id}`,
+      registrationId: r.id,
+      name: `${r.first_name} ${r.last_name}`,
+      email: r.email,
+      amount: r.amount,
+      status: r.status,
+      kind: "Abono inicial",
+      date: r.created_at,
+    })),
+    ...payments
+      .filter((p) => !(p.kind === "replacement" && p.status === "approved"))
+      .map((p) => {
+        const r = rows.find((item) => item.id === p.registration_id);
+        return {
+          id: p.id,
+          registrationId: p.registration_id,
+          name: r ? `${r.first_name} ${r.last_name}` : "Participante",
+          email: r?.email || "",
+          amount: p.amount,
+          status: p.status,
+          kind:
+            p.kind === "replacement"
+              ? "Comprobante corregido"
+              : "Abono adicional",
+          date: p.created_at,
+        };
+      }),
+  ]
+    .filter(
+      (p) =>
+        (!params.status ||
+          params.status === "all" ||
+          p.status === params.status) &&
+        (!params.q ||
+          `${p.name} ${p.email}`
+            .toLowerCase()
+            .includes(params.q.toLowerCase())),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
   return (
-    <main className="min-h-screen bg-[#f5f3e9] text-[#092f39]">
-      <header className="bg-[#08343d] text-white">
-        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4 px-5 py-5 lg:px-10">
-          <div>
-            <Link href="/" aria-label="Radical 2.0, inicio">
-              <BrandLogo variant="secundario" width={115} />
+    <main className="min-h-screen bg-[#f4f6f2] text-[#10343d] lg:pl-[260px]">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#082f39] text-white lg:flex">
+        <div className="relative overflow-hidden px-7 pb-8 pt-7">
+          <div className="absolute -right-14 -top-20 h-44 w-44 rounded-full bg-[#06b5b0]/10 blur-3xl" />
+          <Link href="/" aria-label="Radical 2.0, inicio">
+            <BrandLogo variant="secundario" width={155} />
+          </Link>
+          <p className="mt-5 text-[10px] font-black uppercase tracking-[.22em] text-[#88c4c0]">
+            Centro de operaciones
+          </p>
+        </div>
+        <div className="px-5 text-[10px] font-bold uppercase tracking-[.2em] text-[#78a5a5]">
+          Campamento
+        </div>
+        <nav
+          aria-label="Navegación administrativa"
+          className="mt-3 flex-1 space-y-1 px-3"
+        >
+          {nav.map(({ id, label, icon: Icon, badge }) => (
+            <Link
+              key={id}
+              href={`/admin?view=${id}`}
+              aria-current={view === id ? "page" : undefined}
+              className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${view === id ? "bg-[#e9faf5] text-[#073b43] shadow-sm" : "text-[#bed7d3] hover:bg-white/10 hover:text-white"}`}
+            >
+              <Icon size={19} strokeWidth={1.8} />
+              <span className="flex-1">{label}</span>
+              {Boolean(badge) && (
+                <span
+                  className={`rounded-md px-2 py-0.5 text-xs ${view === id ? "bg-[#c6ece3]" : "bg-[#18535a] text-[#b9ece4]"}`}
+                >
+                  {badge}
+                </span>
+              )}
             </Link>
-            <p className="mt-2 text-xs font-black uppercase tracking-[.22em] text-[#ffc42b]">
-              Radical 2.0
-            </p>
-            <h1 className="mt-1 text-2xl font-black">Centro de operaciones</h1>
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="hidden sm:inline">
-              {user?.email} · {master ? "Cuenta maestra" : "Administrador"}
+          ))}
+        </nav>
+        <div className="m-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#ffbf24] text-sm font-black text-[#07333d]">
+              {(user?.email || "R")[0].toUpperCase()}
             </span>
-            <form action={logout}>
-              <button className="rounded-lg border border-white/30 px-4 py-2 font-bold hover:bg-white/10">
-                Salir
-              </button>
-            </form>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold">{user?.email}</p>
+              <p className="mt-1 text-[11px] text-[#a0c9c4]">
+                {master ? "Cuenta maestra" : "Administrador"}
+              </p>
+            </div>
+          </div>
+          <form action={logout} className="mt-4">
+            <button className="flex items-center gap-2 text-xs font-semibold text-[#bad4cf] hover:text-white">
+              <LogOut size={14} /> Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </aside>
+      <header className="sticky top-0 z-20 border-b border-[#e3eae5] bg-[#fbfcf8]/95 backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-4 px-5 py-3">
+          <Link href="/" aria-label="Radical 2.0, inicio">
+            <BrandLogo variant="secundario" width={115} />
+          </Link>
+          <form action={logout}>
+            <button className="rounded-lg bg-[#e7f0ed] px-3 py-2 text-xs font-bold">
+              Salir
+            </button>
+          </form>
+        </div>
+        <nav
+          aria-label="Navegación administrativa"
+          className="flex gap-1 overflow-x-auto px-3 pb-2"
+        >
+          {nav.map(({ id, label, icon: Icon, badge }) => (
+            <Link
+              key={id}
+              href={`/admin?view=${id}`}
+              aria-current={view === id ? "page" : undefined}
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${view === id ? "bg-[#0b4248] text-white" : "text-[#52716f]"}`}
+            >
+              <Icon size={16} />
+              {label}
+              {Boolean(badge) && (
+                <span className="rounded-full bg-[#ffc32b] px-1.5 text-[#10343d]">
+                  {badge}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+      </header>
+      <div className="mx-auto max-w-[1540px] px-4 pb-12 pt-7 sm:px-8 lg:px-10 lg:pt-9">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[.2em] text-[#009d9f]">
+              Radical 2.0 <span className="mx-1 text-[#a6bab5]">/</span>{" "}
+              Administración
+            </p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
+              {viewInfo[view].title}
+            </h1>
+            <p className="mt-2 text-sm text-[#69827e]">
+              {viewInfo[view].subtitle}
+            </p>
+          </div>
+          <div className="hidden items-center gap-2 rounded-full border border-[#dfe9e2] bg-white px-4 py-2 text-xs font-semibold text-[#55736e] sm:flex">
+            <span className="size-2 rounded-full bg-[#14b8a6]" /> Campamento ·
+            Mejía
           </div>
         </div>
-      </header>
-      <div className="mx-auto max-w-[1500px] space-y-6 px-5 py-8 lg:px-10">
         {(params.error || params.success || loadError) && (
           <div
             role="status"
-            className={`rounded-xl px-5 py-4 text-sm font-semibold ${params.error || loadError ? "bg-red-100 text-red-800" : "bg-teal-100 text-teal-900"}`}
+            className={`mb-6 rounded-xl px-5 py-4 text-sm font-semibold ${params.error || loadError ? "bg-red-100 text-red-800" : "bg-teal-100 text-teal-900"}`}
           >
             {loadError
-              ? "No se pudieron cargar todos los registros. Los resultados pueden estar incompletos; vuelve a intentarlo."
+              ? "No se pudieron cargar todos los registros. Vuelve a intentarlo."
               : params.error
                 ? errors[params.error] || "Ocurrió un error."
                 : successes[params.success || ""]}
           </div>
         )}
-        <section>
-          <div className="mb-5">
-            <p className="text-xs font-black uppercase tracking-[.18em] text-[#008e98]">
-              Resumen del campamento
-            </p>
-            <h2 className="mt-1 text-3xl font-black">Inscripciones</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            {[
-              ["Total", rows.length],
-              [
-                "Inscripciones por revisar",
-                rows.filter((r) => r.status === "pending").length,
-              ],
-              [
-                "Abonos por revisar",
-                payments.filter((p) => p.status === "pending").length,
-              ],
-              ["Aprobadas", rows.filter((r) => r.status === "approved").length],
-              [
-                "Abonado aprobado",
-                `S/ ${rows.filter((r) => r.status === "approved").reduce((n, r) => n + r.amount, 0) + payments.filter((p) => p.status === "approved" && p.kind === "additional").reduce((n, p) => n + p.amount, 0)}`,
-              ],
-            ].map(([label, value]) => (
+        {view === "overview" && (
+          <div className="space-y-6">
+            <section className="relative overflow-hidden rounded-[24px] bg-[#0a4249] px-6 py-7 text-white sm:px-8">
               <div
-                key={label}
-                className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm"
-              >
-                <p className="text-sm font-semibold text-slate-500">{label}</p>
-                <p className="mt-2 text-3xl font-black">{value}</p>
+                aria-hidden
+                className="absolute -right-16 -top-36 h-72 w-72 rounded-full bg-[#06b9b2]/25 blur-3xl"
+              />
+              <div className="relative flex flex-wrap items-center justify-between gap-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#83e3d4]">
+                    Panel de control
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+                    Bienvenido a Radical
+                  </h2>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-[#c0ddda]">
+                    Mantén las inscripciones y los pagos al día para preparar
+                    una gran experiencia.
+                  </p>
+                </div>
+                <Link
+                  href="/admin?view=registrations"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#ffc32b] px-5 py-3 text-sm font-black text-[#07333d]"
+                >
+                  Ver inscripciones <ArrowUpRight size={17} />
+                </Link>
               </div>
-            ))}
+            </section>
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              {[
+                {
+                  label: "Inscripciones",
+                  value: rows.length,
+                  icon: UsersRound,
+                  tone: "bg-[#e2f5ef] text-[#008e86]",
+                },
+                {
+                  label: "Inscripciones pendientes",
+                  value: pendingRegistrations.length,
+                  icon: ClipboardCheck,
+                  tone: "bg-[#fff1ce] text-[#b97c00]",
+                },
+                {
+                  label: "Abonos por revisar",
+                  value: pendingRegistrations.length + pendingPayments.length,
+                  icon: Clock3,
+                  tone: "bg-[#ffecdf] text-[#db6e27]",
+                },
+                {
+                  label: "Abonado aprobado",
+                  value: `S/ ${approvedTotal}`,
+                  icon: CircleDollarSign,
+                  tone: "bg-[#e5f2f6] text-[#167d94]",
+                },
+              ].map(({ label, value, icon: Icon, tone }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-[#e3ebe5] bg-white p-5 shadow-[0_8px_30px_rgba(13,55,58,.035)]"
+                >
+                  <div
+                    className={`grid size-10 place-items-center rounded-xl ${tone}`}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <p className="mt-4 text-2xl font-black sm:text-3xl">
+                    {value}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#728a84]">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+              <section className="rounded-2xl border border-[#e3ebe5] bg-white p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-black">
+                      Inscripciones recientes
+                    </h2>
+                    <p className="mt-1 text-xs text-[#78918a]">
+                      Las últimas personas registradas
+                    </p>
+                  </div>
+                  <Link
+                    href="/admin?view=registrations"
+                    className="text-xs font-bold text-[#008e95]"
+                  >
+                    Ver todas →
+                  </Link>
+                </div>
+                <div className="mt-5 divide-y divide-[#edf1ee]">
+                  {rows.slice(0, 5).map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/admin?view=overview&selected=${r.id}`}
+                      className="flex items-center gap-3 py-3 hover:text-[#008e95]"
+                    >
+                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e6f5ef] text-sm font-black text-[#008e86]">
+                        {r.first_name[0]?.toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <b className="block truncate text-sm">
+                          {r.first_name} {r.last_name}
+                        </b>
+                        <span className="block truncate text-xs text-[#8a9f99]">
+                          {r.email}
+                        </span>
+                      </span>
+                      <span className="text-xs font-bold text-[#66837a]">
+                        {labels[r.status]}
+                      </span>
+                      <ChevronRight size={16} />
+                    </Link>
+                  ))}
+                  {!rows.length && (
+                    <p className="py-10 text-center text-sm text-[#829992]">
+                      Todavía no hay inscripciones registradas.
+                    </p>
+                  )}
+                </div>
+              </section>
+              <section className="rounded-2xl border border-[#e3ebe5] bg-white p-6">
+                <h2 className="text-lg font-black">Pendientes del equipo</h2>
+                <p className="mt-1 text-xs text-[#78918a]">
+                  Accesos rápidos para avanzar
+                </p>
+                <div className="mt-5 space-y-3">
+                  <Link
+                    href="/admin?view=registrations&status=pending"
+                    className="flex items-center gap-3 rounded-xl bg-[#fff9e9] p-4"
+                  >
+                    <ClipboardCheck className="text-[#c48600]" size={20} />
+                    <span className="flex-1 text-sm font-bold">
+                      Inscripciones por revisar
+                    </span>
+                    <b>{pendingRegistrations.length}</b>
+                    <ChevronRight size={16} />
+                  </Link>
+                  <Link
+                    href="/admin?view=payments&status=pending"
+                    className="flex items-center gap-3 rounded-xl bg-[#ecf8f5] p-4"
+                  >
+                    <WalletCards className="text-[#008e86]" size={20} />
+                    <span className="flex-1 text-sm font-bold">
+                      Abonos por revisar
+                    </span>
+                    <b>
+                      {pendingRegistrations.length + pendingPayments.length}
+                    </b>
+                    <ChevronRight size={16} />
+                  </Link>
+                  <div className="rounded-xl border border-dashed border-[#dbe8df] p-4 text-xs leading-5 text-[#78918a]">
+                    Los comprobantes se revisan individualmente y cada decisión
+                    queda en el historial.
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
-        </section>
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
-          <section className="rounded-3xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-7">
+        )}
+        {view === "registrations" && (
+          <section className="rounded-2xl border border-[#e2e8e4] bg-white p-5 shadow-[0_8px_35px_rgba(13,55,58,0.04)] sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black">Participantes</h2>
@@ -425,6 +760,7 @@ export default async function AdminPage({
               </span>
             </div>
             <form className="mt-5 flex flex-wrap gap-2">
+              <input type="hidden" name="view" value="registrations" />
               <input
                 name="q"
                 defaultValue={params.q}
@@ -449,7 +785,7 @@ export default async function AdminPage({
                   <tr>
                     <th className="py-3">Participante</th>
                     <th>Plan</th>
-                    <th>Abono</th>
+                    <th>Abonado</th>
                     <th>Estado</th>
                     <th />
                   </tr>
@@ -473,7 +809,18 @@ export default async function AdminPage({
                         )}
                       </td>
                       <td className="capitalize">{r.plan}</td>
-                      <td>S/ {r.amount}</td>
+                      <td>
+                        S/{" "}
+                        {r.amount +
+                          payments
+                            .filter(
+                              (p) =>
+                                p.registration_id === r.id &&
+                                p.kind === "additional" &&
+                                p.status === "approved",
+                            )
+                            .reduce((total, p) => total + p.amount, 0)}
+                      </td>
                       <td>
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-bold ${r.status === "approved" ? "bg-emerald-100 text-emerald-800" : r.status === "rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}`}
@@ -483,7 +830,7 @@ export default async function AdminPage({
                       </td>
                       <td>
                         <Link
-                          href={`/admin?selected=${r.id}`}
+                          href={detailHref(r.id)}
                           className="font-bold text-[#008b96] hover:underline"
                         >
                           Revisar →
@@ -500,321 +847,135 @@ export default async function AdminPage({
               )}
             </div>
           </section>
-          <aside className="rounded-3xl border border-[#dce5df] bg-white p-6 shadow-sm">
-            {selected ? (
-              <>
-                <div className="flex justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#009aa3]">
-                      Detalle de inscripción
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black">
-                      {selected.first_name} {selected.last_name}
-                    </h2>
-                  </div>
-                  <Link
-                    href="/admin"
-                    className="text-sm font-bold text-slate-500"
-                  >
-                    Cerrar ×
-                  </Link>
-                </div>
-                <dl className="mt-5 space-y-3 text-sm">
-                  {[
-                    ["Documento", selected.document],
-                    ["Nacimiento", selected.birth_date],
-                    ["Género", selected.gender],
-                    ["WhatsApp", selected.phone],
-                    ["Correo", selected.email],
-                    [
-                      "Emergencia",
-                      `${selected.emergency_name} · ${selected.emergency_relation} · ${selected.emergency_phone}`,
-                    ],
-                    ["Plan", `${selected.plan} · S/ ${selected.price}`],
-                    [
-                      "Abono declarado",
-                      `S/ ${selectedPaid} · saldo S/ ${Math.max(0, selected.price - selectedPaid)}`,
-                    ],
-                    ["Estado", labels[selected.status]],
-                    [
-                      "Fecha",
-                      new Date(selected.created_at).toLocaleDateString(
-                        "es-PE",
-                        { dateStyle: "long", timeZone: "America/Lima" },
-                      ),
-                    ],
-                  ].map(([k, v]) => (
-                    <div
-                      key={k}
-                      className="flex justify-between gap-4 border-b border-slate-100 pb-2"
-                    >
-                      <dt className="text-slate-500">{k}</dt>
-                      <dd className="text-right font-semibold">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <h3 className="mt-6 font-bold">Comprobante</h3>
-                {originalReceipt?.signedUrl && (
-                  <a
-                    className="mt-2 block text-sm font-bold text-[#008b96]"
-                    href={originalReceipt.signedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Ver comprobante original ↗
-                  </a>
-                )}
-                {receipt?.signedUrl ? (
-                  <a
-                    href={receipt.signedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 block"
-                  >
-                    <Image
-                      src={receipt.signedUrl}
-                      alt="Comprobante de pago enviado"
-                      width={600}
-                      height={500}
-                      unoptimized
-                      className="max-h-72 w-full rounded-xl border border-slate-200 object-contain"
-                    />
-                    <span className="mt-2 block text-sm font-bold text-[#008b96]">
-                      Abrir imagen ↗
-                    </span>
-                  </a>
-                ) : (
-                  <p className="mt-2 text-sm text-red-700">
-                    No se pudo cargar el comprobante.
-                  </p>
-                )}
-                {selectedPayments.length > 0 && (
-                  <section className="mt-6 space-y-3">
-                    <h3 className="font-black">Otros comprobantes</h3>
-                    {selectedPayments.map((p) => (
-                      <div
-                        key={p.id}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm"
-                      >
-                        <div className="flex justify-between gap-2">
-                          <strong>
-                            {p.kind === "replacement"
-                              ? "Reemplazo"
-                              : "Abono adicional"}{" "}
-                            · S/ {p.amount}
-                          </strong>
-                          <span>{labels[p.status]}</span>
-                        </div>
-                        {p.signedUrl && (
-                          <a
-                            href={p.signedUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 block font-bold text-[#008b96]"
-                          >
-                            Ver comprobante ↗
-                          </a>
-                        )}
-                        {p.review_note && (
-                          <p className="mt-2 text-slate-600">{p.review_note}</p>
-                        )}
-                        <form action={reviewPayment} className="mt-3 space-y-2">
-                          <input type="hidden" name="payment_id" value={p.id} />
-                          <input
-                            type="hidden"
-                            name="registration_id"
-                            value={selected.id}
-                          />
-                          <input
-                            name="note"
-                            defaultValue={p.review_note || ""}
-                            maxLength={1000}
-                            placeholder="Nota opcional"
-                            className={input}
-                          />
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              name="status"
-                              value="approved"
-                              className="rounded-lg bg-[#008e87] px-3 py-2 font-bold text-white"
-                            >
-                              Aprobar
-                            </button>
-                            <button
-                              name="status"
-                              value="rejected"
-                              className="rounded-lg bg-red-100 px-3 py-2 font-bold text-red-800"
-                            >
-                              Observar
-                            </button>
-                            <button
-                              name="status"
-                              value="pending"
-                              className="rounded-lg bg-slate-200 px-3 py-2 font-bold"
-                            >
-                              Pendiente
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    ))}
-                  </section>
-                )}
-                {history && history.length > 0 && (
-                  <details className="mt-5 rounded-xl bg-slate-50 p-4 text-sm">
-                    <summary className="cursor-pointer font-bold">
-                      Historial de revisiones
-                    </summary>
-                    <ul className="mt-3 space-y-3">
-                      {history.map((event) => (
-                        <li
-                          key={event.id}
-                          className="border-t border-slate-200 pt-2"
-                        >
-                          <strong>
-                            {event.payment_id ? "Abono" : "Inscripción"}:{" "}
-                            {labels[event.new_status] || event.new_status}
-                          </strong>
-                          <p className="text-xs text-slate-500">
-                            {new Date(event.created_at).toLocaleString(
-                              "es-PE",
-                              {
-                                timeZone: "America/Lima",
-                                dateStyle: "medium",
-                                timeStyle: "short",
-                              },
-                            )}
-                          </p>
-                          {event.note && <p className="mt-1">{event.note}</p>}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-                <form action={review} className="mt-6 space-y-3">
-                  <input type="hidden" name="id" value={selected.id} />
-                  <label className="block text-sm font-bold">
-                    Nota de revisión
-                    <textarea
-                      name="note"
-                      defaultValue={selected.review_note || ""}
-                      maxLength={1000}
-                      className={`${input} mt-2`}
-                      rows={2}
-                      placeholder="Opcional"
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      name="status"
-                      value="approved"
-                      className="rounded-xl bg-[#008e87] px-4 py-3 text-sm font-bold text-white"
-                    >
-                      Aprobar
-                    </button>
-                    <button
-                      name="status"
-                      value="rejected"
-                      className="rounded-xl bg-red-100 px-4 py-3 text-sm font-bold text-red-800"
-                    >
-                      Observar
-                    </button>
-                    <button
-                      name="status"
-                      value="pending"
-                      className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold"
-                    >
-                      Pendiente
-                    </button>
-                  </div>
-                </form>
-              </>
-            ) : (
-              <div className="py-12 text-center">
-                <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-[#e5f7f3] text-3xl">
-                  ✓
-                </div>
-                <h2 className="mt-5 text-xl font-black">Todo bajo control</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Selecciona una inscripción para consultar sus datos y revisar
-                  su comprobante.
+        )}
+        {view === "payments" && (
+          <section className="rounded-2xl border border-[#e2e8e4] bg-white p-5 shadow-[0_8px_35px_rgba(13,55,58,.04)] sm:p-7">
+            <div className="flex flex-wrap justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black">Movimientos</h2>
+                <p className="mt-1 text-sm text-[#78918a]">
+                  Abonos iniciales, adicionales y comprobantes corregidos.
                 </p>
               </div>
-            )}
-          </aside>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-3xl border border-[#dce5df] bg-white p-6">
-            <h2 className="text-xl font-black">Mi contraseña</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Crea o cambia tu contraseña para acceder con correo y contraseña.
-            </p>
-            <form action={setPassword} className="mt-4 space-y-3">
+              <span className="rounded-full bg-[#e9f6f3] px-3 py-1 text-xs font-bold text-[#007f87]">
+                {paymentItems.length} resultados
+              </span>
+            </div>
+            <form className="mt-5 flex flex-wrap gap-2">
+              <input type="hidden" name="view" value="payments" />
               <input
-                type="password"
-                name="password"
-                required
-                minLength={12}
-                autoComplete="new-password"
-                placeholder="Nueva contraseña (mínimo 12 caracteres)"
-                className={input}
+                name="q"
+                defaultValue={params.q}
+                placeholder="Buscar participante o correo"
+                className={`${input} min-w-[200px] flex-1`}
               />
-              <input
-                type="password"
-                name="confirm"
-                required
-                minLength={12}
-                autoComplete="new-password"
-                placeholder="Repite la contraseña"
-                className={input}
-              />
-              <button className={button}>Guardar contraseña</button>
+              <select
+                name="status"
+                defaultValue={params.status || "all"}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="pending">Pendientes</option>
+                <option value="approved">Aprobados</option>
+                <option value="rejected">Observados</option>
+              </select>
+              <button className={button}>Buscar</button>
             </form>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[620px] text-left text-sm">
+                <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="py-3">Participante</th>
+                    <th>Movimiento</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentItems.map((p) => (
+                    <tr key={p.id} className="border-b border-slate-100">
+                      <td className="py-4">
+                        <b>{p.name}</b>
+                        <div className="text-xs text-slate-500">{p.email}</div>
+                      </td>
+                      <td>{p.kind}</td>
+                      <td className="font-bold">S/ {p.amount}</td>
+                      <td>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${p.status === "approved" ? "bg-emerald-100 text-emerald-800" : p.status === "rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}`}
+                        >
+                          {labels[p.status]}
+                        </span>
+                      </td>
+                      <td>
+                        <Link
+                          href={`${detailHref(p.registrationId)}${p.id.startsWith("initial-") ? "" : `#payment-${p.id}`}`}
+                          className="font-bold text-[#008b96]"
+                        >
+                          Revisar →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!paymentItems.length && (
+                <p className="py-12 text-center text-sm text-slate-500">
+                  No hay movimientos que coincidan con la búsqueda.
+                </p>
+              )}
+            </div>
           </section>
-          {master && (
+        )}
+        {view === "account" && (
+          <div className="max-w-2xl">
+            {" "}
             <section className="rounded-3xl border border-[#dce5df] bg-white p-6">
-              <h2 className="text-xl font-black">Equipo administrador</h2>
+              <h2 className="text-xl font-black">Mi contraseña</h2>
               <p className="mt-2 text-sm text-slate-500">
-                Crea accesos para el equipo. La cuenta maestra administra los
-                permisos.
+                Crea o cambia tu contraseña para acceder con correo y
+                contraseña.
               </p>
-              <form action={createAdmin} className="mt-4 space-y-3">
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="Correo del administrador"
-                  className={input}
-                />
+              <form action={setPassword} className="mt-4 space-y-3">
                 <input
                   type="password"
                   name="password"
                   required
                   minLength={12}
                   autoComplete="new-password"
-                  placeholder="Contraseña inicial (mínimo 12 caracteres)"
+                  placeholder="Nueva contraseña (mínimo 12 caracteres)"
                   className={input}
                 />
-                <button className={button}>Crear administrador</button>
+                <input
+                  type="password"
+                  name="confirm"
+                  required
+                  minLength={12}
+                  autoComplete="new-password"
+                  placeholder="Repite la contraseña"
+                  className={input}
+                />
+                <button className={button}>Guardar contraseña</button>
               </form>
-              <details className="mt-5 text-sm">
-                <summary className="cursor-pointer font-bold text-[#008e98]">
-                  Dar acceso a una cuenta existente
-                </summary>
-                <form
-                  action={grantExistingAdmin}
-                  className="mt-3 flex flex-wrap gap-2"
-                >
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    placeholder="Correo de la cuenta existente"
-                    className={`${input} min-w-[180px] flex-1`}
-                  />
-                  <button className={button}>Dar acceso</button>
-                </form>
-              </details>
+            </section>
+          </div>
+        )}
+        {view === "team" && master && (
+          <div className="max-w-3xl">
+            {" "}
+            <section className="rounded-3xl border border-[#dce5df] bg-white p-6">
+              <h2 className="text-xl font-black">Equipo administrador</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Crea accesos para el equipo. La cuenta maestra administra los
+                permisos.
+              </p>
+              <Link
+                href="/admin?view=team&dialog=create"
+                className={`${button} mt-5`}
+              >
+                + Agregar administrador
+              </Link>
               <div className="mt-5 space-y-2">
                 {admins.map((a) => (
                   <div
@@ -873,8 +1034,331 @@ export default async function AdminPage({
                 ))}
               </div>
             </section>
+          </div>
+        )}
+        {view === "team" &&
+          master &&
+          params.dialog === "create" &&
+          !selected && (
+            <AdminDialog
+              closeHref="/admin?view=team"
+              title="Agregar administrador"
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-[#009aa3]">
+                    Equipo Radical
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black">
+                    Agregar administrador
+                  </h2>
+                </div>
+                <Link
+                  href="/admin?view=team"
+                  className="text-sm font-bold text-slate-500"
+                >
+                  Cerrar ×
+                </Link>
+              </div>
+              <p className="text-sm leading-6 text-slate-500">
+                Crea una cuenta nueva o concede acceso a una cuenta existente.
+              </p>{" "}
+              <form action={createAdmin} className="mt-4 space-y-3">
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder="Correo del administrador"
+                  className={input}
+                />
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  minLength={12}
+                  autoComplete="new-password"
+                  placeholder="Contraseña inicial (mínimo 12 caracteres)"
+                  className={input}
+                />
+                <button className={button}>Crear administrador</button>
+              </form>
+              <details className="mt-5 text-sm">
+                <summary className="cursor-pointer font-bold text-[#008e98]">
+                  Dar acceso a una cuenta existente
+                </summary>
+                <form
+                  action={grantExistingAdmin}
+                  className="mt-3 flex flex-wrap gap-2"
+                >
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="Correo de la cuenta existente"
+                    className={`${input} min-w-[180px] flex-1`}
+                  />
+                  <button className={button}>Dar acceso</button>
+                </form>
+              </details>
+            </AdminDialog>
           )}
-        </div>
+        {selected && (
+          <AdminDialog closeHref={closeHref} title="Detalle de inscripción">
+            {(params.error || params.success) && (
+              <p
+                role="status"
+                className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold ${params.error ? "bg-red-100 text-red-800" : "bg-teal-100 text-teal-900"}`}
+              >
+                {params.error
+                  ? errors[params.error] || "Ocurrió un error."
+                  : successes[params.success || ""]}
+              </p>
+            )}{" "}
+            <>
+              <div className="flex justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-[#009aa3]">
+                    Detalle de inscripción
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black">
+                    {selected.first_name} {selected.last_name}
+                  </h2>
+                </div>
+                <Link
+                  href={closeHref}
+                  className="text-sm font-bold text-slate-500"
+                >
+                  Cerrar ×
+                </Link>
+              </div>
+              <dl className="mt-5 space-y-3 text-sm">
+                {[
+                  ["Documento", selected.document],
+                  ["Nacimiento", selected.birth_date],
+                  ["Género", selected.gender],
+                  ["WhatsApp", selected.phone],
+                  ["Correo", selected.email],
+                  [
+                    "Emergencia",
+                    `${selected.emergency_name} · ${selected.emergency_relation} · ${selected.emergency_phone}`,
+                  ],
+                  ["Plan", `${selected.plan} · S/ ${selected.price}`],
+                  [
+                    "Abono declarado",
+                    `S/ ${selectedPaid} · saldo S/ ${Math.max(0, selected.price - selectedPaid)}`,
+                  ],
+                  ["Estado", labels[selected.status]],
+                  [
+                    "Fecha",
+                    new Date(selected.created_at).toLocaleDateString("es-PE", {
+                      dateStyle: "long",
+                      timeZone: "America/Lima",
+                    }),
+                  ],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex justify-between gap-4 border-b border-slate-100 pb-2"
+                  >
+                    <dt className="text-slate-500">{k}</dt>
+                    <dd className="text-right font-semibold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <h3 className="mt-6 font-bold">Comprobante</h3>
+              {originalReceipt?.signedUrl && (
+                <a
+                  className="mt-2 block text-sm font-bold text-[#008b96]"
+                  href={originalReceipt.signedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver comprobante original ↗
+                </a>
+              )}
+              {receipt?.signedUrl ? (
+                <a
+                  href={receipt.signedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 block"
+                >
+                  <Image
+                    src={receipt.signedUrl}
+                    alt="Comprobante de pago enviado"
+                    width={600}
+                    height={500}
+                    unoptimized
+                    className="max-h-72 w-full rounded-xl border border-slate-200 object-contain"
+                  />
+                  <span className="mt-2 block text-sm font-bold text-[#008b96]">
+                    Abrir imagen ↗
+                  </span>
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-red-700">
+                  No se pudo cargar el comprobante.
+                </p>
+              )}
+              {selectedPayments.length > 0 && (
+                <section className="mt-6 space-y-3">
+                  <h3 className="font-black">Otros comprobantes</h3>
+                  {selectedPayments.map((p) => (
+                    <div
+                      key={p.id}
+                      id={`payment-${p.id}`}
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm"
+                    >
+                      <div className="flex justify-between gap-2">
+                        <strong>
+                          {p.kind === "replacement"
+                            ? "Reemplazo"
+                            : "Abono adicional"}{" "}
+                          · S/ {p.amount}
+                        </strong>
+                        <span>{labels[p.status]}</span>
+                      </div>
+                      {p.signedUrl && (
+                        <a
+                          href={p.signedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 block font-bold text-[#008b96]"
+                        >
+                          Ver comprobante ↗
+                        </a>
+                      )}
+                      {p.review_note && (
+                        <p className="mt-2 text-slate-600">{p.review_note}</p>
+                      )}
+                      <form action={reviewPayment} className="mt-3 space-y-2">
+                        <input type="hidden" name="view" value={view} />
+                        <input
+                          type="hidden"
+                          name="filter_q"
+                          value={params.q || ""}
+                        />
+                        <input
+                          type="hidden"
+                          name="filter_status"
+                          value={params.status || ""}
+                        />
+                        <input type="hidden" name="payment_id" value={p.id} />
+                        <input
+                          type="hidden"
+                          name="registration_id"
+                          value={selected.id}
+                        />
+                        <input
+                          name="note"
+                          defaultValue={p.review_note || ""}
+                          maxLength={1000}
+                          placeholder="Nota opcional"
+                          className={input}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            name="status"
+                            value="approved"
+                            className="rounded-lg bg-[#008e87] px-3 py-2 font-bold text-white"
+                          >
+                            Aprobar
+                          </button>
+                          <button
+                            name="status"
+                            value="rejected"
+                            className="rounded-lg bg-red-100 px-3 py-2 font-bold text-red-800"
+                          >
+                            Observar
+                          </button>
+                          <button
+                            name="status"
+                            value="pending"
+                            className="rounded-lg bg-slate-200 px-3 py-2 font-bold"
+                          >
+                            Pendiente
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  ))}
+                </section>
+              )}
+              {history && history.length > 0 && (
+                <details className="mt-5 rounded-xl bg-slate-50 p-4 text-sm">
+                  <summary className="cursor-pointer font-bold">
+                    Historial de revisiones
+                  </summary>
+                  <ul className="mt-3 space-y-3">
+                    {history.map((event) => (
+                      <li
+                        key={event.id}
+                        className="border-t border-slate-200 pt-2"
+                      >
+                        <strong>
+                          {event.payment_id ? "Abono" : "Inscripción"}:{" "}
+                          {labels[event.new_status] || event.new_status}
+                        </strong>
+                        <p className="text-xs text-slate-500">
+                          {new Date(event.created_at).toLocaleString("es-PE", {
+                            timeZone: "America/Lima",
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
+                        </p>
+                        {event.note && <p className="mt-1">{event.note}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <form action={review} className="mt-6 space-y-3">
+                <input type="hidden" name="view" value={view} />
+                <input type="hidden" name="filter_q" value={params.q || ""} />
+                <input
+                  type="hidden"
+                  name="filter_status"
+                  value={params.status || ""}
+                />
+                <input type="hidden" name="id" value={selected.id} />
+                <label className="block text-sm font-bold">
+                  Nota de revisión
+                  <textarea
+                    name="note"
+                    defaultValue={selected.review_note || ""}
+                    maxLength={1000}
+                    className={`${input} mt-2`}
+                    rows={2}
+                    placeholder="Opcional"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    name="status"
+                    value="approved"
+                    className="rounded-xl bg-[#008e87] px-4 py-3 text-sm font-bold text-white"
+                  >
+                    Aprobar
+                  </button>
+                  <button
+                    name="status"
+                    value="rejected"
+                    className="rounded-xl bg-red-100 px-4 py-3 text-sm font-bold text-red-800"
+                  >
+                    Observar
+                  </button>
+                  <button
+                    name="status"
+                    value="pending"
+                    className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold"
+                  >
+                    Pendiente
+                  </button>
+                </div>
+              </form>
+            </>
+          </AdminDialog>
+        )}
       </div>
     </main>
   );
