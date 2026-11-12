@@ -6,6 +6,8 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, Copy, Download, FileText, IdCard, Mail, Ticket, Trash2, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { createClient } from "@/utils/supabase/client";
+import { AdditionalPayments } from "./AdditionalPayments";
 import "./RegistrationFlow.css";
 
 type PlanId = "preventa" | "regular";
@@ -50,12 +52,18 @@ async function loadReceiptLocally(userId: string) {
   });
 }
 
+function clearLocalDraft(userId: string) {
+  try { window.localStorage.removeItem(`radical-registration-draft:v1:${userId}`); } catch { /* Storage may be unavailable. */ }
+  void storeReceiptLocally(userId, null).catch(() => {});
+}
+
 const plans = {
   preventa: { name: "Preventa", price: 200, date: "Hasta el 15 de diciembre", brush: "/assets/elements/brush-planes-amarillo.png", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
   regular: { name: "Regular", price: 250, date: "Desde el 16 de diciembre", brush: "/assets/elements/brush-planes-turquesa.png", desktopBrush: "/assets/elements/brush-planes-turquesa.png" },
 } as const;
 const benefits = ["Hospedaje", "Alimentación completa", "Programación y materiales", "Amistad del evento", "Acceso a todas las actividades"];
-const yapePhoneNumber = "999123456";
+const yapePhoneNumber = process.env.NEXT_PUBLIC_YAPE_PHONE || "";
+const yapeHolder = process.env.NEXT_PUBLIC_YAPE_HOLDER || "";
 function FieldValidationMessage({ id, message }: { id: string; message?: string }) {
   return message ? <span id={id} className="registration-field-error" role="alert">{message}</span> : null;
 }
@@ -70,10 +78,10 @@ const steps = [
   { label: "Contacto", icon: Phone },
   { label: "Abono", icon: Wallet },
   { label: "Revisión", icon: FileText },
-  { label: "Mi entrada", icon: CheckCircle2 },
+  { label: "Mi inscripción", icon: CheckCircle2 },
 ] as const;
 const titles = ["ELIGE TU PLAN\nDE INSCRIPCIÓN", "INFORMACIÓN\nPERSONAL", "CONTACTO Y\nEMERGENCIA", "ELIGE TU ABONO", "REVISA TUS DATOS", "TU ESPACIO RADICAL"];
-const subtitles = ["Asegura tu cupo y vive el siguiente nivel en Radical 2.0.", "Datos del campista", "Cómo comunicarnos contigo y a quién llamar en una emergencia.", "Separa tu cupo con un abono desde S/50 o paga el plan completo.", "Confirma que todo esté listo antes de enviar tu inscripción.", "Así se verá el estado de tu inscripción y tu entrada digital."];
+const subtitles = ["Asegura tu cupo y vive el siguiente nivel en Radical 2.0.", "Datos del campista", "Cómo comunicarnos contigo y a quién llamar en una emergencia.", "Separa tu cupo con un abono desde S/50 o paga el plan completo.", "Confirma que todo esté listo antes de enviar tu inscripción.", "Consulta el estado de tu inscripción y tus abonos."];
 const previousCampPhotoSources = [
   "/assets/previous-camp/01-lugar-letrero-carretera-campel.jpg",
   "/assets/previous-camp/02-fogata-noche-tarjeta-2timoteo.jpg",
@@ -202,6 +210,12 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const receiptSelectionRef = useRef(0);
   const [consent, setConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
+  const [submitError, setSubmitError] = useState("");
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
+  const [reviewNote, setReviewNote] = useState<string | null>(null);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [validationStep, setValidationStep] = useState<number | null>(null);
   const [birthDateInvalid, setBirthDateInvalid] = useState(false);
   const selected = plan ? plans[plan] : null;
@@ -229,11 +243,25 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
     let cancelled = false;
     async function restoreDraft() {
       try {
+        const { data: existing } = await createClient().from("registrations").select("id,status,review_note,first_name,last_name,document,birth_date,gender,phone,emergency_name,emergency_relation,emergency_phone,plan,payment_type,amount").eq("user_id", userId).maybeSingle();
+        if (existing && !cancelled) {
+          setRegistrationId(existing.id);
+          setParticipant({ firstName: existing.first_name, lastName: existing.last_name, document: existing.document, birthDate: existing.birth_date, gender: existing.gender });
+          setContact({ phone: existing.phone, email: userEmail, emergencyName: existing.emergency_name, emergencyRelation: existing.emergency_relation, emergencyPhone: existing.emergency_phone });
+          setPlan(existing.plan as PlanId);
+          setPayment(existing.payment_type as "reserve" | "full");
+          setReserveAmount(existing.amount);
+          setRegistrationStatus(existing.status);
+          setReviewNote(existing.review_note);
+          setStep(5);
+          clearLocalDraft(userId);
+          return;
+        }
         const saved = window.localStorage.getItem(`radical-registration-draft:v1:${userId}`);
         if (saved) {
           const draft = JSON.parse(saved) as Partial<RegistrationDraft>;
           if (draft.version === 1) {
-            if (Number.isInteger(draft.step) && (draft.step ?? -1) >= 0 && (draft.step ?? 6) <= 5) setStep(draft.step!);
+            if (Number.isInteger(draft.step) && (draft.step ?? -1) >= 0 && (draft.step ?? 6) <= 5) setStep(Math.min(draft.step!, 4));
             if (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular") setPlan(draft.plan);
             if (draft.participant && Object.values(draft.participant).every((value) => typeof value === "string")) setParticipant(draft.participant);
             if (draft.contact && Object.values(draft.contact).every((value) => typeof value === "string")) setContact({ ...draft.contact, email: userEmail });
@@ -263,14 +291,14 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
   }, [userEmail, userId]);
 
   useEffect(() => {
-    if (!draftReady) return;
+    if (!draftReady || registrationStatus) return;
     const draft: RegistrationDraft = { version: 1, step, plan, participant, contact: { ...contact, email: userEmail }, payment, reserveAmount, receiptName, consent };
     try {
       window.localStorage.setItem(`radical-registration-draft:v1:${userId}`, JSON.stringify(draft));
     } catch {
       // El formulario conserva su estado aunque el navegador no permita guardar más datos.
     }
-  }, [consent, contact, draftReady, participant, payment, plan, receiptName, reserveAmount, step, userEmail, userId]);
+  }, [consent, contact, draftReady, participant, payment, plan, receiptName, registrationStatus, reserveAmount, step, userEmail, userId]);
 
   useEffect(() => {
     if (!draftReady) return;
@@ -358,7 +386,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
     return true;
   }
 
-  function next(event?: FormEvent) {
+  async function next(event?: FormEvent) {
     event?.preventDefault();
     if (!draftReady) return;
     if (step === 0 && !plan) {
@@ -383,6 +411,53 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
     }
     if (step === 4 && !consent) {
       setValidationStep(step);
+      return;
+    }
+    if (step === 4) {
+      const invalidDate = Boolean(participant.birthDate) && Date.parse(participant.birthDate) >= Date.now();
+      if (!plan || !selected) { setStep(0); setValidationStep(0); return; }
+      if (!dataComplete || invalidDate) { setBirthDateInvalid(invalidDate); setStep(1); setValidationStep(1); return; }
+      if (!contactComplete) { setStep(2); setValidationStep(2); return; }
+      if (!receiptBlobRef.current || !receiptPreviewUrl || receiptError || (payment === "reserve" && (!Number.isInteger(reserveAmount) || reserveAmount < 50 || reserveAmount > selected.price))) {
+        setStep(3); setPaymentError("Revisa el monto y vuelve a subir tu comprobante para continuar."); return;
+      }
+      if (submitLock.current || !plan || !selected || !receiptBlobRef.current) return;
+      submitLock.current = true;
+      setSubmitting(true);
+      setSubmitError("");
+      try {
+      const supabase = createClient();
+      const receipt = receiptBlobRef.current;
+      const suffix = receipt.type === "image/png" ? "png" : receipt.type === "image/webp" ? "webp" : "jpg";
+      const path = `${userId}/${crypto.randomUUID()}.${suffix}`;
+      const { error: uploadError } = await supabase.storage.from("registration-receipts").upload(path, receipt, { contentType: receipt.type });
+      if (uploadError) {
+        setSubmitError("No pudimos subir tu comprobante. Comprueba tu conexión e inténtalo otra vez.");
+        return;
+      }
+      const { data: created, error } = await supabase.from("registrations").insert({ user_id: userId, first_name: participant.firstName.trim(), last_name: participant.lastName.trim(), document: participant.document.replace(/\s/g, ""), birth_date: participant.birthDate, gender: participant.gender, phone: contact.phone.trim(), email: userEmail, emergency_name: contact.emergencyName.trim(), emergency_relation: contact.emergencyRelation, emergency_phone: contact.emergencyPhone.trim(), plan, price: selected.price, amount, payment_type: payment, receipt_path: path }).select("id").single();
+      if (error) {
+        await supabase.storage.from("registration-receipts").remove([path]);
+        const { data: existing } = await supabase.from("registrations").select("id,status").eq("user_id", userId).maybeSingle();
+        if (!existing) {
+          setSubmitError("No pudimos enviar tu inscripción. Tus datos siguen guardados en este dispositivo; inténtalo de nuevo.");
+          return;
+        }
+        setRegistrationStatus(existing.status);
+        setRegistrationId(existing.id);
+      } else {
+        setRegistrationStatus("pending");
+        setRegistrationId(created.id);
+      }
+      clearLocalDraft(userId);
+      setStep(5);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        setSubmitError("No pudimos conectar con el servidor. Tus datos siguen guardados en este dispositivo; inténtalo de nuevo.");
+      } finally {
+        submitLock.current = false;
+        setSubmitting(false);
+      }
       return;
     }
     if (!lockNavigation(1550)) return;
@@ -489,7 +564,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
               </form>}
 
               {step === 3 && <div className="registration-payment-composition">
-                <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Yape</strong><p>Escanea el QR o usa el número de celular.</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Yape para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details"><strong>John Doe</strong><div className="registration-yape-number"><span>999 123 456</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div><a href="/assets/registration/payment-qr.png" download="qr-yape-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
+                <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Yape</strong><p>{yapePhoneNumber ? "Escanea el QR o usa el número de celular." : "Escanea el QR para realizar tu pago."}</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Yape para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details">{yapeHolder && <strong>{yapeHolder}</strong>}{yapePhoneNumber && <div className="registration-yape-number"><span>{yapePhoneNumber}</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div>}<a href="/assets/registration/payment-qr.png" download="qr-yape-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
                 <div className="registration-payment">
                   <div className="registration-payment-options">
                     <p className="registration-payment-step-label"><span>1</span> Elige cómo pagar</p>
@@ -513,20 +588,23 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
                 <div className="registration-review-row"><span>Plan</span><strong>{selected?.name} · S/{selected?.price}</strong></div>
                 <div className="registration-review-row"><span>Primer abono</span><strong>S/{amount}</strong></div>
                 <div className="registration-review-row"><span>Saldo posterior</span><strong>S/{remaining}</strong></div>
-                <label className={`registration-consent ${showStepErrors && !consent ? "registration-field-invalid" : ""}`}><input type="checkbox" aria-invalid={showStepErrors && !consent ? true : undefined} aria-describedby={showStepErrors && !consent ? "consent-error" : undefined} checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>Revisé mis datos y entiendo que esta es una vista previa; todavía no se ha enviado una inscripción ni un pago.</span>{showStepErrors && !consent && <FieldValidationMessage id="consent-error" message="Confirma que revisaste la información." />}</label>
+                <label className={`registration-consent ${showStepErrors && !consent ? "registration-field-invalid" : ""}`}><input type="checkbox" aria-invalid={showStepErrors && !consent ? true : undefined} aria-describedby={showStepErrors && !consent ? "consent-error" : undefined} checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>Revisé mis datos y autorizo su uso para gestionar mi inscripción.</span>{showStepErrors && !consent && <FieldValidationMessage id="consent-error" message="Confirma que revisaste la información." />}</label>
+                {submitError && <p className="registration-error" role="alert">{submitError}</p>}
               </div>}
 
               {step === 5 && <div className="registration-ticket-preview">
                 <div className="registration-ticket-icon"><Ticket size={38} /></div>
-                <span className="registration-preview-tag">VISTA PREVIA · SIN INSCRIPCIÓN ACTIVA</span>
-                <h2>Tu campamento, en un solo lugar</h2>
-                <p>Cuando el sistema esté conectado, aquí aparecerán el estado de tus abonos, la revisión de tu comprobante y tu entrada con QR una vez aprobada.</p>
-                <div className="registration-ticket-status"><Clock3 size={19} /><span>Entrada digital disponible después de la aprobación</span></div>
+                <span className="registration-preview-tag">INSCRIPCIÓN ENVIADA</span>
+                <h2>{registrationStatus === "approved" ? "¡Tu inscripción fue aprobada!" : registrationStatus === "rejected" ? "Tu comprobante necesita revisión" : "Estamos revisando tu inscripción"}</h2>
+                <p>{registrationStatus === "rejected" ? "Comunícate con el equipo para revisar tu comprobante." : "El equipo revisará tu comprobante y actualizará el estado de tu inscripción."}</p>
+                {registrationStatus === "rejected" && reviewNote && <p>Nota del equipo: {reviewNote}</p>}
+                <div className="registration-ticket-status"><Clock3 size={19} /><span>{registrationStatus === "approved" ? "Pago aprobado" : registrationStatus === "rejected" ? "Comprobante observado" : "Pendiente de revisión"}</span></div>
+                {registrationId && registrationStatus && selected && <AdditionalPayments userId={userId} registrationId={registrationId} registrationStatus={registrationStatus} price={selected.price} initialAmount={amount} />}
               </div>}
 
               <div className="registration-actions">
-                {step > 0 && <button type="button" className="registration-back" onClick={back}><ArrowLeft size={18} /> Atrás</button>}
-                {step < 5 && <button type="button" className="registration-next" disabled={!draftReady} onClick={() => next()}><span>{step === 4 ? "Ver vista previa" : "Continuar"}</span><ArrowRight size={23} /></button>}
+                {step > 0 && step < 5 && <button type="button" className="registration-back" disabled={submitting} onClick={back}><ArrowLeft size={18} /> Atrás</button>}
+                {step < 5 && <button type="button" className="registration-next" disabled={!draftReady || submitting} onClick={() => void next()}><span>{submitting ? "Enviando…" : step === 4 ? "Enviar inscripción" : "Continuar"}</span><ArrowRight size={23} /></button>}
               </div>
             </section>
 

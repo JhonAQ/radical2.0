@@ -9,9 +9,10 @@ import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "Mi cuenta", robots: { index: false, follow: false } };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
   const supabase = createClient(await cookies());
   const [{ data: { user } }, params] = await Promise.all([supabase.auth.getUser(), searchParams]);
+  const next = params.next === "admin" ? "admin" : undefined;
   const avatarUrl = typeof user?.user_metadata?.avatar_url === "string"
     ? user.user_metadata.avatar_url
     : typeof user?.user_metadata?.picture === "string"
@@ -26,7 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <h1 id="login-title" className="font-[family-name:var(--font-blowbrush)] text-5xl leading-tight sm:text-6xl">{user ? "YA ESTÁS DENTRO" : "BIENVENIDO A RADICAL"}</h1>
       <p className="mb-8 mt-5 leading-relaxed text-[#49676c]">{user ? "Tu sesión está activa. Puedes continuar con tu inscripción." : "Entra con tu cuenta de Google para continuar tu experiencia en Radical 2.0."}</p>
       {params.error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-[#b42318]">{params.error === "logout" ? "No pudimos cerrar tu sesión. Inténtalo nuevamente." : "No se completó el acceso con Google. Puedes volver a intentarlo."}</p>}
-      {user ? <div className="space-y-4"><div className="flex items-center gap-4 rounded-xl bg-white/80 p-4">{avatarUrl ? <Image src={avatarUrl} alt="" width={56} height={56} unoptimized className="size-14 shrink-0 rounded-full object-cover ring-2 ring-[#ffc629]" /> : <span aria-hidden="true" className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#0b2d36] text-xl font-bold text-white">{(user.email?.[0] ?? "R").toUpperCase()}</span>}<p className="min-w-0 break-words text-sm font-semibold">{user.email}</p></div><Link href="/inscripcion" className="flex min-h-14 items-center justify-center rounded-xl bg-[#ffc629] px-5 py-3 font-bold">Continuar mi inscripción →</Link><form action={signOut}><button type="submit" className="min-h-12 w-full rounded-xl border border-[#0b2d36]/20 px-5 py-3 text-sm font-bold">Cerrar sesión</button></form></div> : <GoogleLoginButton />}
+      {user ? <div className="space-y-4"><div className="flex items-center gap-4 rounded-xl bg-white/80 p-4">{avatarUrl ? <Image src={avatarUrl} alt="" width={56} height={56} unoptimized className="size-14 shrink-0 rounded-full object-cover ring-2 ring-[#ffc629]" /> : <span aria-hidden="true" className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#0b2d36] text-xl font-bold text-white">{(user.email?.[0] ?? "R").toUpperCase()}</span>}<p className="min-w-0 break-words text-sm font-semibold">{user.email}</p></div><Link href={next === "admin" ? "/admin" : "/inscripcion"} className="flex min-h-14 items-center justify-center rounded-xl bg-[#ffc629] px-5 py-3 font-bold">{next === "admin" ? "Continuar al panel →" : "Continuar mi inscripción →"}</Link><form action={signOut}><button type="submit" className="min-h-12 w-full rounded-xl border border-[#0b2d36]/20 px-5 py-3 text-sm font-bold">Cerrar sesión</button></form></div> : <GoogleLoginButton next={next} />}
     </section>
     <footer className="relative px-6 py-6 text-center text-xs text-[#49676c]">Radical 2.0 · Viviendo Radikalmente</footer>
   </main>;
