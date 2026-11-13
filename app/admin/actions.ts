@@ -78,8 +78,11 @@ export async function requestPasswordReset(form: FormData) {
 }
 
 function reviewLocation(form: FormData, id: string, result: string) {
-  const view = form.get("view") === "payments" ? "payments" : "registrations";
-  const params = new URLSearchParams({ view, selected: id });
+  const isPayments = form.get("view") === "payments";
+  const params = new URLSearchParams();
+  if (!isPayments) {
+    params.set("selected", id);
+  }
   const query = String(form.get("filter_q") || "").slice(0, 100);
   const status = String(form.get("filter_status") || "");
   if (query) params.set("q", query);
@@ -87,7 +90,8 @@ function reviewLocation(form: FormData, id: string, result: string) {
     params.set("status", status);
   const [key, value] = result.split("=");
   params.set(key, value);
-  return `/admin?${params.toString()}`;
+  const base = isPayments ? "/admin/pagos" : "/admin/inscripciones";
+  return `${base}?${params.toString()}`;
 }
 
 export async function review(form: FormData) {
@@ -103,7 +107,7 @@ export async function review(form: FormData) {
     !/^[0-9a-f-]{36}$/i.test(id) ||
     !["approved", "rejected", "pending"].includes(status)
   )
-    redirect(`/admin?view=${view}&error=review`);
+    redirect(`/admin/inscripciones?error=review`);
   if (status === "rejected" && !note)
     redirect(reviewLocation(form, id, "error=note"));
   const { error } = await context.client.rpc("review_initial_registration", {
@@ -113,6 +117,8 @@ export async function review(form: FormData) {
   });
   if (error) redirect(reviewLocation(form, id, "error=review"));
   revalidatePath("/admin");
+  revalidatePath("/admin/inscripciones");
+  revalidatePath("/admin/pagos");
   redirect(reviewLocation(form, id, "success=review"));
 }
 
@@ -131,7 +137,7 @@ export async function reviewPayment(form: FormData) {
     !/^[0-9a-f-]{36}$/i.test(registrationId) ||
     !["approved", "rejected", "pending"].includes(status)
   )
-    redirect(`/admin?view=${view}&error=review`);
+    redirect(`/admin/inscripciones?error=review`);
   if (status === "rejected" && !note)
     redirect(reviewLocation(form, registrationId, "error=note"));
   const { error } = await context.client.rpc("review_registration_payment", {
@@ -140,6 +146,8 @@ export async function reviewPayment(form: FormData) {
     p_note: note || null,
   });
   revalidatePath("/admin");
+  revalidatePath("/admin/inscripciones");
+  revalidatePath("/admin/pagos");
   redirect(
     reviewLocation(
       form,
@@ -154,10 +162,10 @@ export async function setPassword(form: FormData) {
   if (!context) redirect("/admin?error=access");
   const password = String(form.get("password") || "");
   if (password.length < 12 || password !== String(form.get("confirm") || ""))
-    redirect("/admin?view=account&error=password");
+    redirect("/admin/cuenta?error=password");
   const { error } = await context.client.auth.updateUser({ password });
-  if (error) redirect("/admin?view=account&error=password");
-  redirect("/admin?view=account&success=password");
+  if (error) redirect("/admin/cuenta?error=password");
+  redirect("/admin/cuenta?success=password");
 }
 
 export async function createAdmin(form: FormData) {
@@ -168,24 +176,25 @@ export async function createAdmin(form: FormData) {
     .toLowerCase();
   const password = String(form.get("password") || "");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12)
-    redirect("/admin?view=team&error=admin_input");
+    redirect("/admin/equipo?error=admin_input");
   const service = serviceClient();
-  if (!service) redirect("/admin?view=team&error=configuration");
+  if (!service) redirect("/admin/equipo?error=configuration");
   const { data, error } = await service.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
   });
-  if (error || !data.user) redirect("/admin?view=team&error=admin_create");
+  if (error || !data.user) redirect("/admin/equipo?error=admin_create");
   const { error: membershipError } = await service
     .from("admin_users")
     .insert({ user_id: data.user.id, role: "admin" });
   if (membershipError) {
     await service.auth.admin.deleteUser(data.user.id);
-    redirect("/admin?view=team&error=admin_create");
+    redirect("/admin/equipo?error=admin_create");
   }
   revalidatePath("/admin");
-  redirect("/admin?view=team&success=admin");
+  revalidatePath("/admin/equipo");
+  redirect("/admin/equipo?success=admin");
 }
 
 export async function removeAdmin(form: FormData) {
@@ -195,15 +204,16 @@ export async function removeAdmin(form: FormData) {
   if (!/^[0-9a-f-]{36}$/i.test(id) || id === context.user.id)
     redirect("/admin?error=access");
   const service = serviceClient();
-  if (!service) redirect("/admin?view=team&error=configuration");
+  if (!service) redirect("/admin/equipo?error=configuration");
   const { error } = await service
     .from("admin_users")
     .delete()
     .eq("user_id", id)
     .eq("role", "admin");
-  if (error) redirect("/admin?view=team&error=admin_create");
+  if (error) redirect("/admin/equipo?error=admin_create");
   revalidatePath("/admin");
-  redirect("/admin?view=team&success=removed");
+  revalidatePath("/admin/equipo");
+  redirect("/admin/equipo?success=removed");
 }
 
 export async function resetAdminPassword(form: FormData) {
@@ -216,20 +226,21 @@ export async function resetAdminPassword(form: FormData) {
     password.length < 12 ||
     password !== String(form.get("confirm") || "")
   )
-    redirect("/admin?view=team&error=password");
+    redirect("/admin/equipo?error=password");
   const service = serviceClient();
-  if (!service) redirect("/admin?view=team&error=configuration");
+  if (!service) redirect("/admin/equipo?error=configuration");
   const { data: member, error: memberError } = await service
     .from("admin_users")
     .select("user_id")
     .eq("user_id", id)
     .maybeSingle();
   if (memberError || !member)
-    redirect("/admin?view=team&error=admin_not_found");
+    redirect("/admin/equipo?error=admin_not_found");
   const { error } = await service.auth.admin.updateUserById(id, { password });
-  if (error) redirect("/admin?view=team&error=password");
+  if (error) redirect("/admin/equipo?error=password");
   revalidatePath("/admin");
-  redirect("/admin?view=team&success=admin_password");
+  revalidatePath("/admin/equipo");
+  redirect("/admin/equipo?success=admin_password");
 }
 
 export async function grantExistingAdmin(form: FormData) {
@@ -239,9 +250,9 @@ export async function grantExistingAdmin(form: FormData) {
     .trim()
     .toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    redirect("/admin?view=team&error=admin_input");
+    redirect("/admin/equipo?error=admin_input");
   const service = serviceClient();
-  if (!service) redirect("/admin?view=team&error=configuration");
+  if (!service) redirect("/admin/equipo?error=configuration");
   let userId: string | undefined;
   let confirmed = false;
   for (let page = 1; ; page++) {
@@ -249,7 +260,7 @@ export async function grantExistingAdmin(form: FormData) {
       page,
       perPage: 1000,
     });
-    if (error) redirect("/admin?view=team&error=admin_create");
+    if (error) redirect("/admin/equipo?error=admin_create");
     const match = data.users.find(
       (user) => user.email?.toLowerCase() === email,
     );
@@ -257,12 +268,13 @@ export async function grantExistingAdmin(form: FormData) {
     confirmed = Boolean(match?.email_confirmed_at);
     if (userId || data.users.length < 1000) break;
   }
-  if (!userId) redirect("/admin?view=team&error=admin_not_found");
-  if (!confirmed) redirect("/admin?view=team&error=admin_unverified");
+  if (!userId) redirect("/admin/equipo?error=admin_not_found");
+  if (!confirmed) redirect("/admin/equipo?error=admin_unverified");
   const { error } = await service
     .from("admin_users")
     .insert({ user_id: userId, role: "admin" });
-  if (error) redirect("/admin?view=team&error=admin_create");
+  if (error) redirect("/admin/equipo?error=admin_create");
   revalidatePath("/admin");
-  redirect("/admin?view=team&success=admin_existing");
+  revalidatePath("/admin/equipo");
+  redirect("/admin/equipo?success=admin_existing");
 }
