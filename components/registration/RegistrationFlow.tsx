@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, Copy, Download, FileText, IdCard, Mail, Ticket, Trash2, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { createClient } from "@/utils/supabase/client";
-import { AdditionalPayments } from "./AdditionalPayments";
+
 import "./RegistrationFlow.css";
 
 type PlanId = "preventa" | "regular";
@@ -599,7 +599,8 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
                 <p>{registrationStatus === "rejected" ? "Comunícate con el equipo para revisar tu comprobante." : "El equipo revisará tu comprobante y actualizará el estado de tu inscripción."}</p>
                 {registrationStatus === "rejected" && reviewNote && <p>Nota del equipo: {reviewNote}</p>}
                 <div className="registration-ticket-status"><Clock3 size={19} /><span>{registrationStatus === "approved" ? "Pago aprobado" : registrationStatus === "rejected" ? "Comprobante observado" : "Pendiente de revisión"}</span></div>
-                {registrationId && registrationStatus && selected && <AdditionalPayments userId={userId} registrationId={registrationId} registrationStatus={registrationStatus} price={selected.price} initialAmount={amount} />}
+                <Link href="/mi-inscripcion" className="registration-mi-espacio-link">Ir a mi espacio<ArrowRight size={18} /></Link>
+                <p className="registration-mi-espacio-hint">Desde ahí podrás gestionar tus abonos y ver tu historial.</p>
               </div>}
 
               <div className="registration-actions">

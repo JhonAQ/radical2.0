@@ -996,3 +996,8 @@
   .registration-payment-composition>.registration-payment-method{order:-1;width:100%;margin:0}
   .registration-payment-composition>.registration-payment{width:100%;margin:0}
 }
+
+/* "Ir a mi espacio" CTA in the registration confirmation step. */
+.registration-mi-espacio-link{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:14px 28px;border-radius:14px;background:linear-gradient(100deg,#ff6b00,#ffb900);color:#fff;font-size:15px;font-weight:900;text-decoration:none;box-shadow:0 8px 19px #ff7e0040;transition:transform .2s,box-shadow .2s}
+.registration-mi-espacio-link:hover{transform:translateY(-2px);box-shadow:0 12px 22px #ff7e0050}
+.registration-mi-espacio-hint{margin-top:12px;font-size:12px;color:#5c7374}

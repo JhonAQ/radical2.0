@@ -1,0 +1,715 @@
+/* ═══════════════════════════════════════════════════════════
+   Mi Inscripción — Design system
+   Mobile-first base → desktop overrides at min-width:851px
+   Paleta: #0b2d36 (dark) · #f8f4e9 (cream) · #ff6b00 (orange)
+            #00aeb8 (teal)  · #ffc629 (yellow) · #008d98 (green-teal)
+═══════════════════════════════════════════════════════════ */
+
+/* ── Page & Shell ─────────────────────────────────────────── */
+.mi-inscripcion-page {
+  min-height: 100svh;
+  background: #f8f4e9;
+  color: #0b2d36;
+  background-image:
+    radial-gradient(circle at 92% 12%, rgba(255,198,41,.15), transparent 25%),
+    radial-gradient(circle at 4%  88%, rgba(0,199,199,.10), transparent 28%);
+}
+.mi-inscripcion-shell {
+  max-width: 820px;
+  margin: auto;
+  min-height: 100svh;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.mi-inscripcion-header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(11,45,54,.12);
+  background: rgba(255,255,255,.65);
+}
+.mi-inscripcion-header-logo { width: 100px; flex: none; }
+.mi-inscripcion-header-logo img { width: 100%; }
+.mi-inscripcion-header-nav { display: flex; align-items: center; gap: 16px; }
+.mi-inscripcion-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b2d36;
+  text-decoration: none;
+}
+.mi-inscripcion-header-link:hover { color: #dc5a00; }
+
+/* ── Content ──────────────────────────────────────────────── */
+.mi-inscripcion-content { padding: 28px 20px 48px; }
+
+/* ── Heading ──────────────────────────────────────────────── */
+.mi-inscripcion-heading {
+  text-align: center;
+  margin-bottom: 22px;
+  animation: mi-inscripcion-enter .35s ease-out;
+}
+.mi-inscripcion-heading h1 {
+  font: 400 clamp(32px,7vw,52px)/.98 var(--font-blowbrush);
+  letter-spacing: .01em;
+}
+.mi-inscripcion-heading p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #52666c;
+  margin-top: 9px;
+  line-height: 1.5;
+}
+.mi-inscripcion-eyebrow {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  color: #d25500;
+  margin-bottom: 8px;
+}
+
+/* ── Status banner ────────────────────────────────────────── */
+.mi-inscripcion-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+  animation: mi-inscripcion-enter .35s ease-out;
+}
+.mi-inscripcion-status svg { flex: none; margin-top: 1px; }
+.mi-inscripcion-status--pending  { background: #fff7e0; color: #92610a; }
+.mi-inscripcion-status--approved { background: #e2f7f2; color: #0a6b5e; }
+.mi-inscripcion-status--rejected { background: #fff0ed; color: #a83820; }
+.mi-inscripcion-status-note {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: .85;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.mi-inscripcion-card {
+  background: #fffefa;
+  border: 1px solid #e5e7e0;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 8px 20px #1d3f3f0a;
+  animation: mi-inscripcion-enter .35s ease-out;
+  margin-bottom: 18px;
+}
+.mi-inscripcion-card-title {
+  font: 400 20px var(--font-bebas);
+  letter-spacing: .04em;
+  color: #0b2d36;
+  margin: 0 0 12px;
+}
+.mi-inscripcion-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0ec;
+  font-size: 13px;
+}
+.mi-inscripcion-card-row:last-child { border-bottom: 0; }
+.mi-inscripcion-card-row span    { color: #607677; }
+.mi-inscripcion-card-row strong  { text-align: right; color: #0b2d36; }
+
+/* ── Payment progress ─────────────────────────────────────── */
+.mi-inscripcion-progress {
+  background: #fffefa;
+  border: 1px solid #e5e7e0;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 8px 20px #1d3f3f0a;
+  animation: mi-inscripcion-enter .35s ease-out;
+  margin-bottom: 18px;
+}
+.mi-inscripcion-progress-title {
+  font: 400 20px var(--font-bebas);
+  letter-spacing: .04em;
+  margin: 0 0 14px;
+}
+.mi-inscripcion-progress-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#e4ebe8,#d7deda);
+  box-shadow: inset 0 1px 2px rgba(11,45,54,.1);
+  overflow: hidden;
+}
+.mi-inscripcion-progress-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#007f91,#0caea9 40%,#28c9bc 60%,#72d6bd);
+  box-shadow: 0 0 8px rgba(80,235,226,.5);
+}
+.mi-inscripcion-progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.mi-inscripcion-progress-label span:first-child { color: #008d98; }
+.mi-inscripcion-progress-label span:last-child   { color: #607677; }
+.mi-inscripcion-progress-stats {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0ec;
+}
+.mi-inscripcion-progress-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.mi-inscripcion-progress-stat span   { color: #607677; }
+.mi-inscripcion-progress-stat strong { color: #0b2d36; }
+.mi-inscripcion-progress-complete {
+  text-align: center;
+  margin-top: 12px;
+  font: 400 18px var(--font-bebas);
+  color: #008d98;
+  letter-spacing: .04em;
+}
+
+/* ── Actions ──────────────────────────────────────────────── */
+.mi-inscripcion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 22px;
+  animation: mi-inscripcion-enter .35s ease-out;
+}
+.mi-inscripcion-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(100deg,#ff6b00,#ffb900);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 0 26px;
+  box-shadow: 0 8px 19px #ff7e0040;
+  transition: transform .2s, box-shadow .2s;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+.mi-inscripcion-btn-primary:hover  { transform: translateY(-2px); box-shadow: 0 12px 22px #ff7e0050; }
+.mi-inscripcion-btn-primary:active { transform: translateY(0); }
+.mi-inscripcion-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 12px;
+  background: #fffefa;
+  border: 1.5px solid #cbd6d1;
+  color: #0b2d36;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 20px;
+  transition: border-color .2s, color .2s;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mi-inscripcion-btn-secondary:hover { border-color: #00aeb8; color: #008d98; }
+
+/* ── Payments list ────────────────────────────────────────── */
+.mi-inscripcion-payments { animation: mi-inscripcion-enter .35s ease-out; }
+.mi-inscripcion-payments-title {
+  font: 400 20px var(--font-bebas);
+  letter-spacing: .04em;
+  margin: 0 0 12px;
+}
+.mi-inscripcion-payment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fffefa;
+  border: 1px solid #e5e7e0;
+  box-shadow: 0 4px 12px #1d3f3f06;
+  margin-bottom: 8px;
+}
+.mi-inscripcion-payment-item:last-child { margin-bottom: 0; }
+.mi-inscripcion-payment-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.mi-inscripcion-payment-icon--pending  { background: #fff7e0; color: #b97c00; }
+.mi-inscripcion-payment-icon--approved { background: #e2f7f2; color: #008e86; }
+.mi-inscripcion-payment-icon--rejected { background: #fff0ed; color: #d64536; }
+.mi-inscripcion-payment-info { flex: 1; min-width: 0; }
+.mi-inscripcion-payment-info strong { display: block; font-size: 13px; font-weight: 800; color: #0b2d36; }
+.mi-inscripcion-payment-info small   { font-size: 11px; color: #607677; }
+.mi-inscripcion-payment-amount { font: 400 22px var(--font-bebas); color: #0b2d36; flex: none; }
+.mi-inscripcion-badge {
+  display: inline-block;
+  border-radius: 20px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.mi-inscripcion-badge--pending  { background: #fff7e0; color: #92610a; }
+.mi-inscripcion-badge--approved { background: #e2f7f2; color: #0a6b5e; }
+.mi-inscripcion-badge--rejected { background: #fff0ed; color: #a83820; }
+
+/* ── Nuevo abono form ─────────────────────────────────────── */
+.mi-inscripcion-abono-layout { display: grid; gap: 20px; animation: mi-inscripcion-enter .35s ease-out; }
+
+/* QR payment card (dark teal) */
+.mi-inscripcion-payment-method {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border-radius: 20px;
+  padding: 22px;
+  background: linear-gradient(155deg,#0b3540,#075b62);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(11,45,54,.12);
+  align-content: start;
+}
+.mi-inscripcion-payment-method-title { font: 400 20px var(--font-bebas); letter-spacing: .04em; margin: 0 0 4px; }
+.mi-inscripcion-payment-method p { font-size: 12px; color: rgba(255,255,255,.78); text-align: center; line-height: 1.45; margin: 0; }
+.mi-inscripcion-payment-qr {
+  display: block;
+  width: clamp(130px,22vw,180px);
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
+  box-sizing: content-box;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,.32);
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  margin: 6px 0;
+}
+.mi-inscripcion-yape-details { display: grid; width: 100%; justify-items: center; gap: 4px; text-align: center; }
+.mi-inscripcion-yape-details > strong { color: #fff; font-size: 12px; }
+.mi-inscripcion-yape-number {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 9px;
+  padding: 5px 7px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+}
+.mi-inscripcion-yape-number button,
+.mi-inscripcion-yape-details > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  background: #ffc629;
+  padding: 5px 7px;
+  color: #0b2d36;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mi-inscripcion-yape-details > a { width: 100%; margin-top: 3px; background: rgba(255,255,255,.12); color: #fff; }
+
+/* Form section */
+.mi-inscripcion-abono-form { display: grid; gap: 18px; }
+.mi-inscripcion-abono-form label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; color: #193d45; }
+.mi-inscripcion-abono-form input:not([type="file"]):not([type="checkbox"]) {
+  width: 100%;
+  min-height: 49px;
+  border: 1.5px solid #b9c8c4;
+  border-radius: 11px;
+  background: #fffdf7;
+  padding: 12px 13px;
+  color: #0b2d36;
+  font-size: 14px;
+  font-weight: 650;
+  box-shadow: 0 3px 0 #0b2d360d;
+  outline: none;
+}
+.mi-inscripcion-abono-form input:focus       { border-color: #00aeb8; box-shadow: 0 0 0 3px #00aeb829; }
+.mi-inscripcion-abono-form input[aria-invalid="true"] { border-color: #d64536; box-shadow: 0 0 0 2px rgba(214,69,54,.14); }
+.mi-inscripcion-abono-form small             { font-size: 11px; font-weight: 500; color: #617b7c; }
+.mi-inscripcion-field-error                  { color: #b42318; font-size: 11px; font-weight: 750; margin-top: -3px; }
+
+/* Receipt upload */
+.mi-inscripcion-receipt { display: grid; gap: 5px; }
+.mi-inscripcion-receipt input[type="file"] { clip: rect(0,0,0,0); clip-path: inset(50%); position: absolute; white-space: nowrap; width: 1px; height: 1px; }
+.mi-inscripcion-receipt-drop {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  border: 2px dashed #b9cfca;
+  border-radius: 12px;
+  padding: 16px;
+  color: #007e89;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.mi-inscripcion-receipt-drop:hover { border-color: #00aeb8; background: #f5fcfb; }
+.mi-inscripcion-receipt-preview { display: block; width: 100%; overflow: hidden; border: 1px solid #d7e1dc; border-radius: 12px; background: #f5f4ee; }
+.mi-inscripcion-receipt-preview img { display: block; width: 100%; height: auto; max-height: 200px; object-fit: contain; }
+.mi-inscripcion-receipt-file-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; }
+.mi-inscripcion-receipt-file-info strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.mi-inscripcion-receipt-file-info div    { display: flex; gap: 6px; }
+.mi-inscripcion-receipt-file-info button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font-size: 11px;
+  font-weight: 800;
+  color: #007e89;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.mi-inscripcion-receipt-file-info button:hover { background: #e9f6f4; }
+.mi-inscripcion-receipt-remove        { color: #b42318 !important; }
+.mi-inscripcion-receipt-remove:hover  { background: #fef2f0 !important; }
+
+/* Confirmation section */
+.mi-inscripcion-confirmation {
+  background: #fffefa;
+  border: 1px solid #e5e7e0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 16px #1d3f3f08;
+}
+.mi-inscripcion-confirmation-title { font: 400 18px var(--font-bebas); letter-spacing: .04em; margin: 0 0 12px; }
+.mi-inscripcion-confirmation-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; }
+.mi-inscripcion-confirmation-row span   { color: #607677; }
+.mi-inscripcion-confirmation-row strong { color: #0b2d36; }
+.mi-inscripcion-consent { display: flex; align-items: start; gap: 10px; margin-top: 14px; font-size: 12px; font-weight: 700; line-height: 1.5; cursor: pointer; }
+.mi-inscripcion-consent input { width: 18px; height: 18px; flex: none; accent-color: #00aeb8; }
+
+/* Success */
+.mi-inscripcion-success { text-align: center; padding: 48px 20px; animation: mi-inscripcion-enter .35s ease-out; }
+.mi-inscripcion-success-icon { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 18px; background: #dcf6f0; color: #008d98; display: grid; place-items: center; }
+.mi-inscripcion-success h2 { font: 400 32px var(--font-edosz); margin: 0 0 10px; }
+.mi-inscripcion-success p  { font-size: 13px; color: #5c7374; line-height: 1.5; max-width: 380px; margin: 0 auto; }
+
+/* ── Timeline ─────────────────────────────────────────────── */
+.mi-inscripcion-timeline { position: relative; padding-left: 32px; animation: mi-inscripcion-enter .35s ease-out; }
+.mi-inscripcion-timeline::before {
+  content: "";
+  position: absolute;
+  left: 11px; top: 8px; bottom: 8px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#00aeb8 0%,#d7dedc 70%,transparent 100%);
+}
+.mi-inscripcion-timeline-event { position: relative; margin-bottom: 20px; }
+.mi-inscripcion-timeline-event:last-child { margin-bottom: 0; }
+.mi-inscripcion-timeline-dot {
+  position: absolute;
+  left: -32px; top: 10px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 3px solid #f8f4e9;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 1px rgba(72,109,112,.2);
+}
+.mi-inscripcion-timeline-dot--pending  { background: #ffc629; }
+.mi-inscripcion-timeline-dot--approved { background: #00aeb8; }
+.mi-inscripcion-timeline-dot--rejected { background: #e5634d; }
+.mi-inscripcion-timeline-dot svg { width: 10px; height: 10px; color: #fff; }
+.mi-inscripcion-timeline-card { background: #fffefa; border: 1px solid #e5e7e0; border-radius: 14px; padding: 16px 18px; box-shadow: 0 4px 12px #1d3f3f06; }
+.mi-inscripcion-timeline-date { font-size: 11px; font-weight: 700; color: #8a9f99; margin-bottom: 6px; }
+.mi-inscripcion-timeline-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mi-inscripcion-timeline-meta strong { font-size: 14px; color: #0b2d36; }
+.mi-inscripcion-timeline-meta span   { font: 400 22px var(--font-bebas); color: #0b2d36; }
+.mi-inscripcion-timeline-note { margin-top: 8px; font-size: 11px; color: #607677; line-height: 1.4; padding: 8px 10px; background: #f5f4ee; border-radius: 8px; }
+.mi-inscripcion-empty { text-align: center; padding: 40px 20px; color: #8a9f99; font-size: 14px; }
+
+/* ── Animation ────────────────────────────────────────────── */
+@keyframes mi-inscripcion-enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile overrides (< 560px)
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 560px) {
+  .mi-inscripcion-header           { height: 60px; padding: 0 16px; }
+  .mi-inscripcion-header-logo      { width: 88px; }
+  .mi-inscripcion-header-link      { font-size: 12px; }
+  .mi-inscripcion-content          { padding: 18px 14px 40px; }
+  .mi-inscripcion-heading h1       { font-size: clamp(28px,8vw,36px); }
+  .mi-inscripcion-heading p        { font-size: 12px; }
+  .mi-inscripcion-card,
+  .mi-inscripcion-progress         { padding: 16px; border-radius: 16px; }
+  .mi-inscripcion-actions          { flex-direction: column; }
+  .mi-inscripcion-btn-primary,
+  .mi-inscripcion-btn-secondary    { width: 100%; justify-content: center; }
+  .mi-inscripcion-payment-item     { padding: 10px 12px; }
+  .mi-inscripcion-abono-layout     { gap: 16px; }
+  .mi-inscripcion-payment-method   { padding: 18px; }
+  .mi-inscripcion-timeline         { padding-left: 26px; }
+  .mi-inscripcion-timeline::before { left: 8px; }
+  .mi-inscripcion-timeline-dot     { left: -26px; width: 18px; height: 18px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Desktop layout (≥ 851px)
+   Shell: wider + header fixed
+   Dashboard: two-column grid (left=context, right=content)
+═══════════════════════════════════════════════════════════ */
+@media (min-width: 851px) {
+
+  /* Page & shell */
+  .mi-inscripcion-page {
+    overflow: hidden;
+    background-image:
+      radial-gradient(circle at 88% 10%, rgba(255,198,41,.12), transparent 28%),
+      radial-gradient(circle at 5%  82%, rgba(0,199,199,.09), transparent 30%),
+      radial-gradient(circle at 50% 50%, rgba(248,244,233,.0), transparent 100%);
+  }
+  .mi-inscripcion-shell {
+    max-width: 100%;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header: fixed, full-width, matches registration header aesthetic */
+  .mi-inscripcion-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    height: 88px;
+    padding: 0 max(44px, calc((100vw - 1340px) / 2));
+    background: rgba(250,247,237,.94);
+    backdrop-filter: blur(14px);
+    border-bottom: 0;
+    box-shadow: 0 7px 24px rgba(11,45,54,.06);
+  }
+  .mi-inscripcion-header::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -9px;
+    height: 19px;
+    background: url('/assets/textures/t2-01-teal-thin-top.webp') center / 100% 100% no-repeat;
+    opacity: .36;
+    pointer-events: none;
+  }
+  .mi-inscripcion-header-logo {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    width: 130px;
+  }
+  .mi-inscripcion-header-logo::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 50%; top: 50%;
+    width: 300px; height: 110px;
+    background: url('/assets/textures/t1-03-dark-navy-top.webp') center / 100% 100% no-repeat;
+    opacity: .92;
+    transform: translate(-50%,-50%);
+    pointer-events: none;
+  }
+  .mi-inscripcion-header-link { font-size: 13px; }
+
+  /* Content: push below fixed header, use full viewport */
+  .mi-inscripcion-content {
+    flex: 1;
+    padding: 112px max(44px, calc((100vw - 1340px) / 2)) 48px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Dashboard two-column grid ── */
+  /* Wraps all dashboard children; set by wrapping div in component */
+  .mi-inscripcion-dashboard-grid {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-rows: auto;
+    column-gap: clamp(32px, 4vw, 64px);
+    align-items: start;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* Left column: heading + status banner + personal info */
+  .mi-inscripcion-left-col {
+    grid-column: 1;
+    position: sticky;
+    top: 108px; /* below fixed header */
+  }
+
+  /* Right column: progress + actions + payments */
+  .mi-inscripcion-right-col {
+    grid-column: 2;
+  }
+
+  /* Heading adjustments for desktop left column */
+  .mi-inscripcion-heading {
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  .mi-inscripcion-heading h1 {
+    font-size: clamp(40px, 3.6vw, 56px);
+    line-height: .94;
+  }
+  .mi-inscripcion-heading h1::after {
+    content: "";
+    display: block;
+    width: 180px;
+    height: 20px;
+    margin-top: 10px;
+    background: url('/assets/textures/t3-04-yellow-arc-underline.webp') center / 100% 100% no-repeat;
+    transform: rotate(-2deg);
+    opacity: .85;
+  }
+  .mi-inscripcion-heading p { font-size: 14px; margin-top: 12px; }
+
+  /* Cards scale up on desktop */
+  .mi-inscripcion-card     { padding: 26px 28px; border-radius: 22px; }
+  .mi-inscripcion-progress { padding: 26px 28px; border-radius: 22px; }
+  .mi-inscripcion-card-title,
+  .mi-inscripcion-progress-title { font-size: 22px; margin-bottom: 16px; }
+
+  /* Actions row */
+  .mi-inscripcion-actions {
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .mi-inscripcion-btn-primary  { min-height: 52px; padding: 0 30px; font-size: 15px; }
+  .mi-inscripcion-btn-secondary{ min-height: 48px; padding: 0 24px; }
+
+  /* Nuevo abono: wider QR column */
+  .mi-inscripcion-abono-layout {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 36px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .mi-inscripcion-payment-method {
+    padding: 28px 24px;
+    border-radius: 22px;
+    position: sticky;
+    top: 108px;
+  }
+  .mi-inscripcion-payment-qr { width: 190px; }
+
+  /* Historial: nicer centered container */
+  .mi-inscripcion-historial-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .mi-inscripcion-timeline-card { padding: 20px 24px; }
+  .mi-inscripcion-timeline-meta strong { font-size: 15px; }
+  .mi-inscripcion-timeline-meta span   { font-size: 26px; }
+
+  /* Status banner refinement */
+  .mi-inscripcion-status { padding: 18px 24px; border-radius: 18px; font-size: 14px; }
+
+  /* Ambient decorations (desktop only) */
+  .mi-inscripcion-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .mi-inscripcion-ambient img {
+    position: absolute;
+    height: auto;
+    user-select: none;
+  }
+  .mi-inscripcion-ambient-birds {
+    right: 6%;
+    top: 110px;
+    width: 130px;
+    opacity: .15;
+    transform: rotate(-4deg);
+  }
+  .mi-inscripcion-ambient-leaf-left {
+    left: -80px;
+    bottom: -180px;
+    width: 230px;
+    opacity: .2;
+    transform: rotate(16deg);
+  }
+  .mi-inscripcion-ambient-leaf-right {
+    right: -60px;
+    bottom: -80px;
+    width: 200px;
+    opacity: .17;
+    transform: rotate(-14deg);
+  }
+
+  /* Timeline bigger dots on desktop */
+  .mi-inscripcion-timeline { padding-left: 42px; }
+  .mi-inscripcion-timeline::before { left: 14px; width: 3px; }
+  .mi-inscripcion-timeline-dot { left: -42px; width: 28px; height: 28px; }
+  .mi-inscripcion-timeline-dot svg { width: 13px; height: 13px; }
+  .mi-inscripcion-timeline-event { margin-bottom: 26px; }
+}
+
+/* ── Narrow desktop (851–1100px) ──────────────────────────── */
+@media (min-width: 851px) and (max-width: 1100px) {
+  .mi-inscripcion-header { padding: 0 36px; }
+  .mi-inscripcion-content { padding-inline: 36px; }
+  .mi-inscripcion-dashboard-grid {
+    grid-template-columns: 260px minmax(0, 1fr);
+    column-gap: 28px;
+  }
+  .mi-inscripcion-abono-layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 24px;
+  }
+  .mi-inscripcion-heading h1 { font-size: 42px; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .mi-inscripcion-heading,
+  .mi-inscripcion-card,
+  .mi-inscripcion-progress,
+  .mi-inscripcion-status,
+  .mi-inscripcion-actions,
+  .mi-inscripcion-payments,
+  .mi-inscripcion-abono-layout,
+  .mi-inscripcion-timeline,
+  .mi-inscripcion-success { animation: none; }
+  .mi-inscripcion-btn-primary,
+  .mi-inscripcion-btn-secondary { transition: none; }
+}

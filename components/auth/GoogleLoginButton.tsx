@@ -12,7 +12,11 @@ export function GoogleLoginButton({ next }: { next?: "admin" }) {
     setError("");
     try {
       const supabase = createClient();
-      const callback = new URL("/auth/callback", window.location.origin);
+      // Use the canonical site URL from env if set (avoids Vercel preview URLs
+      // being used as the OAuth callback origin). Falls back to window.location.origin
+      // for local development.
+      const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const callback = new URL("/auth/callback", origin);
       if (next === "admin") callback.searchParams.set("next", "/admin");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
