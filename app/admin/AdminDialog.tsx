@@ -58,7 +58,7 @@ export function AdminDialog({
   }, [closeHref, router]);
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-[#03232b]/65 backdrop-blur-[3px]"
+      className="fixed inset-0 z-50 flex justify-end bg-[#03232b]/60"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) router.push(closeHref);
       }}

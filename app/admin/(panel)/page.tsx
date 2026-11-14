@@ -73,30 +73,37 @@ export default async function AdminOverviewPage({
     (approvedRegs || []).reduce((n, r) => n + r.amount, 0) +
     (approvedAddlPayments || []).reduce((n, p) => n + p.amount, 0);
 
+  const pendingReviewTotal =
+    (pendingRegistrations || 0) + (pendingPayments || 0);
+
   const kpis = [
     {
       label: "Inscripciones totales",
       value: totalRegistrations || 0,
       icon: UsersRound,
-      tone: "bg-[#e2f5ef] text-[#008e86]",
+      detail: "Registros en sistema",
+      highlight: false,
     },
     {
       label: "Inscripciones pendientes",
       value: pendingRegistrations || 0,
       icon: ClipboardCheck,
-      tone: "bg-[#fff1ce] text-[#b97c00]",
+      detail: "Por validar comprobante",
+      highlight: (pendingRegistrations || 0) > 0,
     },
     {
       label: "Abonos por revisar",
-      value: (pendingRegistrations || 0) + (pendingPayments || 0),
+      value: pendingPayments || 0,
       icon: Clock3,
-      tone: "bg-[#ffecdf] text-[#db6e27]",
+      detail: "Comprobantes de saldo",
+      highlight: (pendingPayments || 0) > 0,
     },
     {
       label: "Recaudado aprobado",
       value: `S/ ${approvedTotal}`,
       icon: CircleDollarSign,
-      tone: "bg-[#e5f2f6] text-[#167d94]",
+      detail: "Monto total confirmado",
+      highlight: false,
     },
   ];
 
@@ -104,110 +111,153 @@ export default async function AdminOverviewPage({
 
   return (
     <div className="space-y-6">
-      {/* Header Info */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-1">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[.2em] text-[#009d9f]">
-            Radical 2.0 <span className="mx-1 text-[#a6bab5]">/</span> Resumen
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
-            Resumen general
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
+            Panel de control
           </h1>
-          <p className="mt-2 text-sm text-[#69827e]">
-            Todo lo que sucede en el campamento, en un solo lugar.
+          <p className="mt-1 text-sm text-[#5f7a75]">
+            Métricas de campistas y estado operativo en tiempo real.
           </p>
         </div>
-        <div className="hidden items-center gap-2 rounded-full border border-[#dfe9e2] bg-white px-4 py-2 text-xs font-semibold text-[#55736e] sm:flex">
-          <span className="size-2 rounded-full bg-[#14b8a6]" /> Campamento ·
-          Mejía
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/inscripciones"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#d2ded8] bg-white px-3.5 py-2 text-xs font-semibold text-[#0a3039] shadow-sm transition hover:bg-[#f8faf8]"
+          >
+            <span>Ver inscripciones</span>
+          </Link>
+          <Link
+            href="/admin/reportes"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0a4249] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#08363c]"
+          >
+            <span>Reportes oficiales</span>
+          </Link>
         </div>
       </div>
 
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden rounded-[24px] bg-[#0a4249] px-6 py-7 text-white sm:px-8">
-        <div
-          aria-hidden
-          className="absolute -right-16 -top-36 h-72 w-72 rounded-full bg-[#06b9b2]/25 blur-3xl"
-        />
-        <div className="relative flex flex-wrap items-center justify-between gap-5">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#83e3d4]">
-              Panel de control
-            </p>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              Bienvenido al equipo Radical
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#c0ddda]">
-              Revisa comprobantes, mantén las inscripciones al día y prepara una
-              gran experiencia para los campistas.
-            </p>
+      {/* ── Operational Attention Bar (shown only when pending tasks exist) ── */}
+      {pendingReviewTotal > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-amber-200/90 bg-[#fffaf0] p-4 text-[#784300] shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800">
+              <Clock3 size={18} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-[#683b00]">
+                {pendingReviewTotal === 1
+                  ? "1 comprobante pendiente de verificación"
+                  : `${pendingReviewTotal} comprobantes pendientes de verificación`}
+              </p>
+              <p className="text-xs text-[#8c5615]">
+                {pendingRegistrations || 0} inscripción(es) inicial(es) y {pendingPayments || 0} abono(s) por auditar.
+              </p>
+            </div>
           </div>
-          <Link
-            href="/admin/inscripciones"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#ffc32b] px-5 py-3 text-sm font-black text-[#07333d] transition hover:bg-[#ffca44]"
-          >
-            <span>Ver inscripciones</span>
-            <ArrowUpRight size={17} />
-          </Link>
+          <div className="flex items-center gap-2">
+            {(pendingRegistrations || 0) > 0 && (
+              <Link
+                href="/admin/inscripciones?status=pending"
+                className="rounded-lg bg-[#d97706] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#b45309]"
+              >
+                Inscripciones ({pendingRegistrations})
+              </Link>
+            )}
+            {(pendingPayments || 0) > 0 && (
+              <Link
+                href="/admin/pagos?status=pending"
+                className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-sm transition hover:bg-amber-50"
+              >
+                Abonos ({pendingPayments})
+              </Link>
+            )}
+          </div>
         </div>
-      </section>
+      )}
 
-      {/* KPI Blocks */}
+      {/* ── Unified Metric Cards ── */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {kpis.map(({ label, value, icon: Icon, tone }) => (
+        {kpis.map(({ label, value, icon: Icon, detail, highlight }) => (
           <div
             key={label}
-            className="rounded-2xl border border-[#e3ebe5] bg-white p-5 shadow-[0_8px_30px_rgba(13,55,58,.035)]"
+            className={`rounded-xl border p-4.5 transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.03)] ${
+              highlight
+                ? "border-amber-200/90 bg-[#fffdf9]"
+                : "border-[#e2e8e4] bg-white"
+            }`}
           >
-            <div className={`grid size-10 place-items-center rounded-xl ${tone}`}>
-              <Icon size={20} />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#657d77]">{label}</span>
+              <span
+                className={`grid size-7 place-items-center rounded-md ${
+                  highlight
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-[#edf3f0] text-[#4d6a64]"
+                }`}
+              >
+                <Icon size={15} />
+              </span>
             </div>
-            <p className="mt-4 text-2xl font-black sm:text-3xl">{value}</p>
-            <p className="mt-1 text-xs font-semibold text-[#728a84]">{label}</p>
+            <p className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
+              {value}
+            </p>
+            <p className="mt-1 text-[11px] text-[#7d948f]">{detail}</p>
           </div>
         ))}
       </div>
 
-      {/* Overview 2-Col Grid */}
-      <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+      {/* ── Overview 2-Col Grid ── */}
+      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
         {/* Recent Registrations */}
-        <section className="rounded-2xl border border-[#e3ebe5] bg-white p-6">
-          <div className="flex items-center justify-between gap-3">
+        <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-4">
             <div>
-              <h2 className="text-lg font-black">Inscripciones recientes</h2>
-              <p className="mt-1 text-xs text-[#78918a]">
-                Las últimas personas que enviaron su inscripción
+              <h2 className="text-base font-bold text-[#0a3039]">
+                Inscripciones recientes
+              </h2>
+              <p className="mt-0.5 text-xs text-[#78918a]">
+                Últimos participantes registrados en la plataforma
               </p>
             </div>
             <Link
               href="/admin/inscripciones"
-              className="text-xs font-bold text-[#008e95] hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#008e95] hover:text-[#006e74]"
             >
-              Ver todas →
+              <span>Ver todas</span>
+              <ChevronRight size={14} />
             </Link>
           </div>
-          <div className="mt-5 divide-y divide-[#edf1ee]">
+          <div className="mt-2 divide-y divide-[#edf1ee]">
             {recent.map((r) => (
               <Link
                 key={r.id}
                 href={`/admin/inscripciones?selected=${r.id}`}
                 className="flex items-center gap-3 py-3 transition hover:text-[#008e95]"
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e6f5ef] text-sm font-black text-[#008e86]">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eaf3f0] text-xs font-bold text-[#0a524a]">
                   {r.first_name[0]?.toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <b className="block truncate text-sm">
+                  <span className="block truncate text-sm font-semibold text-[#0a3039]">
                     {r.first_name} {r.last_name}
-                  </b>
-                  <span className="block truncate text-xs text-[#8a9f99]">
+                  </span>
+                  <span className="block truncate text-xs text-[#7d948f]">
                     {r.email}
                   </span>
                 </span>
-                <span className="text-xs font-bold text-[#66837a]">
+                <span
+                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                    r.status === "approved"
+                      ? "bg-emerald-50 text-emerald-800"
+                      : r.status === "rejected"
+                        ? "bg-red-50 text-red-800"
+                        : "bg-amber-50 text-amber-800"
+                  }`}
+                >
                   {statusLabels[r.status] || r.status}
                 </span>
-                <ChevronRight size={16} />
+                <ChevronRight size={15} className="text-[#9cb2ac]" />
               </Link>
             ))}
             {recent.length === 0 && (
@@ -218,39 +268,59 @@ export default async function AdminOverviewPage({
           </div>
         </section>
 
-        {/* Quick Pending Tasks */}
-        <section className="rounded-2xl border border-[#e3ebe5] bg-white p-6">
-          <h2 className="text-lg font-black">Pendientes del equipo</h2>
-          <p className="mt-1 text-xs text-[#78918a]">
-            Accesos rápidos para revisar comprobantes
-          </p>
-          <div className="mt-5 space-y-3">
+        {/* Operational Shortcuts */}
+        <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
+          <div className="border-b border-[#edf1ee] pb-4">
+            <h2 className="text-base font-bold text-[#0a3039]">
+              Accesos operativos
+            </h2>
+            <p className="mt-0.5 text-xs text-[#78918a]">
+              Gestión directa de pagos y comprobantes
+            </p>
+          </div>
+          <div className="mt-4 space-y-2.5">
             <Link
               href="/admin/inscripciones?status=pending"
-              className="flex items-center gap-3 rounded-xl bg-[#fff9e9] p-4 transition hover:bg-[#fff4d6]"
+              className="flex items-center gap-3 rounded-lg border border-[#e7eee9] bg-[#fafcfb] p-3.5 transition hover:border-[#008e95]/40 hover:bg-white"
             >
-              <ClipboardCheck className="text-[#c48600]" size={20} />
-              <span className="flex-1 text-sm font-bold">
+              <div className="grid size-8 place-items-center rounded-md bg-amber-50 text-amber-700">
+                <ClipboardCheck size={17} />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#0a3039]">
                 Inscripciones por revisar
               </span>
-              <b>{pendingRegistrations || 0}</b>
-              <ChevronRight size={16} />
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">
+                {pendingRegistrations || 0}
+              </span>
+              <ChevronRight size={14} className="text-[#9cb2ac]" />
             </Link>
             <Link
               href="/admin/pagos?status=pending"
-              className="flex items-center gap-3 rounded-xl bg-[#ecf8f5] p-4 transition hover:bg-[#dcf4ee]"
+              className="flex items-center gap-3 rounded-lg border border-[#e7eee9] bg-[#fafcfb] p-3.5 transition hover:border-[#008e95]/40 hover:bg-white"
             >
-              <Clock3 className="text-[#008e86]" size={20} />
-              <span className="flex-1 text-sm font-bold">
+              <div className="grid size-8 place-items-center rounded-md bg-[#eaf3f0] text-[#0a524a]">
+                <Clock3 size={17} />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#0a3039]">
                 Abonos por revisar
               </span>
-              <b>{(pendingRegistrations || 0) + (pendingPayments || 0)}</b>
-              <ChevronRight size={16} />
+              <span className="rounded-full bg-[#e1eee9] px-2 py-0.5 text-xs font-bold text-[#0a524a]">
+                {(pendingRegistrations || 0) + (pendingPayments || 0)}
+              </span>
+              <ChevronRight size={14} className="text-[#9cb2ac]" />
             </Link>
-            <div className="rounded-xl border border-dashed border-[#dbe8df] p-4 text-xs leading-5 text-[#78918a]">
-              Los comprobantes se verifican individualmente y cada observación o
-              aprobación queda auditada en el historial.
-            </div>
+            <Link
+              href="/admin/reportes?type=asistencia"
+              className="flex items-center gap-3 rounded-lg border border-[#e7eee9] bg-[#fafcfb] p-3.5 transition hover:border-[#008e95]/40 hover:bg-white"
+            >
+              <div className="grid size-8 place-items-center rounded-md bg-[#edf3f6] text-[#145d70]">
+                <UsersRound size={17} />
+              </div>
+              <span className="flex-1 text-xs font-semibold text-[#0a3039]">
+                Padrón de asistencia y buses
+              </span>
+              <ChevronRight size={14} className="text-[#9cb2ac]" />
+            </Link>
           </div>
         </section>
       </div>

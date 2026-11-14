@@ -30,14 +30,14 @@ export default async function ResetPage() {
         {membership ? (
           <>
             <p className="mt-3 text-sm text-slate-600">
-              Elige una contraseña de al menos 12 caracteres para {user?.email}.
+              Elige una contraseña de al menos 6 caracteres para {user?.email}.
             </p>
             <form action={setPassword} className="mt-6 space-y-4">
               <input
                 aria-label="Nueva contraseña"
                 name="password"
                 type="password"
-                minLength={12}
+                minLength={6}
                 required
                 autoComplete="new-password"
                 placeholder="Nueva contraseña"
@@ -47,7 +47,7 @@ export default async function ResetPage() {
                 aria-label="Repite la contraseña"
                 name="confirm"
                 type="password"
-                minLength={12}
+                minLength={6}
                 required
                 autoComplete="new-password"
                 placeholder="Repite la contraseña"

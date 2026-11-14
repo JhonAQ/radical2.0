@@ -34,14 +34,15 @@ export function AdminLoginForm({
           <Link href="/" aria-label="Radical 2.0, inicio">
             <BrandLogo variant="secundario" width={130} />
           </Link>
-          <p className="mb-3 mt-5 text-xs font-black uppercase tracking-[.2em] text-[#009ca5]">
-            Radical 2.0 · Equipo
-          </p>
-          <h1 className="text-3xl font-black">Bienvenido al panel</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Ingresa con tu cuenta de administrador para gestionar las
-            inscripciones.
-          </p>
+          <div className="mt-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#082e39]">
+              Panel de administración
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Ingresa con tu cuenta de administrador para gestionar las
+              inscripciones.
+            </p>
+          </div>
 
           {error && (
             <p

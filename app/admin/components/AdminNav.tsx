@@ -41,11 +41,11 @@ export function AdminNav({
       label: "Inscripciones",
       icon: UsersRound,
       active: pathname.startsWith("/admin/inscripciones"),
-      badge: pendingRegistrationsCount,
+      badge: 0,
     },
     {
       href: "/admin/pagos",
-      label: "Pagos y comprobantes",
+      label: "Validar comprobantes",
       icon: WalletCards,
       active: pathname.startsWith("/admin/pagos"),
       badge: pendingRegistrationsCount + pendingPaymentsCount,

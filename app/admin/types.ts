@@ -77,12 +77,12 @@ export const errorMessages: Record<string, string> = {
   access: "Esta cuenta no tiene acceso al panel.",
   review:
     "No se pudo actualizar la revisión. Revisa primero los abonos adicionales aprobados.",
-  password: "Las contraseñas deben coincidir y tener al menos 12 caracteres.",
+  password: "Las contraseñas deben coincidir y tener al menos 6 caracteres.",
   admin_unverified:
     "La cuenta debe confirmar su correo antes de recibir acceso.",
   admin_not_found: "No encontramos una cuenta con ese correo.",
   admin_input:
-    "Ingresa un correo válido y una contraseña de al menos 12 caracteres.",
+    "Ingresa un correo válido y una contraseña de al menos 6 caracteres.",
   admin_create:
     "No se pudo crear el administrador. Comprueba que el correo no esté registrado.",
   configuration:

@@ -1,29 +1,41 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
+    "avoid-ai-design": {
+      "source": "funboy322/avoid-ai-design",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5f0ad5b9e3192854cc0c6f8a49edd65d00008a942dded2f0f46dd5a2b6ad0d03"
+    },
     "framer-motion-react": {
       "source": "c-jeril/framer-motion-skills",
       "sourceType": "github",
       "skillPath": "skills/framer-motion-react/SKILL.md",
-      "computedHash": "3d3fc832d8a3e3729919c316d3cdc6c7e7e3235e2e0c6868929b3565c8941ae8"
+      "computedHash": "01d9c4f6d39f1a0081688ed5488a2ff4288db47d6f84294f29f7da794e2b9eb5"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "ba6f33350863bd8138de222e55a7bf0f409ed329770a92e3db7535cbd2d0fb80"
     },
     "motion": {
       "source": "secondsky/claude-skills",
       "sourceType": "github",
       "skillPath": "plugins/motion/skills/motion/SKILL.md",
-      "computedHash": "7b293f2fd97c563bbe9835ba0010ef6771aa0493493fb9c31cfa704a556da8aa"
+      "computedHash": "540bfe5a35ab06ad34c2730875ee737e554be8b836dac17cce26cd543f4d2ac4"
     },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/supabase/SKILL.md",
-      "computedHash": "211141fd078b4b3645803868528d54221bc7755d24d5c8af45a366785c151dba"
+      "computedHash": "2fbff32fd63b7d31585cacf0ed43e5bf8d05dd20d6c0c751d256cb967a00eec1"
     },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
-      "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
+      "computedHash": "3eb972c2d7c818e544e35cc33ea8d7147d4d78ae08142ef40037b0fbac7a2505"
     }
   }
 }

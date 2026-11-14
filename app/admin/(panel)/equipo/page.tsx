@@ -166,16 +166,16 @@ export default async function AdminEquipoPage({
                   <input
                     type="password"
                     name="password"
-                    minLength={12}
+                    minLength={6}
                     required
                     autoComplete="new-password"
-                    placeholder="Nueva contraseña (mínimo 12 caracteres)"
+                    placeholder="Nueva contraseña (mínimo 6 caracteres)"
                     className={adminInputClass}
                   />
                   <input
                     type="password"
                     name="confirm"
-                    minLength={12}
+                    minLength={6}
                     required
                     autoComplete="new-password"
                     placeholder="Repite la contraseña"
@@ -233,9 +233,9 @@ export default async function AdminEquipoPage({
                 type="password"
                 name="password"
                 required
-                minLength={12}
+                minLength={6}
                 autoComplete="new-password"
-                placeholder="Mínimo 12 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 className={`${adminInputClass} mt-1`}
               />
             </label>

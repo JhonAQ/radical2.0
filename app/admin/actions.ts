@@ -78,11 +78,9 @@ export async function requestPasswordReset(form: FormData) {
 }
 
 function reviewLocation(form: FormData, id: string, result: string) {
+  const returnTo = form.get("return_to");
   const isPayments = form.get("view") === "payments";
   const params = new URLSearchParams();
-  if (!isPayments) {
-    params.set("selected", id);
-  }
   const query = String(form.get("filter_q") || "").slice(0, 100);
   const status = String(form.get("filter_status") || "");
   if (query) params.set("q", query);
@@ -90,6 +88,16 @@ function reviewLocation(form: FormData, id: string, result: string) {
     params.set("status", status);
   const [key, value] = result.split("=");
   params.set(key, value);
+
+  if (returnTo) {
+    const returnUrl = String(returnTo);
+    const separator = returnUrl.includes("?") ? "&" : "?";
+    return `${returnUrl}${separator}${params.toString()}`;
+  }
+
+  if (!isPayments) {
+    params.set("selected", id);
+  }
   const base = isPayments ? "/admin/pagos" : "/admin/inscripciones";
   return `${base}?${params.toString()}`;
 }
@@ -161,7 +169,7 @@ export async function setPassword(form: FormData) {
   const context = await adminContext();
   if (!context) redirect("/admin?error=access");
   const password = String(form.get("password") || "");
-  if (password.length < 12 || password !== String(form.get("confirm") || ""))
+  if (password.length < 6 || password !== String(form.get("confirm") || ""))
     redirect("/admin/cuenta?error=password");
   const { error } = await context.client.auth.updateUser({ password });
   if (error) redirect("/admin/cuenta?error=password");
@@ -175,7 +183,7 @@ export async function createAdmin(form: FormData) {
     .trim()
     .toLowerCase();
   const password = String(form.get("password") || "");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 6)
     redirect("/admin/equipo?error=admin_input");
   const service = serviceClient();
   if (!service) redirect("/admin/equipo?error=configuration");
@@ -223,7 +231,7 @@ export async function resetAdminPassword(form: FormData) {
   const password = String(form.get("password") || "");
   if (
     !/^[0-9a-f-]{36}$/i.test(id) ||
-    password.length < 12 ||
+    password.length < 6 ||
     password !== String(form.get("confirm") || "")
   )
     redirect("/admin/equipo?error=password");

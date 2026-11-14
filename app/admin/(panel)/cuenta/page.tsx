@@ -89,9 +89,9 @@ export default async function AdminCuentaPage({
               type="password"
               name="password"
               required
-              minLength={12}
+              minLength={6}
               autoComplete="new-password"
-              placeholder="Mínimo 12 caracteres"
+              placeholder="Mínimo 6 caracteres"
               className={`${adminInputClass} mt-1`}
             />
           </label>
@@ -101,7 +101,7 @@ export default async function AdminCuentaPage({
               type="password"
               name="confirm"
               required
-              minLength={12}
+              minLength={6}
               autoComplete="new-password"
               placeholder="Repite la nueva contraseña"
               className={`${adminInputClass} mt-1`}
