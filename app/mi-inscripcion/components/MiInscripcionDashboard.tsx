@@ -99,7 +99,31 @@ export function MiInscripcionDashboard({
     registration.price > 0 ? (totalPaid / registration.price) * 100 : 0,
   );
   const isPaidInFull = remaining <= 0 && registration.status === "approved";
-  const recentPayments = payments.slice(0, 3);
+
+  // Combine initial registration payment with additional payments
+  const allMovements = [
+    ...payments.map((p) => ({
+      id: p.id,
+      date: p.created_at,
+      label: kindLabels[p.kind] ?? "Abono adicional",
+      amount: p.amount,
+      status: p.status,
+      reviewNote: p.review_note,
+    })),
+    {
+      id: "initial",
+      date: registration.created_at,
+      label:
+        registration.amount >= registration.price
+          ? "Pago completo de inscripción"
+          : "Abono inicial de inscripción",
+      amount: registration.amount,
+      status: registration.status,
+      reviewNote: registration.review_note,
+    },
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  const recentMovements = allMovements.slice(0, 4);
 
   return (
     <div className="mi-inscripcion-dashboard-grid">
@@ -216,17 +240,20 @@ export function MiInscripcionDashboard({
               <ArrowRight size={18} />
             </Link>
           )}
+          <Link href="/mi-inscripcion/datos" className="mi-inscripcion-btn-secondary">
+            Editar mis datos
+          </Link>
           <Link href="/mi-inscripcion/historial" className="mi-inscripcion-btn-secondary">
             <CalendarDays size={16} />
             Ver historial
           </Link>
         </motion.div>
 
-        {/* Recent payments */}
-        {recentPayments.length > 0 && (
+        {/* Recent movements */}
+        {recentMovements.length > 0 && (
           <motion.div className="mi-inscripcion-payments" {...fade(0.22)}>
             <h2 className="mi-inscripcion-payments-title">Últimos movimientos</h2>
-            {recentPayments.map((p) => (
+            {recentMovements.map((p) => (
               <div key={p.id} className="mi-inscripcion-payment-item">
                 <div
                   className={`mi-inscripcion-payment-icon mi-inscripcion-payment-icon--${p.status}`}
@@ -234,9 +261,9 @@ export function MiInscripcionDashboard({
                   <Receipt size={18} />
                 </div>
                 <div className="mi-inscripcion-payment-info">
-                  <strong>{kindLabels[p.kind] ?? "Abono"}</strong>
+                  <strong>{p.label}</strong>
                   <small>
-                    {new Date(p.created_at).toLocaleDateString("es-PE", {
+                    {new Date(p.date).toLocaleDateString("es-PE", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",

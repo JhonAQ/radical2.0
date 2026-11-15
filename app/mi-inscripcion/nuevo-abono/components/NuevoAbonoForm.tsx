@@ -29,10 +29,7 @@ const fadeIn = {
 export function NuevoAbonoForm({
   userId,
   registrationId,
-  registrationStatus,
-  plan,
   price,
-  totalPaid,
   remaining,
   maximumAllowed,
   isCorrection,

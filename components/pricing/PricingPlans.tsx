@@ -5,11 +5,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
+import { preventaDates } from "@/utils/preventa";
 import "./PricingPlans.css";
 
-const plans = [
-  { name: "Preventa", price: "200", date: "Hasta el 15 de diciembre", brush: "/assets/elements/brush-planes-amarillo.png" },
-  { name: "Regular", price: "250", date: "Desde el 16 de diciembre", brush: "/assets/elements/brush-planes-turquesa.png" },
+const basePlans = [
+  { name: "Preventa", price: "200", brush: "/assets/elements/brush-planes-amarillo.png" },
+  { name: "Regular", price: "250", brush: "/assets/elements/brush-planes-turquesa.png" },
 ] as const;
 
 const benefits = ["Hospedaje", "Alimentación completa", "Programación y materiales", "Acceso a todas las actividades"];
@@ -63,7 +64,9 @@ function PlanCardWatermark() {
   );
 }
 
-export function PricingPlans() {
+export function PricingPlans({ preventaDeadline }: { preventaDeadline: string }) {
+  const dates = preventaDates(preventaDeadline);
+  const plans = basePlans.map((plan, index) => ({ ...plan, date: index === 0 ? `Hasta el ${dates.lastDay}` : `Desde el ${dates.firstRegularDay}` }));
   const router = useRouter();
   const headingRef = useRef<HTMLDivElement>(null);
   const headingVisible = useInView(headingRef, { once: true, amount: 0.4, margin: "0px 0px -18% 0px" });
@@ -132,7 +135,7 @@ export function PricingPlans() {
                   <p className="whitespace-nowrap font-bebas text-5xl leading-none sm:text-6xl lg:text-6xl xl:text-7xl"><span className="mr-1 text-2xl sm:text-3xl">S/</span>{plan.price}</p>
                   <p className="relative isolate mt-1 min-h-8 text-xs font-semibold leading-tight sm:text-sm lg:mt-4 lg:flex lg:min-h-9 lg:items-center lg:justify-center lg:text-base">
                     {index === 0 && <span aria-hidden="true" className="pointer-events-none absolute -inset-y-3 inset-x-[15%] -z-10 hidden lg:block lg:scale-x-125 lg:scale-y-150 lg:rotate-[7deg]"><Image src={plan.brush} alt="" fill sizes="220px" className="object-fill" /></span>}
-                    {index === 0 ? <><span className="lg:hidden">{plan.date}</span><span className="hidden lg:block lg:font-extrabold lg:uppercase">Hasta el 15<br />de diciembre</span></> : plan.date}
+                    {index === 0 ? <><span className="lg:hidden">{plan.date}</span><span className="hidden lg:block lg:font-extrabold lg:uppercase">Hasta el {dates.lastDayNumber}<br />de {dates.lastMonth}</span></> : plan.date}
                   </p>
                 </div>
                 <div className="relative z-10 mx-3 mt-2 border-t border-azul-profundo/10 pt-2 sm:mx-5 lg:hidden">

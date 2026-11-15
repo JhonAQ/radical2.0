@@ -85,20 +85,11 @@ export default async function AdminReportesPage({
 
   // Compute metrics
   const totalRegistrations = registrations.length;
-  const approvedCount = registrations.filter((r) => r.status === "approved").length;
-
-  let totalExpected = 0;
-  let totalCollected = 0;
 
   const financialItems = registrations.map((r) => {
     const additional = additionalPaidByReg[r.id] || 0;
     const paid = r.amount + additional;
     const balance = Math.max(0, r.price - paid);
-
-    if (r.status === "approved") {
-      totalExpected += r.price;
-      totalCollected += paid;
-    }
 
     return {
       ...r,
@@ -107,6 +98,9 @@ export default async function AdminReportesPage({
     };
   });
 
+  const approvedItems = financialItems.filter((r) => r.status === "approved");
+  const totalExpected = approvedItems.reduce((n, r) => n + r.price, 0);
+  const totalCollected = approvedItems.reduce((n, r) => n + r.totalPaid, 0);
   const totalOutstanding = Math.max(0, totalExpected - totalCollected);
 
   // Group by plan

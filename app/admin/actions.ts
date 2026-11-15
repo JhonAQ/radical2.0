@@ -107,7 +107,6 @@ export async function review(form: FormData) {
   if (!context) redirect("/admin?error=access");
   const id = String(form.get("id") || "");
   const status = String(form.get("status") || "");
-  const view = form.get("view") === "payments" ? "payments" : "registrations";
   const note = String(form.get("note") || "")
     .trim()
     .slice(0, 1000);
@@ -136,7 +135,6 @@ export async function reviewPayment(form: FormData) {
   const paymentId = String(form.get("payment_id") || "");
   const registrationId = String(form.get("registration_id") || "");
   const status = String(form.get("status") || "");
-  const view = form.get("view") === "payments" ? "payments" : "registrations";
   const note = String(form.get("note") || "")
     .trim()
     .slice(0, 1000);
@@ -285,4 +283,61 @@ export async function grantExistingAdmin(form: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/equipo");
   redirect("/admin/equipo?success=admin_existing");
+}
+
+function personalFields(form: FormData) {
+  const text = (name: string) => String(form.get(name) || "").trim();
+  return {
+    p_first_name: text("first_name"),
+    p_last_name: text("last_name"),
+    p_birth_date: text("birth_date"),
+    p_gender: text("gender"),
+    p_phone: text("phone"),
+    p_emergency_name: text("emergency_name"),
+    p_emergency_relation: text("emergency_relation"),
+    p_emergency_phone: text("emergency_phone"),
+  };
+}
+
+export async function updateRegistrationData(form: FormData) {
+  const context = await adminContext();
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/inscripciones?error=review");
+  const { error } = await context.client.rpc("admin_update_registration", {
+    p_id: id,
+    ...personalFields(form),
+    p_document: String(form.get("document") || "").replace(/\s/g, ""),
+    p_email: String(form.get("email") || "").trim().toLowerCase(),
+  });
+  revalidatePath("/admin/inscripciones");
+  revalidatePath(`/admin/inscripciones/${id}`);
+  redirect(
+    `/admin/inscripciones/${id}?${error ? (error.code === "23505" ? "error=document_taken" : "error=registration_data") : "success=registration_data"}`,
+  );
+}
+
+export async function updateCampSettings(form: FormData) {
+  const context = await adminContext();
+  if (!context) redirect("/admin?error=access");
+  // El admin elige el último día de preventa; vale hasta las 24:00 (hora de Lima, UTC-5 sin horario de verano),
+  // es decir, el corte es las 00:00 del día siguiente.
+  const raw = String(form.get("preventa_last_day") || "");
+  const lastDay = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00-05:00`) : null;
+  const deadline = lastDay && !Number.isNaN(lastDay.getTime())
+    ? new Date(lastDay.getTime() + 24 * 60 * 60 * 1000)
+    : null;
+  if (!deadline || Number.isNaN(deadline.getTime()))
+    redirect("/admin/configuracion?error=settings");
+  const { error } = await context.client
+    .from("camp_settings")
+    .update({
+      preventa_deadline: deadline.toISOString(),
+      updated_at: new Date().toISOString(),
+      updated_by: context.user.id,
+    })
+    .eq("id", true);
+  if (error) redirect("/admin/configuracion?error=settings");
+  revalidatePath("/", "layout");
+  redirect("/admin/configuracion?success=settings");
 }

@@ -10,8 +10,10 @@ import { PricingPlans } from "@/components/pricing/PricingPlans";
 import { LocationFaq } from "@/components/location/LocationFaq";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppFloating } from "@/components/common/WhatsAppFloating";
+import { getPreventaDeadline } from "@/utils/preventa-server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const preventaDeadline = await getPreventaDeadline();
   return (
     <>
       {/* Fuera de <main>: el header fijo y el portal del menú quedan
@@ -29,8 +31,8 @@ export default function HomePage() {
             <PackingList />
           </div>
         </div>
-        <PricingPlans />
-        <LocationFaq />
+        <PricingPlans preventaDeadline={preventaDeadline} />
+        <LocationFaq preventaDeadline={preventaDeadline} />
       </main>
       <Footer />
       <WhatsAppFloating />

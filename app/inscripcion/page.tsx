@@ -30,7 +30,14 @@ export default async function RegistrationPage({ searchParams }: {
   const firstName = typeof metadata.given_name === "string" ? metadata.given_name : nameParts[0] ?? "";
   const lastName = typeof metadata.family_name === "string" ? metadata.family_name : nameParts.slice(1).join(" ");
 
+  const { data: settings } = await supabase
+    .from("camp_settings")
+    .select("preventa_deadline")
+    .eq("id", true)
+    .maybeSingle();
+  const preventaDeadline = settings?.preventa_deadline ?? "2026-12-16T00:00:00-05:00";
+
   const { plan } = await searchParams;
   const selectedPlan = typeof plan === "string" && (plan === "preventa" || plan === "regular") ? plan : null;
-  return <RegistrationFlow initialPlan={selectedPlan} userId={user.id} userEmail={user.email ?? ""} avatarUrl={avatarUrl} initialFirstName={firstName} initialLastName={lastName} />;
+  return <RegistrationFlow preventaDeadline={preventaDeadline} initialPlan={selectedPlan} userId={user.id} userEmail={user.email ?? ""} avatarUrl={avatarUrl} initialFirstName={firstName} initialLastName={lastName} />;
 }

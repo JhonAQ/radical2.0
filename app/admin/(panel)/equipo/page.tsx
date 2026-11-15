@@ -17,7 +17,7 @@ import {
   grantExistingAdmin,
   resetAdminPassword,
 } from "../../actions";
-import { UserPlus, Shield, Trash2, KeyRound } from "lucide-react";
+import { UserPlus, Shield, Trash2 } from "lucide-react";
 
 export default async function AdminEquipoPage({
   searchParams,

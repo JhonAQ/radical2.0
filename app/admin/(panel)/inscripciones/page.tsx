@@ -11,7 +11,7 @@ import {
   type RegistrationPayment,
 } from "../../types";
 import { ExportPanel } from "../../components/ExportPanel";
-import { Search, Eye, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -47,12 +47,14 @@ export default async function AdminInscripcionesPage({
     countQuery = countQuery.eq("status", params.status);
     dataQuery = dataQuery.eq("status", params.status);
   }
-  if (params.plan && params.plan !== "all") {
-    countQuery = countQuery.ilike("plan", params.plan);
-    dataQuery = dataQuery.ilike("plan", params.plan);
+  if (params.plan === "preventa" || params.plan === "regular") {
+    countQuery = countQuery.eq("plan", params.plan);
+    dataQuery = dataQuery.eq("plan", params.plan);
   }
   if (params.q && params.q.trim()) {
-    const term = `%${params.q.trim()}%`;
+    // Quita caracteres con significado en filtros PostgREST (, ( ) " \) y comodines LIKE.
+    const clean = params.q.replace(/[,()"\\%_*]/g, " ").trim().replace(/\s+/g, " ");
+    const term = `%${clean}%`;
     const orClause = `first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},document.ilike.${term}`;
     countQuery = countQuery.or(orClause);
     dataQuery = dataQuery.or(orClause);

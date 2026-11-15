@@ -7,11 +7,12 @@ import { BadgeCheck, BusFront, Layers3, MapPin, UsersRound, Wallet } from "lucid
 import { CAMP_CONFIG } from "@/config/site";
 import { FooterBeachScene } from "@/components/layout/FooterBeachScene";
 import { AnimatedSeabird } from "@/components/common/AnimatedSeabird";
+import { preventaDates } from "@/utils/preventa";
 import "./LocationFaq.css";
 
-const questions = [
+const buildQuestions = (lastDay: string) => [
   { question: "¿Desde dónde saldremos?", answer: "La salida hacia el campamento será desde Arequipa. El punto de encuentro y la hora se comunicarán para esta edición.", icon: BusFront },
-  { question: "¿Puedo pagar por partes?", answer: "¡Sí! Puedes reservar tu cupo con S/50 y completar el saldo antes del inicio del campamento. Si reservas hasta el 15 de diciembre, aprovechas el precio de preventa de S/200.", icon: Wallet },
+  { question: "¿Puedo pagar por partes?", answer: `¡Sí! Puedes reservar tu cupo con S/50 y completar el saldo antes del inicio del campamento. Si reservas hasta el ${lastDay}, aprovechas el precio de preventa de S/200.`, icon: Wallet },
   { question: "¿Qué incluye el precio?", answer: "Incluye hospedaje, alimentación completa, programación y materiales, y acceso a todas las actividades del campamento.", icon: BadgeCheck },
   { question: "¿La preventa incluye lo mismo que el precio regular?", answer: "Sí. Ambas tarifas incluyen la misma experiencia. La diferencia es el precio según la fecha en que te inscribas.", icon: Layers3 },
   { question: "¿Hay límite de edad?", answer: "El campamento está pensado para adolescentes y jóvenes. No hay un límite superior de edad: si quieres vivir esta experiencia, eres bienvenido.", icon: UsersRound },
@@ -46,7 +47,8 @@ function SectionHeading({ id, text, tone }: { id: string; text: string; tone: "y
   );
 }
 
-export function LocationFaq() {
+export function LocationFaq({ preventaDeadline }: { preventaDeadline: string }) {
+  const questions = buildQuestions(preventaDates(preventaDeadline).lastDay);
   const [activeQuestion, setActiveQuestion] = useState<number | null>(null);
   const faqId = useId();
   const reduceMotion = Boolean(useReducedMotion());

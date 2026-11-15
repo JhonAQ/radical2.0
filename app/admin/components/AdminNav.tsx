@@ -9,6 +9,7 @@ import {
   WalletCards,
   ShieldCheck,
   Settings,
+  SlidersHorizontal,
   LogOut,
 } from "lucide-react";
 import { logout } from "../actions";
@@ -61,6 +62,13 @@ export function AdminNav({
           },
         ]
       : []),
+    {
+      href: "/admin/configuracion",
+      label: "Configuración",
+      icon: SlidersHorizontal,
+      active: pathname.startsWith("/admin/configuracion"),
+      badge: 0,
+    },
     {
       href: "/admin/cuenta",
       label: "Mi cuenta",

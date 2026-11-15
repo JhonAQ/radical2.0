@@ -7,7 +7,6 @@ import {
   RotateCw,
   ZoomIn,
   ZoomOut,
-  Maximize2,
   ExternalLink,
   RefreshCw,
 } from "lucide-react";
@@ -58,7 +57,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-6">
         {/* Receipt Tabs / Switcher if multiple */}
         <div className="flex flex-wrap gap-1.5">
-          {receipts.map((r, index) => (
+          {receipts.map((r) => (
             <button
               key={r.id}
               type="button"

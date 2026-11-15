@@ -5,8 +5,6 @@ import {
   statusLabels,
   errorMessages,
   successMessages,
-  adminInputClass,
-  adminButtonClass,
   type Registration,
   type RegistrationPayment,
 } from "../../types";
@@ -16,11 +14,8 @@ import { ReceiptViewer } from "../../components/ReceiptViewer";
 import { ReviewResolutionForm } from "../../components/ReviewResolutionForm";
 import {
   Search,
-  Eye,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  AlertTriangle,
   Clock,
   X,
   ExternalLink,
@@ -54,8 +49,13 @@ export default async function AdminPagosPage({
   const { data: rawRows } = await client
     .from("registrations")
     .select("id,first_name,last_name,email,amount,status,created_at,plan,phone,receipt_path,review_note");
-  const registrationMap: Record<string, any> = Object.fromEntries(
-    ((rawRows as any[]) || []).map((r) => [r.id, r]),
+  type PaymentRegistration = Pick<
+    Registration,
+    | "id" | "first_name" | "last_name" | "email" | "amount" | "status"
+    | "created_at" | "plan" | "phone" | "receipt_path" | "review_note"
+  >;
+  const registrationMap: Record<string, PaymentRegistration> = Object.fromEntries(
+    ((rawRows as PaymentRegistration[] | null) || []).map((r) => [r.id, r]),
   );
 
   // ── Payment items query ──
@@ -669,6 +669,8 @@ export default async function AdminPagosPage({
                       returnTo={buildHref({ review: undefined, kind: undefined })}
                       closeUrl={buildHref({ review: undefined, kind: undefined })}
                       entityType="comprobante"
+                      participantPhone={activeReviewData.phone}
+                      participantFirstName={activeReviewData.name.split(" ")[0]}
                     />
                   </div>
                 </div>

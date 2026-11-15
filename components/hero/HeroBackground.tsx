@@ -13,7 +13,6 @@ export function HeroBackground() {
         <picture>
           <source media="(max-width: 767px)" srcSet={media.mobile.poster} width={media.mobile.width} height={media.mobile.height} />
           {/* Pre-encoded responsive posters: one request, selected before hydration. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img ref={posterRef} src={media.desktop.poster} alt="" width={media.desktop.width} height={media.desktop.height} fetchPriority="high" loading="eager" decoding="async" className="absolute inset-0 h-full w-full object-cover object-center" />
         </picture>
         <video

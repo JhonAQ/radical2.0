@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle, AlertTriangle, RotateCcw, X } from "lucide-react";
+import { CheckCircle, AlertTriangle, MessageCircle, RotateCcw, X } from "lucide-react";
+import { whatsappUrl } from "@/utils/whatsapp";
 import { adminInputClass } from "../types";
 
 interface ReviewResolutionFormProps {
@@ -16,6 +17,8 @@ interface ReviewResolutionFormProps {
   returnTo?: string;
   closeUrl?: string;
   entityType?: "comprobante" | "inscripcion";
+  participantPhone?: string;
+  participantFirstName?: string;
 }
 
 export function ReviewResolutionForm({
@@ -29,6 +32,8 @@ export function ReviewResolutionForm({
   returnTo,
   closeUrl,
   entityType = "comprobante",
+  participantPhone = "",
+  participantFirstName = "",
 }: ReviewResolutionFormProps) {
   const [note, setNote] = useState(initialNote);
   const hasNote = note.trim().length > 0;
@@ -40,6 +45,16 @@ export function ReviewResolutionForm({
       : "Aprobar inscripción";
   const rejectLabel =
     entityType === "comprobante" ? "Observar comprobante" : "Observar";
+
+  const whatsappHref =
+    hasNote && participantPhone
+      ? whatsappUrl(
+          participantPhone,
+          `Hola ${participantFirstName}, te escribimos del equipo de Radical 2.0. Revisamos tu ${
+            entityType === "comprobante" ? "comprobante" : "inscripción"
+          } y tiene una observación: ${note.trim()}\n\nPuedes corregirlo ingresando a https://radical2-0.vercel.app/mi-inscripcion`,
+        )
+      : null;
 
   return (
     <form action={action} className="space-y-3.5">
@@ -82,7 +97,7 @@ export function ReviewResolutionForm({
 
         {hasNote && (
           <p className="mt-1 text-[11px] text-amber-700">
-            Al escribir una observación, se desactiva "Aprobar". Bórrala si
+            Al escribir una observación, se desactiva &ldquo;Aprobar&rdquo;. Bórrala si
             el pago es conforme.
           </p>
         )}
@@ -109,6 +124,19 @@ export function ReviewResolutionForm({
           <CheckCircle size={15} />
           <span>{approveLabel}</span>
         </button>
+
+        {whatsappHref && (
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#20ba59]"
+            title="Abre WhatsApp con la observación ya escrita"
+          >
+            <MessageCircle size={15} />
+            <span>Avisar la observación por WhatsApp</span>
+          </a>
+        )}
 
         {/* Fila secundaria de acciones */}
         <div className="grid grid-cols-2 gap-2">

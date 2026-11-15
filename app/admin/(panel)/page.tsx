@@ -7,7 +7,6 @@ import {
   ClipboardCheck,
   Clock3,
   CircleDollarSign,
-  ArrowUpRight,
   ChevronRight,
 } from "lucide-react";
 import { statusLabels, type Registration } from "../types";
@@ -38,13 +37,34 @@ export default async function AdminOverviewPage({
 
   const client = createClient(await cookies());
 
+  // Supabase corta en 1000 filas por consulta: se suma por páginas para no truncar el total.
+  async function sumAmounts(
+    table: "registrations" | "registration_payments",
+    filters: Record<string, string>,
+  ) {
+    let total = 0;
+    for (let from = 0; ; from += 1000) {
+      let query = client.from(table).select("amount");
+      for (const [column, value] of Object.entries(filters)) {
+        query = query.eq(column, value);
+      }
+      const { data } = await query
+        .order("id", { ascending: true })
+        .range(from, from + 999);
+      if (!data) break;
+      total += data.reduce((n, row) => n + row.amount, 0);
+      if (data.length < 1000) break;
+    }
+    return total;
+  }
+
   // Metrics queries in parallel
   const [
     { count: totalRegistrations },
     { count: pendingRegistrations },
     { count: pendingPayments },
-    { data: approvedRegs },
-    { data: approvedAddlPayments },
+    approvedRegsTotal,
+    approvedAddlTotal,
     { data: recentRegistrations },
   ] = await Promise.all([
     client.from("registrations").select("*", { count: "exact", head: true }),
@@ -56,12 +76,8 @@ export default async function AdminOverviewPage({
       .from("registration_payments")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending"),
-    client.from("registrations").select("amount").eq("status", "approved"),
-    client
-      .from("registration_payments")
-      .select("amount")
-      .eq("status", "approved")
-      .eq("kind", "additional"),
+    sumAmounts("registrations", { status: "approved" }),
+    sumAmounts("registration_payments", { status: "approved", kind: "additional" }),
     client
       .from("registrations")
       .select("id,first_name,last_name,email,status,created_at,amount")
@@ -69,9 +85,7 @@ export default async function AdminOverviewPage({
       .limit(6),
   ]);
 
-  const approvedTotal =
-    (approvedRegs || []).reduce((n, r) => n + r.amount, 0) +
-    (approvedAddlPayments || []).reduce((n, p) => n + p.amount, 0);
+  const approvedTotal = approvedRegsTotal + approvedAddlTotal;
 
   const pendingReviewTotal =
     (pendingRegistrations || 0) + (pendingPayments || 0);

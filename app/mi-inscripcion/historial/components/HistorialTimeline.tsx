@@ -40,6 +40,7 @@ export function HistorialTimeline({
     amount: number;
     status: string;
     created_at: string;
+    review_note?: string | null;
   };
   payments: {
     id: string;
@@ -63,10 +64,13 @@ export function HistorialTimeline({
     {
       id: "initial",
       date: registration.created_at,
-      label: `Inscripción enviada · Plan ${registration.plan}`,
+      label:
+        registration.amount >= registration.price
+          ? `Inscripción (Pago completo) · Plan ${registration.plan}`
+          : `Inscripción (Abono inicial) · Plan ${registration.plan}`,
       amount: registration.amount,
       status: registration.status,
-      reviewNote: null,
+      reviewNote: registration.review_note ?? null,
     },
   ].sort((a, b) => b.date.localeCompare(a.date));
 

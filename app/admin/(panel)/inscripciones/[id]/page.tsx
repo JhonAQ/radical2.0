@@ -3,13 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { CamperReceiptModal } from "../../../components/CamperReceiptModal";
+import { RegistrationDataForm } from "../../../components/RegistrationDataForm";
 import { ReviewResolutionForm } from "../../../components/ReviewResolutionForm";
-import { review, reviewPayment } from "../../../actions";
+import { review } from "../../../actions";
 import {
   statusLabels,
   errorMessages,
   successMessages,
-  adminInputClass,
   type Registration,
   type RegistrationPayment,
   type ReviewEvent,
@@ -20,15 +20,6 @@ import {
   ChevronRight,
   MessageCircle,
   Phone,
-  Mail,
-  User,
-  ShieldAlert,
-  Calendar,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  ExternalLink,
-  Wallet,
 } from "lucide-react";
 
 export default async function AdminInscripcionDetailPage({
@@ -588,6 +579,8 @@ export default async function AdminInscripcionDetailPage({
             </div>
           </section>
 
+          <RegistrationDataForm registration={registration} />
+
           {/* Registration Resolution Form */}
           <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 sm:p-6 shadow-sm">
             <h2 className="text-base font-bold text-[#082e39]">
@@ -608,6 +601,8 @@ export default async function AdminInscripcionDetailPage({
                 returnTo={`/admin/inscripciones/${registration.id}`}
                 closeUrl="/admin/inscripciones"
                 entityType="inscripcion"
+                participantPhone={registration.phone}
+                participantFirstName={registration.first_name}
               />
             </div>
           </section>

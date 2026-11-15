@@ -88,6 +88,10 @@ export const errorMessages: Record<string, string> = {
   configuration:
     "Falta configurar la clave de servidor de Supabase para gestionar administradores.",
   note: "Escribe una nota para explicar la observación al participante.",
+  settings: "No se pudo guardar la configuración. Revisa la fecha e inténtalo de nuevo.",
+  document_taken: "Ese documento ya pertenece a otra inscripción.",
+  registration_data:
+    "No se pudieron guardar los datos. Revisa que el documento (6 a 12 letras o números), el correo y los teléfonos sean válidos.",
   payment_review:
     "No se pudo actualizar el abono. Comprueba que no supere el saldo pendiente y que la inscripción esté aprobada.",
 };
@@ -96,6 +100,8 @@ export const successMessages: Record<string, string> = {
   reset_sent:
     "Si el correo tiene una cuenta, recibirá un enlace. Ábrelo en este mismo navegador para crear o restablecer tu contraseña.",
   review: "Revisión actualizada.",
+  settings: "Configuración guardada.",
+  registration_data: "Datos de la inscripción actualizados.",
   password: "Contraseña actualizada.",
   admin_existing: "Se concedió acceso a la cuenta existente.",
   admin_password: "Contraseña de la cuenta administradora actualizada.",

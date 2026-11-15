@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, Copy, Download, FileText, IdCard, Mail, Ticket, Trash2, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { createClient } from "@/utils/supabase/client";
+import { preventaDates } from "@/utils/preventa";
 
 import "./RegistrationFlow.css";
 
@@ -58,8 +59,8 @@ function clearLocalDraft(userId: string) {
 }
 
 const plans = {
-  preventa: { name: "Preventa", price: 200, date: "Hasta el 15 de diciembre", brush: "/assets/elements/brush-planes-amarillo.png", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
-  regular: { name: "Regular", price: 250, date: "Desde el 16 de diciembre", brush: "/assets/elements/brush-planes-turquesa.png", desktopBrush: "/assets/elements/brush-planes-turquesa.png" },
+  preventa: { name: "Preventa", price: 200, brush: "/assets/elements/brush-planes-amarillo.png", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
+  regular: { name: "Regular", price: 250, brush: "/assets/elements/brush-planes-turquesa.png", desktopBrush: "/assets/elements/brush-planes-turquesa.png" },
 } as const;
 const benefits = ["Hospedaje", "Alimentación completa", "Programación y materiales", "Amistad del evento", "Acceso a todas las actividades"];
 const yapePhoneNumber = process.env.NEXT_PUBLIC_YAPE_PHONE || "";
@@ -190,12 +191,12 @@ function RegistrationProgress({ currentStep, className }: { currentStep: number;
   })}</nav>;
 }
 
-export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName }: { initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string }) {
+export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName }: { preventaDeadline: string; initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string }) {
   const [step, setStep] = useState(0);
   const [draftReady, setDraftReady] = useState(false);
   const navigationLocked = useRef(false);
   const navigationTimer = useRef<number | null>(null);
-  const [plan, setPlan] = useState<PlanId | null>(initialPlan ?? "preventa");
+  const [plan, setPlan] = useState<PlanId | null>(() => Number.isFinite(Date.parse(preventaDeadline)) && Date.now() >= Date.parse(preventaDeadline) && (initialPlan ?? "preventa") === "preventa" ? "regular" : initialPlan ?? "preventa");
   const [participant, setParticipant] = useState<Participant>({ firstName: initialFirstName, lastName: initialLastName, document: "", birthDate: "", gender: "" });
   const [contact, setContact] = useState<Contact>({ phone: "", email: userEmail, emergencyName: "", emergencyRelation: "", emergencyPhone: "" });
   const [payment, setPayment] = useState<"reserve" | "full">("reserve");
@@ -217,6 +218,10 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
   const [reviewNote, setReviewNote] = useState<string | null>(null);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [validationStep, setValidationStep] = useState<number | null>(null);
+  const dates = preventaDates(preventaDeadline);
+  const preventaDeadlineMs = Date.parse(preventaDeadline);
+  const [preventaClosed, setPreventaClosed] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs);
+  const [preventaNotice, setPreventaNotice] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs && initialPlan === "preventa");
   const [birthDateInvalid, setBirthDateInvalid] = useState(false);
   const selected = plan ? plans[plan] : null;
   const amount = payment === "reserve" ? Math.min(reserveAmount, selected?.price ?? reserveAmount) : selected?.price ?? 0;
@@ -239,6 +244,18 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
     emergencyPhone: !contact.emergencyPhone.trim() ? "Ingresa el celular de emergencia." : /^\d{9,15}$/.test(contact.emergencyPhone.replace(/[\s+()-]/g, "")) ? "" : "Ingresa un celular válido.",
   } : {};
 
+  const closePreventa = useEffectEvent(() => {
+    setPreventaClosed(true);
+    setPlan((current) => (current === "preventa" ? "regular" : current));
+    if (registrationId === null) setPreventaNotice(true);
+  });
+
+  useEffect(() => {
+    if (!Number.isFinite(preventaDeadlineMs)) return;
+    const timer = window.setInterval(() => { if (Date.now() >= preventaDeadlineMs) closePreventa(); }, 15000);
+    return () => window.clearInterval(timer);
+  }, [preventaDeadlineMs]);
+
   useEffect(() => {
     let cancelled = false;
     async function restoreDraft() {
@@ -246,6 +263,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
         const { data: existing } = await createClient().from("registrations").select("id,status,review_note,first_name,last_name,document,birth_date,gender,phone,emergency_name,emergency_relation,emergency_phone,plan,payment_type,amount").eq("user_id", userId).maybeSingle();
         if (existing && !cancelled) {
           setRegistrationId(existing.id);
+          setPreventaNotice(false);
           setParticipant({ firstName: existing.first_name, lastName: existing.last_name, document: existing.document, birthDate: existing.birth_date, gender: existing.gender });
           setContact({ phone: existing.phone, email: userEmail, emergencyName: existing.emergency_name, emergencyRelation: existing.emergency_relation, emergencyPhone: existing.emergency_phone });
           setPlan(existing.plan as PlanId);
@@ -262,7 +280,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
           const draft = JSON.parse(saved) as Partial<RegistrationDraft>;
           if (draft.version === 1) {
             if (Number.isInteger(draft.step) && (draft.step ?? -1) >= 0 && (draft.step ?? 6) <= 5) setStep(Math.min(draft.step!, 4));
-            if (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular") setPlan(draft.plan);
+            if (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular") setPlan(draft.plan === "preventa" && Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs ? "regular" : draft.plan);
             if (draft.participant && Object.values(draft.participant).every((value) => typeof value === "string")) setParticipant(draft.participant);
             if (draft.contact && Object.values(draft.contact).every((value) => typeof value === "string")) setContact({ ...draft.contact, email: userEmail });
             if (draft.payment === "reserve" || draft.payment === "full") setPayment(draft.payment);
@@ -288,7 +306,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
     }
     void restoreDraft();
     return () => { cancelled = true; };
-  }, [userEmail, userId]);
+  }, [userEmail, userId, preventaDeadlineMs]);
 
   useEffect(() => {
     if (!draftReady || registrationStatus) return;
@@ -438,6 +456,16 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
       const { data: created, error } = await supabase.from("registrations").insert({ user_id: userId, first_name: participant.firstName.trim(), last_name: participant.lastName.trim(), document: participant.document.replace(/\s/g, ""), birth_date: participant.birthDate, gender: participant.gender, phone: contact.phone.trim(), email: userEmail, emergency_name: contact.emergencyName.trim(), emergency_relation: contact.emergencyRelation, emergency_phone: contact.emergencyPhone.trim(), plan, price: selected.price, amount, payment_type: payment, receipt_path: path }).select("id").single();
       if (error) {
         await supabase.storage.from("registration-receipts").remove([path]);
+        if (error.code === "23505" && error.message.includes("document")) {
+          setSubmitError("Ese documento ya tiene una inscripción. Si es tuyo, entra con la cuenta con la que te inscribiste.");
+          return;
+        }
+        if (error.code === "42501" && plan === "preventa" && Date.now() >= preventaDeadlineMs) {
+          setPreventaClosed(true);
+          setPlan("regular");
+          setPreventaNotice(true);
+          return;
+        }
         const { data: existing } = await supabase.from("registrations").select("id,status").eq("user_id", userId).maybeSingle();
         if (!existing) {
           setSubmitError("No pudimos enviar tu inscripción. Tus datos siguen guardados en este dispositivo; inténtalo de nuevo.");
@@ -490,6 +518,15 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
 
   return (
     <main className="registration-page">
+      {preventaNotice && (
+        <div role="dialog" aria-modal="true" aria-labelledby="preventa-ended-title" style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: 20, background: "rgba(8,46,57,.6)" }}>
+          <div style={{ maxWidth: 380, width: "100%", borderRadius: 22, background: "#fffefa", padding: "28px 24px", textAlign: "center", boxShadow: "0 20px 50px rgba(0,0,0,.3)" }}>
+            <h2 id="preventa-ended-title" style={{ fontSize: 22, fontWeight: 900, color: "#0b2d36" }}>La preventa ya terminó</h2>
+            <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: "#35555a" }}>El plan Preventa cerró mientras completabas tu inscripción. Tus datos siguen guardados: puedes continuar con el plan Regular (S/250).</p>
+            <button type="button" autoFocus onClick={() => { setPreventaNotice(false); setStep(0); }} style={{ marginTop: 20, width: "100%", minHeight: 48, borderRadius: 14, background: "#ffbc1f", fontWeight: 800, color: "#082e39" }}>Continuar con el plan Regular</button>
+          </div>
+        </div>
+      )}
       <div className="registration-shell">
         <header className="registration-header">
           <Link href="/" aria-label="Volver al inicio de Radical 2.0" className="registration-logo"><BrandLogo variant="secundario" width={150} priority /></Link>
@@ -511,8 +548,8 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
 
               {step === 0 && <div className="registration-plans" role="radiogroup" aria-label="Plan de inscripción">
                 {(Object.entries(plans) as [PlanId, typeof plans[PlanId]][]).map(([id, item]) => (
-                  <label key={id} className={`registration-plan ${plan === id ? "is-selected" : ""}`}>
-                    <input type="radio" name="registration-plan" value={id} checked={plan === id} onChange={() => setPlan(id)} />
+                  <label key={id} className={`registration-plan ${plan === id ? "is-selected" : ""}`} style={id === "preventa" && preventaClosed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}>
+                    <input type="radio" name="registration-plan" value={id} checked={plan === id} disabled={id === "preventa" && preventaClosed} onChange={() => setPlan(id)} />
                     <span className="registration-plan-watermark" aria-hidden="true">
                       <span className="registration-plan-watermark-birds">
                         <Image className="registration-plan-bird registration-plan-bird-1" src="/assets/elements/elem-flying-bird-single-1.webp" alt="" width={170} height={81} sizes="34px" />
@@ -534,7 +571,7 @@ export function RegistrationFlow({ initialPlan, userId, userEmail, avatarUrl, in
                     <span className="registration-plan-check"><Check size={16} strokeWidth={3} /></span>
                     <strong>{item.name}</strong>
                     <span className="registration-plan-price"><small>S/</small>{item.price}</span>
-                    <span className="registration-plan-date">{item.date}</span>
+                    <span className="registration-plan-date">{id === "preventa" ? `Hasta el ${dates.lastDay}` : `Desde el ${dates.firstRegularDay}`}</span>
                     <span className="registration-plan-benefits">{benefits.map((benefit) => <span key={benefit}><Check size={15} strokeWidth={3} />{benefit}</span>)}</span>
                     <span className="registration-plan-selector" aria-hidden="true"><span /></span>
                   </label>
