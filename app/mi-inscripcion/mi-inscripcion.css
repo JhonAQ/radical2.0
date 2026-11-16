@@ -44,6 +44,8 @@
   text-decoration: none;
 }
 .mi-inscripcion-header-link:hover { color: #dc5a00; }
+.mi-inscripcion-signout-desktop button{cursor:pointer}
+.mi-inscripcion-signout-button{padding:9px 12px;border:1px solid rgba(11,45,54,.17);border-radius:10px;background:rgba(255,254,250,.58)}
 
 /* ── Content ──────────────────────────────────────────────── */
 .mi-inscripcion-content { padding: 28px 20px 48px; }
@@ -458,6 +460,19 @@
 .mi-inscripcion-timeline-meta span   { font: 400 22px var(--font-bebas); color: #0b2d36; }
 .mi-inscripcion-timeline-note { margin-top: 8px; font-size: 11px; color: #607677; line-height: 1.4; padding: 8px 10px; background: #f5f4ee; border-radius: 8px; }
 .mi-inscripcion-empty { text-align: center; padding: 40px 20px; color: #8a9f99; font-size: 14px; }
+.mi-inscripcion-historial-embedded { max-width: none; margin: 0; }
+.mi-inscripcion-historial-embedded-heading { margin: 0 0 14px; }
+.mi-inscripcion-historial-embedded-heading p { margin: 0; color: #607677; font-size: 12px; line-height: 1.45; }
+.mi-inscripcion-historial-embedded .mi-inscripcion-timeline-event { margin-bottom: 12px; }
+.mi-inscripcion-account-card{display:flex;align-items:center;gap:15px;margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid rgba(11,45,54,.16)}
+.mi-inscripcion-account-icon{display:grid;width:58px;height:58px;flex:none;place-items:center;border:2px solid #ffc629;border-radius:50%;color:#087d82}
+.mi-inscripcion-profile-avatar{width:58px;height:58px;flex:none;border:2px solid #ffc629;border-radius:50%;object-fit:cover;box-shadow:0 2px 8px rgba(11,45,54,.16)}
+.mi-inscripcion-account-card h2{margin:0;color:#0b2d36;font-size:17px;font-weight:850}
+.mi-inscripcion-account-card p{display:flex;align-items:center;gap:6px;margin:4px 0 0;color:#526b70;font-size:12px;overflow-wrap:anywhere}
+.mi-inscripcion-account-caption{display:block;margin-top:4px;color:#88723a;font-size:10px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+.mi-inscripcion-status-toast{position:relative;width:auto;margin:0 0 14px;padding:15px 42px 15px 17px;box-shadow:0 8px 22px rgba(11,45,54,.1)}
+.mi-inscripcion-status-close{position:absolute;top:10px;right:10px;display:grid;width:30px;height:30px;place-items:center;border:0;border-radius:50%;background:rgba(11,45,54,.08);color:inherit;cursor:pointer}
+.mi-inscripcion-signout-mobile{display:none}
 
 /* ── Animation ────────────────────────────────────────────── */
 @keyframes mi-inscripcion-enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
@@ -483,6 +498,14 @@
   .mi-inscripcion-timeline         { padding-left: 26px; }
   .mi-inscripcion-timeline::before { left: 8px; }
   .mi-inscripcion-timeline-dot     { left: -26px; width: 18px; height: 18px; }
+}
+
+@media(max-width:850px){
+  .mi-inscripcion-signout-desktop{display:none}
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-account-card{order:0;margin:0 0 2px;padding:4px 2px 14px;border-radius:0;background:transparent}
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-card[data-panel="datos"]{order:1}
+  .mi-inscripcion-signout-mobile{display:none;margin:12px 0 0}
+  .mi-inscripcion-signout-mobile button{display:inline-flex;min-height:38px;align-items:center;gap:8px;margin-top:10px;padding:0;border:0;background:transparent;color:#8b3d2e;font:700 12px/1 inherit;cursor:pointer}
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -713,3 +736,91 @@
   .mi-inscripcion-btn-primary,
   .mi-inscripcion-btn-secondary { transition: none; }
 }
+
+.mi-inscripcion-minor-notice{display:flex;align-items:center;gap:10px;margin:0 0 18px;padding:10px 4px;border-top:1px dashed #d9c58a;border-bottom:1px dashed #d9c58a;color:#5c4300;font-size:12px;line-height:1.45}
+.mi-inscripcion-minor-notice svg{flex:none;color:#b07a00}
+.mi-inscripcion-minor-notice b{font-weight:800}
+.mi-inscripcion-actions-hint{flex-basis:100%;margin:0 0 4px;color:#617b7c;font-size:13px;line-height:1.4}
+
+/* ── Móvil: app con pestañas (una pantalla por sección) ───── */
+.mi-inscripcion-tabbar,
+.mi-inscripcion-greeting,
+.mi-inscripcion-mobile-only { display: none; }
+
+@media (max-width: 850px) {
+  .mi-inscripcion-dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .mi-inscripcion-left-col,
+  .mi-inscripcion-right-col { display: contents; }
+
+  /* Solo se ve la pestaña activa */
+  .mi-inscripcion-dashboard-grid[data-tab="inicio"] [data-panel]:not([data-panel="inicio"]),
+  .mi-inscripcion-dashboard-grid[data-tab="pagos"]  [data-panel]:not([data-panel="pagos"]),
+  .mi-inscripcion-dashboard-grid[data-tab="datos"]  [data-panel]:not([data-panel="datos"]) { display: none; }
+  .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-signout-mobile{display:block}
+
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-heading,
+  .mi-inscripcion-desktop-only { display: none; }
+  .mi-inscripcion-mobile-only { display: inline-flex; }
+
+  .mi-inscripcion-content { padding-top: 14px; }
+  .mi-inscripcion-greeting { display: block; margin: 2px 0 2px; font-size: 22px; font-weight: 600; color: #0b2d36; }
+  .mi-inscripcion-greeting strong { font-weight: 900; }
+
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-status { order: 1; margin: 0; padding: 12px 14px; }
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-progress { order: 2; margin: 0; padding: 16px; }
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-actions { order: 3; margin: 0; }
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-minor-notice { order: 4; margin: 0; }
+  .mi-inscripcion-greeting { order: 0; }
+
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-payments { display: grid; gap: 8px; }
+  .mi-inscripcion-payments .mi-inscripcion-mobile-only,
+  .mi-inscripcion-card .mi-inscripcion-mobile-only { width: 100%; justify-content: center; margin-top: 8px; }
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-card { padding: 16px; }
+
+  .mi-inscripcion-tabbar {
+    position: fixed;
+    z-index: 50;
+    inset: auto 0 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(11,45,54,.1);
+    background: rgba(255,254,250,.96);
+    backdrop-filter: blur(12px);
+  }
+  .mi-inscripcion-tabbar button {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 6px 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: #7a8d8e;
+    font-size: 11px;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mi-inscripcion-tabbar button[aria-current="page"] { color: #0b2d36; }
+  .mi-inscripcion-tabbar button[aria-current="page"] svg { color: #008d98; }
+}
+
+@media(min-width:851px){
+  .mi-inscripcion-dashboard-grid[data-tab="inicio"] .mi-inscripcion-account-card[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="pagos"] .mi-inscripcion-account-card[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-account-card[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="inicio"] .mi-inscripcion-minor-notice[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="pagos"] .mi-inscripcion-minor-notice[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-minor-notice[data-panel="datos"]{display:flex}
+  .mi-inscripcion-dashboard-grid[data-tab="inicio"] .mi-inscripcion-card[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="pagos"] .mi-inscripcion-card[data-panel="datos"],
+  .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-card[data-panel="datos"]{display:block}
+}
+
+.mi-inscripcion-payment-method p.mi-inscripcion-cash-hint{margin-top:4px;font-size:11px;opacity:.85}

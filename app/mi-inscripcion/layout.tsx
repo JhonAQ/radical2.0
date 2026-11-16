@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { BrandLogo } from "@/components/common/BrandLogo";
-import { ArrowLeft } from "lucide-react";
+import { House, LogOut } from "lucide-react";
+import { signOut } from "@/app/login/actions";
 import "./mi-inscripcion.css";
 
 export default async function MiInscripcionLayout({
@@ -39,9 +40,12 @@ export default async function MiInscripcionLayout({
           </Link>
           <nav className="mi-inscripcion-header-nav">
             <Link href="/" className="mi-inscripcion-header-link">
-              <ArrowLeft size={16} />
-              <span>Volver</span>
+              <House size={16} />
+              <span>Inicio</span>
             </Link>
+            <form action={signOut} className="mi-inscripcion-signout-desktop">
+              <button type="submit" className="mi-inscripcion-header-link mi-inscripcion-signout-button"><LogOut size={17} aria-hidden /><span>Cerrar sesión</span></button>
+            </form>
           </nav>
         </header>
         <div className="mi-inscripcion-content">{children}</div>

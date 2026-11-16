@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { isMinorAtCamp } from "@/utils/minors";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -8,9 +11,17 @@ import {
   AlertCircle,
   Wallet,
   ArrowRight,
-  CalendarDays,
   Receipt,
+  IdCard,
+  House,
+  UserRound,
+  Pencil,
+  Mail,
+  X,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "@/app/login/actions";
+import { HistorialTimeline } from "../historial/components/HistorialTimeline";
 
 type Registration = {
   id: string;
@@ -24,6 +35,8 @@ type Registration = {
   amount: number;
   status: string;
   review_note: string | null;
+  birth_date: string;
+  payment_method?: string;
   created_at: string;
 };
 
@@ -32,6 +45,7 @@ type Payment = {
   amount: number;
   status: string;
   kind: string;
+  method?: string;
   created_at: string;
   review_note: string | null;
 };
@@ -57,16 +71,13 @@ const statusConfig = {
   },
 } as const;
 
-const kindLabels: Record<string, string> = {
-  additional: "Abono adicional",
-  replacement: "Comprobante corregido",
-};
+type Tab = "inicio" | "pagos" | "datos";
 
-const statusLabels: Record<string, string> = {
-  pending: "En revisión",
-  approved: "Aprobado",
-  rejected: "Observado",
-};
+const tabs: { id: Tab; label: string; icon: typeof House }[] = [
+  { id: "inicio", label: "Inicio", icon: House },
+  { id: "pagos", label: "Pagos", icon: Receipt },
+  { id: "datos", label: "Mi perfil", icon: UserRound },
+];
 
 function fade(delay = 0) {
   return {
@@ -82,6 +93,7 @@ export function MiInscripcionDashboard({
   totalPaid,
   pendingAmount,
   remaining,
+  avatarUrl,
 }: {
   registration: Registration;
   payments: Payment[];
@@ -100,65 +112,37 @@ export function MiInscripcionDashboard({
   );
   const isPaidInFull = remaining <= 0 && registration.status === "approved";
 
-  // Combine initial registration payment with additional payments
-  const allMovements = [
-    ...payments.map((p) => ({
-      id: p.id,
-      date: p.created_at,
-      label: kindLabels[p.kind] ?? "Abono adicional",
-      amount: p.amount,
-      status: p.status,
-      reviewNote: p.review_note,
-    })),
-    {
-      id: "initial",
-      date: registration.created_at,
-      label:
-        registration.amount >= registration.price
-          ? "Pago completo de inscripción"
-          : "Abono inicial de inscripción",
-      amount: registration.amount,
-      status: registration.status,
-      reviewNote: registration.review_note,
-    },
-  ].sort((a, b) => b.date.localeCompare(a.date));
-
-  const recentMovements = allMovements.slice(0, 4);
+  const [tab, setTab] = useState<Tab>("inicio");
+  const [statusToastOpen, setStatusToastOpen] = useState(true);
 
   return (
-    <div className="mi-inscripcion-dashboard-grid">
+    <div className="mi-inscripcion-dashboard-grid" data-tab={tab}>
       {/* ── LEFT COLUMN: heading · status · personal info ── */}
       <div className="mi-inscripcion-left-col">
+        <p className="mi-inscripcion-greeting" data-panel="inicio">
+          Hola, <strong>{registration.first_name.split(" ")[0]}</strong>
+        </p>
+
         <motion.div className="mi-inscripcion-heading" {...fade(0)}>
           <p className="mi-inscripcion-eyebrow">Radical 2.0</p>
           <h1>TU ESPACIO RADICAL</h1>
           <p>Consulta el estado de tu inscripción y gestiona tus abonos.</p>
         </motion.div>
 
-        {/* Status banner */}
-        <motion.div
-          className={`mi-inscripcion-status ${config.className}`}
-          {...fade(0.06)}
-        >
-          <StatusIcon size={22} />
+        {/* Personal info */}
+        <motion.div className="mi-inscripcion-account-card" data-panel="datos" {...fade(0.08)}>
+          {avatarUrl ? <Image src={avatarUrl} alt="Foto de perfil" width={64} height={64} unoptimized className="mi-inscripcion-account-avatar mi-inscripcion-profile-avatar" /> : <span className="mi-inscripcion-account-icon"><UserRound size={22} aria-hidden /></span>}
           <div>
-            <strong>{config.title}</strong>
-            {registration.status === "rejected" && registration.review_note && (
-              <span className="mi-inscripcion-status-note">
-                Nota del equipo: {registration.review_note}
-              </span>
-            )}
-            {registration.status !== "rejected" && (
-              <span className="mi-inscripcion-status-note">
-                {config.description}
-              </span>
-            )}
+            <h2>{registration.first_name} {registration.last_name}</h2>
+            <p><Mail size={14} aria-hidden /> <span>{registration.email}</span></p>
+            <span className="mi-inscripcion-account-caption">Cuenta de Google</span>
+            <form action={signOut} className="mi-inscripcion-signout-mobile">
+              <button type="submit"><LogOut size={16} aria-hidden />Cerrar sesión</button>
+            </form>
           </div>
         </motion.div>
-
-        {/* Personal info */}
-        <motion.div className="mi-inscripcion-card" {...fade(0.12)}>
-          <h2 className="mi-inscripcion-card-title">Datos del campista</h2>
+        <motion.div className="mi-inscripcion-card" data-panel="datos" {...fade(0.12)}>
+          <h2 className="mi-inscripcion-card-title">Datos de inscripción</h2>
           <div className="mi-inscripcion-card-row">
             <span>Nombre</span>
             <strong>{registration.first_name} {registration.last_name}</strong>
@@ -177,13 +161,34 @@ export function MiInscripcionDashboard({
             <span>WhatsApp</span>
             <strong>{registration.phone}</strong>
           </div>
+          <Link href="/mi-inscripcion/datos" className="mi-inscripcion-btn-secondary mi-inscripcion-mobile-only">
+            <Pencil size={16} />
+            Editar mis datos
+          </Link>
         </motion.div>
+        {isMinorAtCamp(registration.birth_date) && (
+          <motion.p className="mi-inscripcion-minor-notice" data-panel="datos" {...fade(0.14)}>
+            <IdCard size={18} aria-hidden />
+            <span><b>Eres menor de edad:</b> lleva tu permiso de viaje notarial en original. Sin él no podrás abordar el bus.</span>
+          </motion.p>
+        )}
       </div>
 
       {/* ── RIGHT COLUMN: progress · actions · payments ── */}
       <div className="mi-inscripcion-right-col">
+        {statusToastOpen && <motion.div className={`mi-inscripcion-status mi-inscripcion-status-toast ${config.className}`} data-panel="inicio" role={registration.status === "rejected" ? "alert" : "status"} {...fade(0.06)}>
+          <StatusIcon size={22} />
+          <div>
+            <strong>{config.title}</strong>
+            {registration.status === "rejected" && registration.review_note ? (
+              <span className="mi-inscripcion-status-note">Nota del equipo: {registration.review_note}</span>
+            ) : <span className="mi-inscripcion-status-note">{config.description}</span>}
+          </div>
+          <button type="button" className="mi-inscripcion-status-close" aria-label="Cerrar aviso" onClick={() => setStatusToastOpen(false)}><X size={17} /></button>
+        </motion.div>}
+
         {/* Payment progress */}
-        <motion.div className="mi-inscripcion-progress" {...fade(0.1)}>
+        <motion.div className="mi-inscripcion-progress" data-panel="inicio" {...fade(0.1)}>
           <h2 className="mi-inscripcion-progress-title">Progreso de pago</h2>
           <div className="mi-inscripcion-progress-bar">
             <motion.div
@@ -219,7 +224,7 @@ export function MiInscripcionDashboard({
         </motion.div>
 
         {/* Actions */}
-        <motion.div className="mi-inscripcion-actions" {...fade(0.17)}>
+        <motion.div className="mi-inscripcion-actions" data-panel="inicio" {...fade(0.17)}>
           {registration.status === "rejected" && (
             <Link
               href="/mi-inscripcion/nuevo-abono?tipo=correccion"
@@ -240,46 +245,39 @@ export function MiInscripcionDashboard({
               <ArrowRight size={18} />
             </Link>
           )}
-          <Link href="/mi-inscripcion/datos" className="mi-inscripcion-btn-secondary">
+          {registration.status === "pending" && remaining > 0 && (
+            <p className="mi-inscripcion-actions-hint">
+              Podrás registrar nuevos abonos cuando el equipo apruebe tu inscripción.
+            </p>
+          )}
+          <Link href="/mi-inscripcion/datos" className="mi-inscripcion-btn-secondary mi-inscripcion-desktop-only">
             Editar mis datos
-          </Link>
-          <Link href="/mi-inscripcion/historial" className="mi-inscripcion-btn-secondary">
-            <CalendarDays size={16} />
-            Ver historial
           </Link>
         </motion.div>
 
-        {/* Recent movements */}
-        {recentMovements.length > 0 && (
-          <motion.div className="mi-inscripcion-payments" {...fade(0.22)}>
-            <h2 className="mi-inscripcion-payments-title">Últimos movimientos</h2>
-            {recentMovements.map((p) => (
-              <div key={p.id} className="mi-inscripcion-payment-item">
-                <div
-                  className={`mi-inscripcion-payment-icon mi-inscripcion-payment-icon--${p.status}`}
-                >
-                  <Receipt size={18} />
-                </div>
-                <div className="mi-inscripcion-payment-info">
-                  <strong>{p.label}</strong>
-                  <small>
-                    {new Date(p.date).toLocaleDateString("es-PE", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      timeZone: "America/Lima",
-                    })}
-                  </small>
-                </div>
-                <span className="mi-inscripcion-payment-amount">S/{p.amount}</span>
-                <span className={`mi-inscripcion-badge mi-inscripcion-badge--${p.status}`}>
-                  {statusLabels[p.status] ?? p.status}
-                </span>
-              </div>
-            ))}
-          </motion.div>
-        )}
+        {/* Full payment history */}
+        <motion.div className="mi-inscripcion-payments" data-panel="pagos" {...fade(0.22)}>
+          <HistorialTimeline
+            embedded
+            registration={registration}
+            payments={payments}
+          />
+        </motion.div>
       </div>
+
+      <nav className="mi-inscripcion-tabbar" aria-label="Secciones">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            aria-current={tab === id ? "page" : undefined}
+            onClick={() => setTab(id)}
+          >
+            <Icon size={21} strokeWidth={tab === id ? 2.4 : 1.9} aria-hidden />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

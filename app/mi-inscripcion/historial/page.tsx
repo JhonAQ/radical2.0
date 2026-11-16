@@ -17,7 +17,7 @@ export default async function HistorialPage() {
 
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id,plan,price,amount,status,created_at,review_note")
+    .select("id,plan,price,amount,payment_method,status,created_at,review_note")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -25,7 +25,7 @@ export default async function HistorialPage() {
 
   const { data: payments } = await supabase
     .from("registration_payments")
-    .select("id,amount,status,kind,created_at,review_note")
+    .select("id,amount,status,kind,method,created_at,review_note")
     .eq("registration_id", registration.id)
     .order("created_at", { ascending: false });
 

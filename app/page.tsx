@@ -6,6 +6,7 @@ import { Activities } from "@/components/activities/Activities";
 import { ProgramDays } from "@/components/program/ProgramDays";
 import { PackingList } from "@/components/packing/PackingList";
 import { ProgramPackingAmbient } from "@/components/program/ProgramPackingAmbient";
+import { Speakers } from "@/components/speakers/Speakers";
 import { PricingPlans } from "@/components/pricing/PricingPlans";
 import { LocationFaq } from "@/components/location/LocationFaq";
 import { Footer } from "@/components/layout/Footer";
@@ -32,6 +33,7 @@ export default async function HomePage() {
           </div>
         </div>
         <PricingPlans preventaDeadline={preventaDeadline} />
+        <Speakers />
         <LocationFaq preventaDeadline={preventaDeadline} />
       </main>
       <Footer />

@@ -317,6 +317,24 @@ export async function updateRegistrationData(form: FormData) {
   );
 }
 
+export async function registerCashPayment(form: FormData) {
+  const context = await adminContext();
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/inscripciones?error=review");
+  const amount = Number(form.get("amount"));
+  if (!Number.isInteger(amount) || amount <= 0 || form.get("confirm") !== "on")
+    redirect(`/admin/inscripciones/${id}?error=cash`);
+  const { error } = await context.client.rpc("admin_register_cash_payment", {
+    p_registration_id: id,
+    p_amount: amount,
+    p_note: String(form.get("note") || "").trim() || null,
+  });
+  revalidatePath("/admin", "layout");
+  revalidatePath("/mi-inscripcion", "layout");
+  redirect(`/admin/inscripciones/${id}?${error ? "error=cash" : "success=cash"}`);
+}
+
 export async function updateCampSettings(form: FormData) {
   const context = await adminContext();
   if (!context) redirect("/admin?error=access");

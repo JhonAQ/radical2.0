@@ -25,7 +25,7 @@ export default async function MiInscripcionPage() {
   const { data: registration } = await supabase
     .from("registrations")
     .select(
-      "id,first_name,last_name,document,email,phone,plan,price,amount,payment_type,status,review_note,created_at",
+      "id,first_name,last_name,document,birth_date,email,phone,plan,price,amount,payment_type,payment_method,status,review_note,created_at",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -34,7 +34,7 @@ export default async function MiInscripcionPage() {
 
   const { data: payments } = await supabase
     .from("registration_payments")
-    .select("id,amount,status,kind,created_at,review_note")
+    .select("id,amount,status,kind,method,created_at,review_note")
     .eq("registration_id", registration.id)
     .order("created_at", { ascending: false });
 

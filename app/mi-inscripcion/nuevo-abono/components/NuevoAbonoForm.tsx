@@ -223,16 +223,19 @@ export function NuevoAbonoForm({
       >
         {/* QR Column */}
         <div className="mi-inscripcion-payment-method">
-          <h2 className="mi-inscripcion-payment-method-title">Paga con Yape</h2>
+          <h2 className="mi-inscripcion-payment-method-title">Paga con Plin</h2>
           <p>
             {yapePhoneNumber
               ? "Escanea el QR o usa el número de celular."
               : "Escanea el QR para realizar tu pago."}
           </p>
+          <p className="mi-inscripcion-cash-hint">
+            ¿Prefieres efectivo? Entrégalo al encargado de inscripciones y él lo registrará en tu cuenta.
+          </p>
           <Image
             className="mi-inscripcion-payment-qr"
             src="/assets/registration/payment-qr.png"
-            alt="Código QR de Yape para pago"
+            alt="Código QR de Plin para pago"
             width={220}
             height={222}
           />
@@ -249,7 +252,7 @@ export function NuevoAbonoForm({
             )}
             <a
               href="/assets/registration/payment-qr.png"
-              download="qr-yape-abono.png"
+              download="qr-plin-abono.png"
             >
               <Download size={15} />
               Descargar QR

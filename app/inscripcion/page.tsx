@@ -15,6 +15,14 @@ export default async function RegistrationPage({ searchParams }: {
   const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Quien ya envió su inscripción no vuelve a pasar por el formulario.
+  const { data: existing } = await supabase
+    .from("registrations")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (existing) redirect("/mi-inscripcion");
   const avatarUrl = typeof user.user_metadata?.avatar_url === "string"
     ? user.user_metadata.avatar_url
     : typeof user.user_metadata?.picture === "string"

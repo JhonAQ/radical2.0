@@ -6,6 +6,8 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 import type { Registration, RegistrationPayment } from "../types";
 import { PrintButton } from "./PrintButton";
 import { ArrowLeft } from "lucide-react";
+import { isMinorAtCamp } from "@/utils/minors";
+import { ageFromBirth, decemberJanuaryBirthdays } from "@/utils/camper-report";
 
 export const metadata = {
   title: "Reporte Editorial Oficial | Radical 2.0",
@@ -82,6 +84,9 @@ export default async function AdminReportesPage({
     acc[p.registration_id] = (acc[p.registration_id] || 0) + p.amount;
     return acc;
   }, {} as Record<string, number>);
+
+  const birthdays = decemberJanuaryBirthdays(registrations);
+  const minors = registrations.filter((r) => isMinorAtCamp(r.birth_date));
 
   // Compute metrics
   const totalRegistrations = registrations.length;
@@ -200,10 +205,10 @@ export default async function AdminReportesPage({
               </p>
               <h1 className="mt-1 font-blowbrush text-3xl tracking-wide text-[#0b2d36] sm:text-4xl">
                 {currentType === "todo-en-uno" && "DOSSIER EJECUTIVO Y LOGÍSTICA"}
-                {currentType === "asistencia" && "LISTA DE CAMPISTAS"}
+                {currentType === "campistas" && "LISTA DE CAMPISTAS"}
                 {currentType === "financiero" && "REPORTE DE TESORERÍA Y SALDOS"}
-                {currentType === "emergencias" && "PADRÓN MÉDICO Y EMERGENCIAS"}
-                {currentType === "contactos" && "DIRECTORIO OFICIAL DE CONTACTOS"}
+                {currentType === "cumpleanos" && "CUMPLEAÑOS DE DICIEMBRE Y ENERO"}
+                {currentType === "menores" && "MENORES DE EDAD Y PERMISOS DE VIAJE"}
               </h1>
             </div>
 
@@ -311,9 +316,9 @@ export default async function AdminReportesPage({
         {currentType === "todo-en-uno" && <div className="page-break" />}
 
         {/* ══════════════════════════════════════════════════════
-            SECCIÓN 2: LISTA DE CAMPISTAS
+            SECCIÓN 2: LISTA DE CAMPISTAS (única: datos, WhatsApp y emergencias)
            ══════════════════════════════════════════════════════ */}
-        {(currentType === "todo-en-uno" || currentType === "asistencia") && (
+        {(currentType === "todo-en-uno" || currentType === "campistas") && (
           <section className="mt-6">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="font-bebas text-xl tracking-wide text-[#0b2d36]">
@@ -322,15 +327,17 @@ export default async function AdminReportesPage({
             </div>
 
             <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-[11px]">
                 <thead className="bg-[#0b2d36] text-[10px] uppercase tracking-wider text-white">
                   <tr>
                     <th className="p-2 text-center w-8">N°</th>
                     <th className="p-2">DNI / Doc</th>
                     <th className="p-2">Apellidos y Nombres</th>
-                    <th className="p-2">Plan</th>
-                    <th className="p-2 text-center">Estado</th>
-                    <th className="p-2 text-center w-28">Firma / Check</th>
+                    <th className="p-2 text-center">Edad</th>
+                    <th className="p-2">WhatsApp</th>
+                    <th className="p-2">Contacto de emergencia</th>
+                    <th className="p-2 text-center w-14">Permiso</th>
+                    <th className="p-2 text-center w-20">Firma</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -340,72 +347,30 @@ export default async function AdminReportesPage({
                       <td className="p-2 font-mono text-slate-700">{r.document}</td>
                       <td className="p-2 font-bold text-slate-900">
                         {r.last_name}, {r.first_name}
-                      </td>
-                      <td className="p-2 capitalize font-medium text-slate-600">{r.plan}</td>
-                      <td className="p-2 text-center">
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                            r.status === "approved"
-                              ? "bg-[#e2f7f2] text-[#0a6b5e]"
-                              : r.status === "rejected"
-                                ? "bg-[#fff0ed] text-[#a83820]"
-                                : "bg-[#fff7e0] text-[#92610a]"
-                          }`}
-                        >
-                          {r.status === "approved" ? "Aprobado" : r.status === "rejected" ? "Observado" : "Pendiente"}
+                        <span className="block text-[9px] font-medium capitalize text-slate-400">
+                          {r.plan} · {r.status === "approved" ? "Aprobado" : r.status === "rejected" ? "Observado" : "Pendiente"}
                         </span>
                       </td>
-                      <td className="p-2 text-center">
-                        <div className="mx-auto h-5 w-24 border border-dashed border-slate-300 rounded" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* Salto de página */}
-        {currentType === "todo-en-uno" && <div className="page-break" />}
-
-        {/* ══════════════════════════════════════════════════════
-            SECCIÓN 3: PADRÓN MÉDICO Y EMERGENCIAS
-           ══════════════════════════════════════════════════════ */}
-        {(currentType === "todo-en-uno" || currentType === "emergencias") && (
-          <section className="mt-6">
-            <div className="border-b border-slate-200 pb-2">
-              <h2 className="font-bebas text-xl tracking-wide text-[#0b2d36]">
-                {currentType === "todo-en-uno" ? "3. Ficha Médica y Contactos de Emergencia" : "Padrón Médico y de Emergencias"}
-              </h2>
-            </div>
-
-            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#0b2d36] text-[10px] uppercase tracking-wider text-white">
-                  <tr>
-                    <th className="p-2 text-center w-8">N°</th>
-                    <th className="p-2">Campista</th>
-                    <th className="p-2">WhatsApp</th>
-                    <th className="p-2">Nacimiento</th>
-                    <th className="p-2">Contacto de Emergencia</th>
-                    <th className="p-2">Teléfono Emergencia</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {registrations.map((r, i) => (
-                    <tr key={r.id} className="odd:bg-slate-50/40 avoid-break">
-                      <td className="p-2 text-center font-bold text-slate-400">{i + 1}</td>
-                      <td className="p-2 font-bold text-slate-900">
-                        {r.last_name}, {r.first_name}
-                      </td>
+                      <td className="p-2 text-center font-semibold text-slate-700">{ageFromBirth(r.birth_date) ?? "—"}</td>
                       <td className="p-2 font-mono text-slate-700">{r.phone}</td>
-                      <td className="p-2 text-slate-600">{r.birth_date}</td>
                       <td className="p-2 text-slate-800">
                         <span className="font-semibold">{r.emergency_name}</span>{" "}
                         <span className="text-[10px] text-slate-500">({r.emergency_relation})</span>
+                        <span className="block font-mono font-bold text-[#a83820]">{r.emergency_phone}</span>
                       </td>
-                      <td className="p-2 font-mono font-bold text-[#a83820]">{r.emergency_phone}</td>
+                      <td className="p-2 text-center">
+                        {isMinorAtCamp(r.birth_date) ? (
+                          <>
+                            <span className="block text-[8px] font-black uppercase text-[#a83820]">Menor</span>
+                            <div className="mx-auto mt-0.5 size-4 rounded border border-slate-500" />
+                          </>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-center">
+                        <div className="mx-auto h-5 w-16 rounded border border-dashed border-slate-300" />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -414,17 +379,16 @@ export default async function AdminReportesPage({
           </section>
         )}
 
-        {/* Salto de página */}
         {currentType === "todo-en-uno" && <div className="page-break" />}
 
         {/* ══════════════════════════════════════════════════════
-            SECCIÓN 4: DIRECTORIO DE CONTACTOS
+            CUMPLEAÑOS DE DICIEMBRE Y ENERO
            ══════════════════════════════════════════════════════ */}
-        {(currentType === "todo-en-uno" || currentType === "contactos") && (
+        {(currentType === "todo-en-uno" || currentType === "cumpleanos") && (
           <section className="mt-6">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="font-bebas text-xl tracking-wide text-[#0b2d36]">
-                {currentType === "todo-en-uno" ? "4. Directorio de Contactos y WhatsApp" : "Directorio de Contactos"}
+                {currentType === "todo-en-uno" ? "3. " : ""}Campistas que cumplen años en diciembre y enero ({birthdays.length})
               </h2>
             </div>
 
@@ -433,22 +397,77 @@ export default async function AdminReportesPage({
                 <thead className="bg-[#0b2d36] text-[10px] uppercase tracking-wider text-white">
                   <tr>
                     <th className="p-2 text-center w-8">N°</th>
-                    <th className="p-2">Campista</th>
-                    <th className="p-2">WhatsApp Directo</th>
-                    <th className="p-2">Correo Electrónico</th>
+                    <th className="p-2">Apellidos y Nombres</th>
+                    <th className="p-2">Cumpleaños</th>
+                    <th className="p-2 text-center">Cumple</th>
+                    <th className="p-2">WhatsApp</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {registrations.map((r, i) => (
+                  {birthdays.map(({ item: r, day, monthLabel, turns }, i) => (
                     <tr key={r.id} className="odd:bg-slate-50/40 avoid-break">
                       <td className="p-2 text-center font-bold text-slate-400">{i + 1}</td>
                       <td className="p-2 font-bold text-slate-900">
                         {r.last_name}, {r.first_name}
                       </td>
-                      <td className="p-2 font-mono font-semibold text-[#008d98]">{r.phone}</td>
-                      <td className="p-2 text-slate-600">{r.email}</td>
+                      <td className="p-2 font-semibold capitalize text-slate-800">{day} de {monthLabel}</td>
+                      <td className="p-2 text-center font-semibold text-slate-700">{turns} años</td>
+                      <td className="p-2 font-mono text-slate-700">{r.phone}</td>
                     </tr>
                   ))}
+                  {birthdays.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-slate-500">
+                        Nadie de la lista cumple años en diciembre o enero.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {currentType === "menores" && (
+          <section className="mt-6">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="font-bebas text-xl tracking-wide text-[#0b2d36]">
+                Menores de edad al inicio del campamento ({minors.length})
+              </h2>
+              <p className="mt-1 text-[11px] text-slate-500">Deben presentar su permiso de viaje notarial en original al abordar.</p>
+            </div>
+            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+              <table className="w-full text-left text-[11px]">
+                <thead className="bg-[#0b2d36] text-[10px] uppercase tracking-wider text-white">
+                  <tr>
+                    <th className="p-2 text-center w-8">N°</th>
+                    <th className="p-2">DNI / Doc</th>
+                    <th className="p-2">Apellidos y Nombres</th>
+                    <th className="p-2 text-center">Edad</th>
+                    <th className="p-2">WhatsApp</th>
+                    <th className="p-2">Contacto de emergencia</th>
+                    <th className="p-2 text-center w-16">Permiso ✓</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {minors.map((r, i) => (
+                    <tr key={r.id} className="odd:bg-slate-50/40 avoid-break">
+                      <td className="p-2 text-center font-bold text-slate-400">{i + 1}</td>
+                      <td className="p-2 font-mono text-slate-700">{r.document}</td>
+                      <td className="p-2 font-bold text-slate-900">{r.last_name}, {r.first_name}</td>
+                      <td className="p-2 text-center font-semibold text-slate-700">{ageFromBirth(r.birth_date) ?? "—"}</td>
+                      <td className="p-2 font-mono text-slate-700">{r.phone}</td>
+                      <td className="p-2 text-slate-800">
+                        <span className="font-semibold">{r.emergency_name}</span>{" "}
+                        <span className="text-[10px] text-slate-500">({r.emergency_relation})</span>
+                        <span className="block font-mono font-bold text-[#a83820]">{r.emergency_phone}</span>
+                      </td>
+                      <td className="p-2 text-center"><div className="mx-auto size-4 rounded border border-slate-500" /></td>
+                    </tr>
+                  ))}
+                  {minors.length === 0 && (
+                    <tr><td colSpan={7} className="p-4 text-center text-slate-500">No hay menores de edad en la lista.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

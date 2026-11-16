@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Plus_Jakarta_Sans, Yellowtail, Bebas_Neue } from "next/font/google";
+import { Plus_Jakarta_Sans, Yellowtail, Bebas_Neue, Kalam } from "next/font/google";
 import "./globals.css";
 
 // UI Base
@@ -37,6 +37,14 @@ const bebas = Bebas_Neue({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-bebas",
+  display: "swap",
+});
+
+// Rotulado a mano / Fechas y temas de ponentes (Kalam)
+const marker = Kalam({
+  weight: "700",
+  subsets: ["latin"],
+  variable: "--font-kalam",
   display: "swap",
 });
 
@@ -105,7 +113,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`h-full antialiased ${sans.variable} ${edosz.variable} ${blowBrush.variable} ${yellowtail.variable} ${bebas.variable}`}
+      className={`h-full antialiased ${sans.variable} ${edosz.variable} ${blowBrush.variable} ${yellowtail.variable} ${bebas.variable} ${marker.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

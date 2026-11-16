@@ -3,10 +3,10 @@
 import { useState } from "react";
 import {
   Printer,
-  FileText,
   DollarSign,
   Users,
-  Phone,
+  Cake,
+  ShieldAlert,
   ChevronDown,
   X,
   FileCheck2,
@@ -14,7 +14,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 
-type ReportType = "todo-en-uno" | "asistencia" | "financiero" | "emergencias" | "contactos";
+type ReportType = "todo-en-uno" | "campistas" | "financiero" | "cumpleanos" | "menores";
 type StatusFilter = "all" | "approved" | "pending" | "rejected";
 type PlanFilter = "all" | "preventa" | "regular";
 
@@ -25,9 +25,9 @@ const REPORT_OPTIONS: {
   icon: React.ElementType;
 }[] = [
   {
-    type: "asistencia",
+    type: "campistas",
     label: "Lista de campistas",
-    description: "Para control en puerta y abordaje de buses con casillas de firma.",
+    description: "Documento, edad, WhatsApp, contacto de emergencia y casilla de firma.",
     icon: Users,
   },
   {
@@ -37,16 +37,16 @@ const REPORT_OPTIONS: {
     icon: DollarSign,
   },
   {
-    type: "emergencias",
-    label: "Padrón Médico y Emergencias",
-    description: "Para tópico y seguridad: contactos familiares y teléfonos.",
-    icon: FileText,
+    type: "cumpleanos",
+    label: "Cumpleaños de diciembre y enero",
+    description: "Campistas que cumplen años en esos meses, con su WhatsApp.",
+    icon: Cake,
   },
   {
-    type: "contactos",
-    label: "Directorio de WhatsApp",
-    description: "Teléfonos directos y correos para líderes y coordinadores.",
-    icon: Phone,
+    type: "menores",
+    label: "Menores de edad y permisos",
+    description: "Menores al inicio del campamento, con casilla para marcar el permiso de viaje.",
+    icon: ShieldAlert,
   },
 ];
 
@@ -191,7 +191,7 @@ export function ExportPanel() {
                       </span>
                     </span>
                     <span className="mt-0.5 block text-[11px] text-slate-200 leading-tight">
-                      KPIs + Tesorería + Acreditación + Emergencias
+                      KPIs + Tesorería + Campistas + Cumpleaños
                     </span>
                   </div>
                 </div>
@@ -270,19 +270,27 @@ export function ExportPanel() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => downloadCsv("contactos")}
+                    onClick={() => downloadCsv("campistas")}
                     disabled={csvLoading !== null}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
-                    CSV Contactos
+                    CSV Campistas
                   </button>
                   <button
                     type="button"
-                    onClick={() => downloadCsv("emergencias")}
+                    onClick={() => downloadCsv("cumpleanos")}
                     disabled={csvLoading !== null}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
-                    CSV Emergencias
+                    CSV Cumpleaños
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadCsv("menores")}
+                    disabled={csvLoading !== null}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    CSV Menores
                   </button>
                 </div>
               )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { isMinorAtCamp, TRAVEL_PERMIT_NOTICE } from "@/utils/minors";
 import { useEffect, useEffectEvent, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -223,10 +224,12 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
   const [preventaClosed, setPreventaClosed] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs);
   const [preventaNotice, setPreventaNotice] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs && initialPlan === "preventa");
   const [birthDateInvalid, setBirthDateInvalid] = useState(false);
+  const [permitAck, setPermitAck] = useState(false);
+  const isMinor = isMinorAtCamp(participant.birthDate);
   const selected = plan ? plans[plan] : null;
   const amount = payment === "reserve" ? Math.min(reserveAmount, selected?.price ?? reserveAmount) : selected?.price ?? 0;
   const remaining = selected ? selected.price - amount : 0;
-  const dataComplete = Object.values(participant).every((value) => value.trim()) && /^[a-zA-Z0-9]{6,12}$/.test(participant.document.replace(/\s/g, "")) && !Number.isNaN(Date.parse(participant.birthDate));
+  const dataComplete = Object.values(participant).every((value) => value.trim()) && /^[a-zA-Z0-9]{6,12}$/.test(participant.document.replace(/\s/g, "")) && !Number.isNaN(Date.parse(participant.birthDate)) && (!isMinor || permitAck);
   const contactComplete = Object.values(contact).every((value) => value.trim()) && /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) && /^\d{9,15}$/.test(contact.emergencyPhone.replace(/[\s+()-]/g, ""));
   const showStepErrors = validationStep === step;
   const participantErrors: Partial<Record<keyof Participant, string>> = showStepErrors && step === 1 ? {
@@ -236,6 +239,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
     birthDate: !participant.birthDate ? "Ingresa tu fecha de nacimiento." : birthDateInvalid ? "La fecha no puede ser futura." : "",
     gender: participant.gender ? "" : "Selecciona una opción.",
   } : {};
+  const permitError = showStepErrors && step === 1 && isMinor && !permitAck ? "Confirma que llevarás tu permiso de viaje." : "";
   const contactErrors: Partial<Record<keyof Contact, string>> = showStepErrors && step === 2 ? {
     phone: !contact.phone.trim() ? "Ingresa tu número de WhatsApp." : /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) ? "" : "Ingresa un celular válido.",
     email: contact.email.trim() ? "" : "No encontramos el correo de tu cuenta.",
@@ -587,6 +591,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                   <label className={participantErrors.document ? "registration-field-invalid" : ""}><span className="registration-field-label"><IdCard /> Documento</span><input aria-required="true" aria-invalid={participantErrors.document ? true : undefined} aria-describedby={participantErrors.document ? "document-error" : undefined} value={participant.document} onChange={(e) => update("document", e.target.value)} placeholder="DNI o documento" /><FieldValidationMessage id="document-error" message={participantErrors.document} /></label>
                   <label className={participantErrors.birthDate ? "registration-field-invalid" : ""}><span className="registration-field-label"><CalendarDays /> Nacimiento</span><input aria-required="true" aria-invalid={participantErrors.birthDate ? true : undefined} aria-describedby={participantErrors.birthDate ? "birth-date-error" : undefined} type="date" value={participant.birthDate} onChange={(e) => update("birthDate", e.target.value)} /><FieldValidationMessage id="birth-date-error" message={participantErrors.birthDate} /></label>
                   <fieldset className={`registration-gender registration-field-wide ${participantErrors.gender ? "registration-field-invalid" : ""}`} aria-invalid={participantErrors.gender ? true : undefined} aria-describedby={participantErrors.gender ? "gender-error" : undefined}><legend><UsersRound size={17} /> Género</legend>{[["masculino", "Masculino"], ["femenino", "Femenino"], ["otro", "Prefiero no decirlo"]].map(([value, label]) => <label key={value}><input type="radio" name="gender" value={value} checked={participant.gender === value} onChange={() => update("gender", value)} /><span>{label}</span></label>)}<FieldValidationMessage id="gender-error" message={participantErrors.gender} /></fieldset>
+                  {isMinor && <div className="registration-minor-notice registration-field-wide" role="note"><strong>Serás menor de edad en el campamento</strong><p>{TRAVEL_PERMIT_NOTICE}</p><label><input type="checkbox" checked={permitAck} onChange={(e) => setPermitAck(e.target.checked)} aria-invalid={permitError ? true : undefined} /><span>Llevaré mi permiso en original el día del viaje.</span></label>{permitError && <small role="alert">{permitError}</small>}</div>}
                 </div>
               </form>}
 
@@ -601,7 +606,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
               </form>}
 
               {step === 3 && <div className="registration-payment-composition">
-                <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Yape</strong><p>{yapePhoneNumber ? "Escanea el QR o usa el número de celular." : "Escanea el QR para realizar tu pago."}</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Yape para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details">{yapeHolder && <strong>{yapeHolder}</strong>}{yapePhoneNumber && <div className="registration-yape-number"><span>{yapePhoneNumber}</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div>}<a href="/assets/registration/payment-qr.png" download="qr-yape-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
+                <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Plin</strong><p>{yapePhoneNumber ? "Escanea el QR o usa el número de celular." : "Escanea el QR para realizar tu pago."}</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Plin para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details">{yapeHolder && <strong>{yapeHolder}</strong>}{yapePhoneNumber && <div className="registration-yape-number"><span>{yapePhoneNumber}</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div>}<a href="/assets/registration/payment-qr.png" download="qr-plin-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
                 <div className="registration-payment">
                   <div className="registration-payment-options">
                     <p className="registration-payment-step-label"><span>1</span> Elige cómo pagar</p>

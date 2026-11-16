@@ -50,6 +50,9 @@
 
   /* Condensed Event Font (Bebas Neue) */
   --font-bebas: var(--font-bebas), sans-serif;
+
+  /* Rotulado a mano (Kalam) */
+  --font-marker: var(--font-kalam), cursive;
   --font-condensed: var(--font-bebas), sans-serif;
 
   /* Custom animation durations */

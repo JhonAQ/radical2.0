@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import type { Registration } from "@/app/admin/types";
+import { isMinorAtCamp } from "@/utils/minors";
+import { ageFromBirth, decemberJanuaryBirthdays } from "@/utils/camper-report";
 
-type ExportType = "general" | "financiero" | "contactos" | "emergencias";
+type ExportType = "general" | "financiero" | "campistas" | "cumpleanos" | "menores";
 
 function escapeCSV(val: unknown): string {
   if (val === null || val === undefined) return "";
@@ -175,54 +177,63 @@ export async function GET(req: NextRequest) {
       });
       break;
 
-    case "contactos":
-      filename = "radical2-lista-contactos";
+    case "campistas":
+      filename = "radical2-lista-campistas";
       header = toRow([
         "N°",
+        "DNI / Pasaporte",
         "Apellidos y Nombres",
+        "Edad",
         "WhatsApp",
-        "Correo",
+        "Contacto de Emergencia",
+        "Relación",
+        "Teléfono de Emergencia",
         "Plan",
         "Estado",
       ]);
-      bodyRows = rows
-        .filter((r) => r.status === "approved")
+      bodyRows = [...rows]
+        .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "es"))
         .map((r, i) =>
           toRow([
             i + 1,
+            r.document,
             `${r.last_name} ${r.first_name}`,
+            ageFromBirth(r.birth_date) ?? "",
             r.phone,
-            r.email,
+            r.emergency_name,
+            r.emergency_relation,
+            r.emergency_phone,
             r.plan,
             statusLabel[r.status] || r.status,
           ]),
         );
       break;
 
-    case "emergencias":
-      filename = "radical2-contactos-emergencia";
-      header = toRow([
-        "N°",
-        "Campista",
-        "WhatsApp Campista",
-        "Nombre de Emergencia",
-        "Relación",
-        "Teléfono de Emergencia",
-        "Plan",
-        "Estado",
-      ]);
-      bodyRows = rows.map((r, i) =>
+    case "cumpleanos":
+      filename = "radical2-cumpleanos-diciembre-enero";
+      header = toRow(["N°", "Apellidos y Nombres", "Cumpleaños", "Cumple (años)", "WhatsApp", "Plan", "Estado"]);
+      bodyRows = decemberJanuaryBirthdays(rows).map(({ item: r, day, monthLabel, turns }, i) =>
         toRow([
           i + 1,
           `${r.last_name} ${r.first_name}`,
+          `${day} de ${monthLabel}`,
+          turns,
           r.phone,
-          r.emergency_name,
-          r.emergency_relation,
-          r.emergency_phone,
           r.plan,
           statusLabel[r.status] || r.status,
         ]),
       );
+      break;
+
+    case "menores":
+      filename = "radical2-menores-de-edad";
+      header = toRow(["N°", "DNI / Pasaporte", "Apellidos y Nombres", "Edad", "WhatsApp", "Contacto de Emergencia", "Relación", "Teléfono de Emergencia", "Permiso de viaje"]);
+      bodyRows = rows
+        .filter((r) => isMinorAtCamp(r.birth_date))
+        .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, "es"))
+        .map((r, i) =>
+          toRow([i + 1, r.document, `${r.last_name} ${r.first_name}`, ageFromBirth(r.birth_date) ?? "", r.phone, r.emergency_name, r.emergency_relation, r.emergency_phone, ""]),
+        );
       break;
 
     default:

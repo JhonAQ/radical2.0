@@ -1,0 +1,112 @@
+/* ── Ponentes ─────────────────────────────────────────────── */
+
+.speakers {
+  background:
+    linear-gradient(to bottom, #fff 0, rgba(255, 255, 255, 0) 90px, rgba(255, 255, 255, 0) calc(100% - 90px), #fff 100%),
+    #f8f1e3;
+}
+/* En desktop el brochazo de Precios cae encima: el crema empieza arriba */
+@media (min-width: 1024px) {
+  .speakers {
+    background:
+      linear-gradient(to bottom, rgba(255, 255, 255, 0) calc(100% - 70px), #fff 100%),
+      #f8f1e3;
+  }
+}
+
+/* Recorte con borde blanco tipo sticker; el borde inferior se funde */
+.speakers-portrait {
+  -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 88%, transparent 100%);
+}
+.speakers-portrait img {
+  filter:
+    drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff)
+    drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff)
+    drop-shadow(0 16px 24px rgba(11, 45, 54, 0.22));
+}
+
+.speakers-name {
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.speakers-topic > img {
+  filter: drop-shadow(0 8px 14px rgba(11, 45, 54, 0.14));
+}
+
+.speakers-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 10px rgba(11, 45, 54, 0.2);
+}
+.speakers-thumb--naranja { background: linear-gradient(160deg, #ffc629, #ff6b00); }
+.speakers-thumb--turquesa { background: linear-gradient(160deg, #00c7c7, #0b6f7d); }
+
+.speakers-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b2d36;
+  box-shadow: 0 6px 16px rgba(11, 45, 54, 0.18);
+  transform: translateY(-50%);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+@media (max-width: 1023px) {
+  .speakers-arrow { top: 36%; width: 40px; height: 40px; }
+}
+.speakers-arrow:hover { transform: translateY(-50%) scale(1.08); }
+.speakers-arrow:focus-visible { outline: 2px solid #00a3ad; outline-offset: 3px; }
+
+.speakers-sun { animation: speakers-spin 180s linear infinite; }
+.speakers-sway { animation: speakers-sway 12s ease-in-out infinite; transform-origin: 0% 0%; }
+.speakers-sway--late { animation-delay: -3s; transform-origin: 100% 0%; }
+.speakers-sway--slow { animation-duration: 16s; }
+.speakers-glow { animation: speakers-glow 3.2s ease-in-out infinite; }
+
+@keyframes speakers-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes speakers-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@keyframes speakers-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-2.5deg); }
+}
+@keyframes speakers-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 190, 60, 0)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 190, 60, 0.55)); }
+}
+
+/* Pincelada: una máscara con borde suave barre de izquierda a derecha */
+.speakers-paint {
+  -webkit-mask-image: linear-gradient(100deg, #000 40%, transparent 60%);
+  mask-image: linear-gradient(100deg, #000 40%, transparent 60%);
+  -webkit-mask-size: 260% 100%;
+  mask-size: 260% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+  animation: speakers-paint 0.9s cubic-bezier(0.55, 0.05, 0.3, 1) both;
+}
+.speakers-paint--slow { animation-duration: 1.5s; }
+@keyframes speakers-paint {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to { -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speakers-sun, .speakers-sway, .speakers-glow { animation: none; }
+  .speakers-paint { animation: none; -webkit-mask-image: none; mask-image: none; }
+}

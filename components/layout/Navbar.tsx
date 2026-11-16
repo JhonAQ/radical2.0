@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { MenuIcon, CloseIcon, ArrowRightIcon } from "@/components/common/Icons";
 import { CAMP_CONFIG } from "@/config/site";
+import { useHasRegistration } from "@/utils/useHasRegistration";
 
 const emptySubscribe = () => () => {};
 
@@ -18,6 +19,8 @@ const emptySubscribe = () => () => {};
  */
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const registered = useHasRegistration();
+  const ctaHref = registered ? "/mi-inscripcion" : CAMP_CONFIG.registrationUrl;
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("inicio");
   const mounted = useSyncExternalStore(
@@ -122,10 +125,10 @@ export function Navbar() {
           {/* CTA + hamburguesa */}
           <div className="flex items-center gap-2">
             <Link
-              href={CAMP_CONFIG.registrationUrl}
+              href={ctaHref}
               className="inline-flex items-center gap-1.5 rounded-xl bg-amarillo px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-azul-profundo sm:px-4 sm:py-2 sm:text-xs"
             >
-              <span>Inscríbete</span>
+              <span>{registered ? "Mi inscripción" : "Inscríbete"}</span>
               <ArrowRightIcon className="w-3 h-3" />
             </Link>
 
@@ -193,11 +196,11 @@ export function Navbar() {
 
               {/* CTA */}
               <Link
-                href={CAMP_CONFIG.registrationUrl}
+                href={ctaHref}
                 onClick={closeMenu}
                 className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-amarillo px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider text-azul-profundo"
               >
-                <span>Inscribirme al Campamento</span>
+                <span>{registered ? "Ver mi inscripción" : "Inscribirme al Campamento"}</span>
                 <ArrowRightIcon className="w-4 h-4" />
               </Link>
             </div>

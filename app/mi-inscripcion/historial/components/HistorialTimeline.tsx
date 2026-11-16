@@ -33,7 +33,9 @@ const kindLabels: Record<string, string> = {
 export function HistorialTimeline({
   registration,
   payments,
+  embedded = false,
 }: {
+  embedded?: boolean;
   registration: {
     plan: string;
     price: number;
@@ -41,12 +43,14 @@ export function HistorialTimeline({
     status: string;
     created_at: string;
     review_note?: string | null;
+    payment_method?: string;
   };
   payments: {
     id: string;
     amount: number;
     status: string;
     kind: string;
+    method?: string;
     created_at: string;
     review_note: string | null;
   }[];
@@ -56,7 +60,7 @@ export function HistorialTimeline({
     ...payments.map((p) => ({
       id: p.id,
       date: p.created_at,
-      label: kindLabels[p.kind] ?? "Abono",
+      label: p.method === "efectivo" ? "Pago en efectivo" : kindLabels[p.kind] ?? "Abono",
       amount: p.amount,
       status: p.status,
       reviewNote: p.review_note,
@@ -64,8 +68,9 @@ export function HistorialTimeline({
     {
       id: "initial",
       date: registration.created_at,
-      label:
-        registration.amount >= registration.price
+      label: registration.payment_method === "efectivo"
+        ? `Inscripción (Pago en efectivo) · Plan ${registration.plan}`
+        : registration.amount >= registration.price
           ? `Inscripción (Pago completo) · Plan ${registration.plan}`
           : `Inscripción (Abono inicial) · Plan ${registration.plan}`,
       amount: registration.amount,
@@ -75,23 +80,31 @@ export function HistorialTimeline({
   ].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="mi-inscripcion-historial-wrap">
-      <motion.div
-        className="mi-inscripcion-heading"
-        initial={{ opacity: 0, y: 9 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" as const }}
-      >
-        <p className="mi-inscripcion-eyebrow">Radical 2.0</p>
-        <h1>HISTORIAL DE PAGOS</h1>
-        <p>Todos los movimientos de tu inscripción en un solo lugar.</p>
-      </motion.div>
+    <div className={`mi-inscripcion-historial-wrap${embedded ? " mi-inscripcion-historial-embedded" : ""}`}>
+      {embedded ? (
+        <div className="mi-inscripcion-historial-embedded-heading">
+          <h2 className="mi-inscripcion-payments-title">Historial de pagos</h2>
+          <p>Inscripción y todos tus movimientos, con su estado y detalle.</p>
+        </div>
+      ) : (
+        <>
+          <motion.div
+            className="mi-inscripcion-heading"
+            initial={{ opacity: 0, y: 9 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" as const }}
+          >
+            <h1>HISTORIAL DE PAGOS</h1>
+            <p>Todos los movimientos de tu inscripción en un solo lugar.</p>
+          </motion.div>
 
-      <div style={{ marginBottom: 20 }}>
-        <Link href="/mi-inscripcion" className="mi-inscripcion-btn-secondary">
-          <ArrowLeft size={16} /> Volver a mi espacio
-        </Link>
-      </div>
+          <div style={{ marginBottom: 20 }}>
+            <Link href="/mi-inscripcion" className="mi-inscripcion-btn-secondary">
+              <ArrowLeft size={16} /> Volver a mi espacio
+            </Link>
+          </div>
+        </>
+      )}
 
       {events.length === 0 ? (
         <p className="mi-inscripcion-empty">

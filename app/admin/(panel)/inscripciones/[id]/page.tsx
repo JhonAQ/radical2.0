@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { CamperReceiptModal } from "../../../components/CamperReceiptModal";
 import { RegistrationDataForm } from "../../../components/RegistrationDataForm";
+import { CashPaymentForm } from "../../../components/CashPaymentForm";
 import { ReviewResolutionForm } from "../../../components/ReviewResolutionForm";
 import { review } from "../../../actions";
 import {
@@ -60,7 +61,8 @@ export default async function AdminInscripcionDetailPage({
       .from("registration_payments")
       .select("*")
       .eq("registration_id", id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true }),
     client
       .from("registration_review_events")
       .select("id,payment_id,created_at,old_status,new_status,note")
@@ -84,6 +86,21 @@ export default async function AdminInscripcionDetailPage({
   ]);
 
   const payments = (rawPayments as RegistrationPayment[]) || [];
+  const paymentLabels = new Map<string, string>();
+  let additionalNumber = 0;
+  let cashNumber = 0;
+
+  for (const payment of payments) {
+    if (payment.kind === "replacement") {
+      paymentLabels.set(payment.id, "Comprobante de reemplazo");
+    } else if (payment.method === "efectivo") {
+      cashNumber += 1;
+      paymentLabels.set(payment.id, `Pago en efectivo #${cashNumber}`);
+    } else {
+      additionalNumber += 1;
+      paymentLabels.set(payment.id, `Abono adicional #${additionalNumber}`);
+    }
+  }
   const history = (rawHistory as ReviewEvent[]) || [];
 
   // Generate signed URLs for all receipts
@@ -132,7 +149,7 @@ export default async function AdminInscripcionDetailPage({
   }
 
   // Additional payment receipts
-  for (const [index, p] of payments.entries()) {
+  for (const p of payments) {
     if (p.receipt_path) {
       const { data: payUrl } = await client.storage
         .from("registration-receipts")
@@ -141,10 +158,7 @@ export default async function AdminInscripcionDetailPage({
       if (payUrl?.signedUrl) {
         receiptsList.push({
           id: p.id,
-          label:
-            p.kind === "replacement"
-              ? `Reemplazo #${index + 1}`
-              : `Abono S/ ${p.amount}`,
+          label: paymentLabels.get(p.id) ?? `Abono S/ ${p.amount}`,
           url: payUrl.signedUrl,
           amount: p.amount,
           kind: p.kind,
@@ -407,7 +421,9 @@ export default async function AdminInscripcionDetailPage({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">
-                      Abono inicial de inscripción
+                      {registration.payment_method === "efectivo"
+                        ? "Pago inicial en efectivo"
+                        : "Abono inicial de inscripción"}
                     </span>
                     <span
                       className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
@@ -423,7 +439,11 @@ export default async function AdminInscripcionDetailPage({
                   </div>
                   <p className="mt-1 text-slate-500">
                     Monto: <strong className="text-slate-800">S/ {registration.amount}</strong> · Registrado el{" "}
-                    {new Date(registration.created_at).toLocaleDateString("es-PE")}
+                    {new Date(registration.created_at).toLocaleString("es-PE", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                      timeZone: "America/Lima",
+                    })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -435,8 +455,8 @@ export default async function AdminInscripcionDetailPage({
                 </div>
               </div>
 
-              {/* Abonos adicionales */}
-              {payments.map((p, index) => (
+              {/* Movimientos posteriores, en orden cronológico */}
+              {payments.map((p) => (
                 <div
                   key={p.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-slate-200 bg-[#fafcfb] p-3.5 text-xs"
@@ -444,9 +464,7 @@ export default async function AdminInscripcionDetailPage({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900">
-                        {p.kind === "replacement"
-                          ? `Comprobante de reemplazo #${index + 1}`
-                          : `Abono adicional #${index + 1}`}
+                        {paymentLabels.get(p.id) ?? "Abono adicional"}
                       </span>
                       <span
                         className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
@@ -462,7 +480,11 @@ export default async function AdminInscripcionDetailPage({
                     </div>
                     <p className="mt-1 text-slate-500">
                       Monto: <strong className="text-slate-800">S/ {p.amount}</strong> · Registrado el{" "}
-                      {new Date(p.created_at).toLocaleDateString("es-PE")}
+                      {new Date(p.created_at).toLocaleString("es-PE", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                        timeZone: "America/Lima",
+                      })}
                     </p>
                     {p.review_note && (
                       <p className="mt-1 text-xs text-amber-900 bg-amber-50 rounded px-2 py-1">
@@ -470,13 +492,15 @@ export default async function AdminInscripcionDetailPage({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <CamperReceiptModal
-                      receipts={receiptsList}
-                      initialReceiptId={p.id}
-                      triggerLabel="Ver comprobante"
-                    />
-                  </div>
+                  {p.receipt_path && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <CamperReceiptModal
+                        receipts={receiptsList}
+                        initialReceiptId={p.id}
+                        triggerLabel="Ver comprobante"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -578,6 +602,13 @@ export default async function AdminInscripcionDetailPage({
               )}
             </div>
           </section>
+
+          <CashPaymentForm
+            registrationId={registration.id}
+            approved={registration.status === "approved"}
+            remaining={remainingBalance}
+            price={registration.price}
+          />
 
           <RegistrationDataForm registration={registration} />
 

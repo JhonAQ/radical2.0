@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useHasRegistration } from "@/utils/useHasRegistration";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import { preventaDates } from "@/utils/preventa";
@@ -68,6 +69,7 @@ export function PricingPlans({ preventaDeadline }: { preventaDeadline: string })
   const dates = preventaDates(preventaDeadline);
   const plans = basePlans.map((plan, index) => ({ ...plan, date: index === 0 ? `Hasta el ${dates.lastDay}` : `Desde el ${dates.firstRegularDay}` }));
   const router = useRouter();
+  const registered = useHasRegistration();
   const headingRef = useRef<HTMLDivElement>(null);
   const headingVisible = useInView(headingRef, { once: true, amount: 0.4, margin: "0px 0px -18% 0px" });
   const reduceMotion = Boolean(useReducedMotion());
@@ -76,7 +78,7 @@ export function PricingPlans({ preventaDeadline }: { preventaDeadline: string })
   const selectedPlanDetails = plans.find((plan) => plan.name === selectedPlan);
 
   return (
-    <section id="inscribirme" aria-labelledby="pricing-heading" className="relative isolate bg-white px-4 py-16 text-azul-profundo sm:px-8 sm:py-20 lg:px-8 lg:py-24">
+    <section id="inscribirme" aria-labelledby="pricing-heading" className="relative isolate bg-white px-4 py-16 text-azul-profundo sm:px-8 sm:py-20 lg:z-20 lg:bg-transparent lg:bg-[linear-gradient(to_bottom,#fff_calc(100%-110px),transparent_calc(100%-110px))] lg:px-8 lg:py-24">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 hidden -scale-x-100 -scale-y-100 bg-[url('/assets/activities/brush-background.png')] bg-center bg-[length:130%_190%] bg-no-repeat lg:block" />
       <MotionImage initial={reduceMotion ? false : { opacity: 0, x: -32, y: 16, rotate: -7 }} animate={showHeading ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: -32, y: 16, rotate: -7 }} transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.08, ease: entranceEase }} src="/assets/elements/precios-izquierda.png" alt="" width={1536} height={1024} className="pointer-events-none absolute bottom-[40px] left-0 z-0 hidden w-72 origin-bottom-left lg:block lg:scale-[1.3] lg:[mask-image:linear-gradient(to_bottom,transparent,black_40%)] xl:w-96" />
       <MotionImage initial={reduceMotion ? false : { opacity: 0, x: 32, y: 16, rotate: 7 }} animate={showHeading ? { opacity: 1, x: 0, y: 0, rotate: 0 } : { opacity: 0, x: 32, y: 16, rotate: 7 }} transition={{ duration: reduceMotion ? 0 : 0.95, delay: reduceMotion ? 0 : 0.22, ease: entranceEase }} src="/assets/elements/precios-derecha.png" alt="" width={1024} height={1536} className="pointer-events-none absolute bottom-[50px] right-0 z-0 hidden w-44 origin-bottom-right lg:block lg:scale-[1.3] lg:[mask-image:linear-gradient(to_bottom,transparent,black_40%)] xl:w-56" />
@@ -149,24 +151,24 @@ export function PricingPlans({ preventaDeadline }: { preventaDeadline: string })
         <div className="hidden text-white lg:block">
           <h3 className="sr-only">Ambos planes incluyen</h3>
           <Benefits className="space-y-4" animated />
-          <button type="button" disabled={!selectedPlan} onClick={() => { if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff6b00] to-[#ffbf00] px-4 font-bebas text-xl uppercase tracking-wide text-white shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
-            {selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}
+          <button type="button" disabled={!selectedPlan && !registered} onClick={() => { if (registered) router.push("/mi-inscripcion"); else if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff6b00] to-[#ffbf00] px-4 font-bebas text-xl uppercase tracking-wide text-white shadow-lg transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">
+            {registered ? "Ver mi inscripción" : selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
           </button>
         </div>
         <motion.div initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4, margin: "0px 0px -10% 0px" }} transition={{ duration: reduceMotion ? 0 : 0.55, delay: reduceMotion ? 0 : 0.12, ease: entranceEase }} className="mt-4 text-center lg:hidden">
-          <button type="button" disabled={!selectedPlan} onClick={() => { if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white transition-[filter,transform] enabled:active:scale-[0.98] enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 sm:max-w-md">
+          <button type="button" disabled={!selectedPlan && !registered} onClick={() => { if (registered) router.push("/mi-inscripcion"); else if (selectedPlan) router.push(`/inscripcion?plan=${selectedPlan.toLowerCase()}`); }} aria-describedby="registration-status" className="relative inline-flex min-h-20 w-full items-center justify-center gap-3 px-6 font-bebas text-2xl uppercase tracking-wide text-white transition-[filter,transform] enabled:active:scale-[0.98] enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 sm:max-w-md">
             <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 inset-x-[6%]"><Image src="/assets/elements/asset-boton-xd.png" alt="" fill sizes="(max-width: 640px) 88vw, 394px" className="object-fill" /></span>
             <span className="relative inline-flex translate-y-[3px] items-center justify-center gap-3 leading-none">
               <span aria-live="polite" aria-atomic="true" className="inline-grid">
                 <AnimatePresence initial={false}>
-                  <motion.span key={selectedPlanDetails?.price ?? "choose"} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.16 }} className="col-start-1 row-start-1">{selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}</motion.span>
+                  <motion.span key={registered ? "registered" : selectedPlanDetails?.price ?? "choose"} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.16 }} className="col-start-1 row-start-1">{registered ? "Ver mi inscripción" : selectedPlanDetails ? `Continuar con S/${selectedPlanDetails.price}` : "Elige un plan"}</motion.span>
                 </AnimatePresence>
               </span>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 shrink-0"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
             </span>
           </button>
-          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">{!selectedPlan ? "Selecciona un plan para continuar" : "Cupos limitados"}</p>
+          <p id="registration-status" className="-mt-1 font-bebas text-base uppercase tracking-wide text-azul-profundo/70 lg:mt-3 lg:text-sm lg:text-white/80">{registered ? "Ya estás inscrito" : !selectedPlan ? "Selecciona un plan para continuar" : "Cupos limitados"}</p>
         </motion.div>
       </div>
     </section>

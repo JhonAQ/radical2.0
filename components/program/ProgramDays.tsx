@@ -2,45 +2,26 @@
 
 import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { BookOpen, Flame, Sun, UsersRound, Waves } from "lucide-react";
-import { useRef } from "react";
+import { Flame, Moon, PartyPopper, Signpost, Sprout, Sun } from "lucide-react";
+import { useRef, type SVGProps } from "react";
 
+/** Cruz latina: el ícono "Cross" de lucide es una cruz griega y se lee como un "+". */
+function LatinCross(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3v18M6.5 8.5h11" />
+    </svg>
+  );
+}
+
+// Una fila por día, siempre con dos líneas: el detalle completo de cada tema
+// (frases, versículos, responsables) no va en la landing.
 const days = [
-  {
-    day: "DÍA 1",
-    title: "Llegada y encuentro",
-    description: "Bienvenida, juegos, comunidad",
-    color: "bg-[#ffb900]",
-    icon: Sun,
-  },
-  {
-    day: "DÍA 2",
-    title: "Enseñanzas que desafían",
-    description: "Tiempos con Dios y talleres",
-    color: "bg-[#009fb1]",
-    icon: BookOpen,
-  },
-  {
-    day: "DÍA 3",
-    title: "Vida en comunidad",
-    description: "Deportes, dinámicas y playa",
-    color: "bg-azul-profundo",
-    icon: UsersRound,
-  },
-  {
-    day: "DÍA 4",
-    title: "Naturaleza que renueva",
-    description: "Salida, aventura y reflexión",
-    color: "bg-[#00bdbb]",
-    icon: Waves,
-  },
-  {
-    day: "DÍA 5",
-    title: "Un propósito más grande",
-    description: "Cierre y envío",
-    color: "bg-[#ff4a1f]",
-    icon: Flame,
-  },
+  { day: "DÍA 1", date: "30 DIC", lines: ["Introducción a Radical", "Es tiempo de volver"], color: "bg-[#ffb900]", icon: Sprout },
+  { day: "DÍA 2", date: "31 DIC", lines: ["Cuando llega la tentación", "La presión de los demás"], twoTopics: true, color: "bg-[#009fb1]", icon: Flame },
+  { day: "DÍA 3", date: "1 ENE", lines: ["Decisiones que construyen mi futuro", "Fe que se ve en lo que elijo"], color: "bg-azul-profundo", icon: Signpost },
+  { day: "DÍA 4", date: "2 ENE", lines: ["Viviendo radicalmente", "Del campamento a la vida"], twoTopics: true, color: "bg-[#00bdbb]", icon: LatinCross },
+  { day: "DÍA 5", date: "3 ENE", lines: ["Clausura del campamento", "Cierre y envío"], color: "bg-[#ff4a1f]", icon: PartyPopper },
 ] as const;
 
 export function ProgramDays() {
@@ -70,7 +51,7 @@ export function ProgramDays() {
         </motion.div>
       </motion.div>
 
-      <div className="relative z-10 mx-auto max-w-6xl lg:max-w-[300px]">
+      <div className="relative z-10 mx-auto max-w-6xl lg:mr-0 lg:max-w-[480px]">
         <motion.div
           initial={reduceMotion ? { opacity: 1, clipPath: "inset(0 0 0 0)" } : { opacity: 0, clipPath: "inset(0 100% 0 0)" }}
           animate={sectionIsInView || reduceMotion ? { opacity: 1, clipPath: "inset(0 0 0 0)" } : { opacity: 0, clipPath: "inset(0 100% 0 0)" }}
@@ -116,9 +97,29 @@ export function ProgramDays() {
                     {...reveal(markerDelay + 0.1, 8)}
                     className="min-w-0 leading-tight"
                   >
-                    <span className="font-bebas text-base tracking-wide sm:text-lg">{item.day}</span>
-                    <h3 className="font-sans text-sm font-bold sm:text-base">{item.title}</h3>
-                    <p className="mt-0.5 font-sans text-xs text-azul-profundo/75 sm:text-sm">{item.description}</p>
+                    <span className="font-bebas text-base tracking-wide sm:text-lg">
+                      {item.day} <span className="text-[#f0522d]">· {item.date}</span>
+                    </span>
+                    {"twoTopics" in item ? (
+                      /* Dos charlas: cada una con su momento del día, para que se lean como temas distintos */
+                      <ul className="mt-0.5 space-y-0.5">
+                        {item.lines.map((topic, topicIndex) => {
+                          const TimeIcon = topicIndex === 0 ? Sun : Moon;
+                          return (
+                            <li key={topic} className="flex items-center gap-1.5">
+                              <TimeIcon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 ${topicIndex === 0 ? "text-[#e09a00]" : "text-[#0b7893]"}`} strokeWidth={2.4} />
+                              <span className="sr-only">{topicIndex === 0 ? "Mañana: " : "Noche: "}</span>
+                              <h3 className="font-sans text-sm font-bold sm:text-base">{topic}</h3>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <>
+                        <h3 className="font-sans text-sm font-bold sm:text-base">{item.lines[0]}</h3>
+                        <p className="mt-0.5 font-sans text-xs text-azul-profundo/75 sm:text-sm">{item.lines[1]}</p>
+                      </>
+                    )}
                   </motion.div>
                 </li>
               );
