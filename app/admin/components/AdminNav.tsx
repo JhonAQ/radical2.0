@@ -11,6 +11,8 @@ import {
   Settings,
   SlidersHorizontal,
   LogOut,
+  ScanLine,
+  DoorOpen,
 } from "lucide-react";
 import { logout } from "../actions";
 
@@ -35,6 +37,20 @@ export function AdminNav({
       label: "Resumen",
       icon: LayoutDashboard,
       active: pathname === "/admin",
+      badge: 0,
+    },
+    {
+      href: "/admin/escaner",
+      label: "Escáner",
+      icon: ScanLine,
+      active: pathname.startsWith("/admin/escaner"),
+      badge: 0,
+    },
+    {
+      href: "/admin/ingresos",
+      label: "Control de ingreso",
+      icon: DoorOpen,
+      active: pathname.startsWith("/admin/ingresos"),
       badge: 0,
     },
     {
@@ -81,7 +97,7 @@ export function AdminNav({
   return (
     <>
       {/* ── Desktop Sidebar ── */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#082f39] text-white lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-[#082f39] text-white lg:flex print:!hidden">
         <div className="relative overflow-hidden px-7 pb-8 pt-7">
           <div className="absolute -right-14 -top-20 h-44 w-44 rounded-full bg-[#06b5b0]/10 blur-3xl" />
           <Link href="/" aria-label="Radical 2.0, inicio">
@@ -154,7 +170,7 @@ export function AdminNav({
       </aside>
 
       {/* ── Mobile Header ── */}
-      <header className="sticky top-0 z-20 border-b border-[#e3eae5] bg-[#fbfcf8]/95 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-20 border-b border-[#e3eae5] bg-[#fbfcf8]/95 backdrop-blur lg:hidden print:hidden">
         <div className="flex items-center justify-between gap-4 px-5 py-3">
           <Link href="/" aria-label="Radical 2.0, inicio">
             <BrandLogo variant="secundario" width={115} />

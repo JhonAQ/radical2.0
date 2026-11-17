@@ -5,11 +5,13 @@ import { createClient } from "@/utils/supabase/server";
 import {
   UsersRound,
   ClipboardCheck,
+  DoorOpen,
   Clock3,
   CircleDollarSign,
   ChevronRight,
 } from "lucide-react";
 import { statusLabels, type Registration } from "../types";
+import { loadCheckInCounts } from "@/utils/check-in-roster";
 
 export default async function AdminOverviewPage({
   searchParams,
@@ -66,6 +68,7 @@ export default async function AdminOverviewPage({
     approvedRegsTotal,
     approvedAddlTotal,
     { data: recentRegistrations },
+    checkInCounts,
   ] = await Promise.all([
     client.from("registrations").select("*", { count: "exact", head: true }),
     client
@@ -83,7 +86,11 @@ export default async function AdminOverviewPage({
       .select("id,first_name,last_name,email,status,created_at,amount")
       .order("created_at", { ascending: false })
       .limit(6),
+    loadCheckInCounts(client),
   ]);
+  const checkInPercent = checkInCounts.total
+    ? Math.round((checkInCounts.checkedIn / checkInCounts.total) * 100)
+    : 0;
 
   const approvedTotal = approvedRegsTotal + approvedAddlTotal;
 
@@ -188,6 +195,30 @@ export default async function AdminOverviewPage({
             )}
           </div>
         </div>
+      )}
+
+      {/* ── Control de ingreso (aparece cuando empieza a registrarse gente) ── */}
+      {checkInCounts.checkedIn > 0 && (
+        <Link
+          href="/admin/ingresos"
+          className="flex items-center gap-4 rounded-xl border border-[#cfe5df] bg-white p-4 shadow-sm transition hover:border-[#008e95]/40"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e3f4ef] text-[#0a524a]">
+            <DoorOpen size={19} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-[#0a3039]">
+              Ingresaron {checkInCounts.checkedIn} de {checkInCounts.total} campistas
+            </span>
+            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[#edf3f0]">
+              <span className="block h-full rounded-full bg-[#0f8f87]" style={{ width: `${checkInPercent}%` }} />
+            </span>
+          </span>
+          <span className="hidden text-xs font-semibold text-[#008e95] sm:block">
+            Faltan {checkInCounts.total - checkInCounts.checkedIn}
+          </span>
+          <ChevronRight size={15} className="text-[#9cb2ac]" />
+        </Link>
       )}
 
       {/* ── Unified Metric Cards ── */}

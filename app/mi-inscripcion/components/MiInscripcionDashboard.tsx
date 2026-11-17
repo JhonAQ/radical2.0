@@ -19,9 +19,12 @@ import {
   Mail,
   X,
   LogOut,
+  Ticket,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { HistorialTimeline } from "../historial/components/HistorialTimeline";
+import { EntradaTicket } from "./EntradaTicket";
+import { ticketState } from "@/utils/ticket";
 
 type Registration = {
   id: string;
@@ -38,6 +41,7 @@ type Registration = {
   birth_date: string;
   payment_method?: string;
   created_at: string;
+  ticket_code: string;
 };
 
 type Payment = {
@@ -71,11 +75,12 @@ const statusConfig = {
   },
 } as const;
 
-type Tab = "inicio" | "pagos" | "datos";
+export type Tab = "inicio" | "pagos" | "entrada" | "datos";
 
 const tabs: { id: Tab; label: string; icon: typeof House }[] = [
   { id: "inicio", label: "Inicio", icon: House },
   { id: "pagos", label: "Pagos", icon: Receipt },
+  { id: "entrada", label: "Entrada", icon: Ticket },
   { id: "datos", label: "Mi perfil", icon: UserRound },
 ];
 
@@ -94,6 +99,8 @@ export function MiInscripcionDashboard({
   pendingAmount,
   remaining,
   avatarUrl,
+  qrSvg,
+  initialTab = "inicio",
 }: {
   registration: Registration;
   payments: Payment[];
@@ -101,6 +108,8 @@ export function MiInscripcionDashboard({
   pendingAmount: number;
   remaining: number;
   avatarUrl: string | null;
+  qrSvg: string;
+  initialTab?: Tab;
 }) {
   const config =
     statusConfig[registration.status as keyof typeof statusConfig] ??
@@ -112,7 +121,7 @@ export function MiInscripcionDashboard({
   );
   const isPaidInFull = remaining <= 0 && registration.status === "approved";
 
-  const [tab, setTab] = useState<Tab>("inicio");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [statusToastOpen, setStatusToastOpen] = useState(true);
 
   return (
@@ -140,6 +149,19 @@ export function MiInscripcionDashboard({
               <button type="submit"><LogOut size={16} aria-hidden />Cerrar sesión</button>
             </form>
           </div>
+        </motion.div>
+        {/* Entrada virtual */}
+        <motion.div className="mi-inscripcion-entrada" data-panel="entrada" {...fade(0.16)}>
+          <EntradaTicket
+            firstName={registration.first_name}
+            lastName={registration.last_name}
+            plan={registration.plan}
+            code={registration.ticket_code}
+            qrSvg={qrSvg}
+            state={ticketState(registration.status)}
+            remaining={remaining}
+            isMinor={isMinorAtCamp(registration.birth_date)}
+          />
         </motion.div>
         <motion.div className="mi-inscripcion-card" data-panel="datos" {...fade(0.12)}>
           <h2 className="mi-inscripcion-card-title">Datos de inscripción</h2>

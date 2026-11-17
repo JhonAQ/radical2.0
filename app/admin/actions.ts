@@ -323,8 +323,10 @@ export async function registerCashPayment(form: FormData) {
   const id = String(form.get("id") || "");
   if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/inscripciones?error=review");
   const amount = Number(form.get("amount"));
-  if (!Number.isInteger(amount) || amount <= 0 || form.get("confirm") !== "on")
-    redirect(`/admin/inscripciones/${id}?error=cash`);
+  if (!Number.isInteger(amount) || amount <= 0 || form.get("confirm") !== "on") {
+    const code = scannerReturnCode(form);
+    redirect(code ? `/admin/escaner?c=${code}&error=cash` : `/admin/inscripciones/${id}?error=cash`);
+  }
   const { error } = await context.client.rpc("admin_register_cash_payment", {
     p_registration_id: id,
     p_amount: amount,
@@ -332,7 +334,30 @@ export async function registerCashPayment(form: FormData) {
   });
   revalidatePath("/admin", "layout");
   revalidatePath("/mi-inscripcion", "layout");
+  const scannerCode = scannerReturnCode(form);
+  if (scannerCode) redirect(`/admin/escaner?c=${scannerCode}&${error ? "error=cash" : "success=cash"}`);
   redirect(`/admin/inscripciones/${id}?${error ? "error=cash" : "success=cash"}`);
+}
+
+/** Si la acción viene del escáner, vuelve a la ficha rápida de ese código. */
+function scannerReturnCode(form: FormData) {
+  const code = String(form.get("scanner_code") || "");
+  return /^[2-9A-HJKMNP-Z]{12}$/.test(code) ? code : null;
+}
+
+export async function checkInRegistration(form: FormData) {
+  const context = await adminContext();
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  const code = scannerReturnCode(form);
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !code) redirect("/admin/escaner?error=checkin");
+  const { error } = await context.client.rpc("admin_check_in_registration", {
+    p_registration_id: id,
+    p_kind: "ingreso",
+    p_note: String(form.get("note") || "").trim() || undefined,
+  });
+  revalidatePath("/admin", "layout");
+  redirect(`/admin/escaner?c=${code}&${error ? "error=checkin" : "success=checkin"}`);
 }
 
 export async function updateCampSettings(form: FormData) {

@@ -11,11 +11,14 @@ export function CashPaymentForm({
   approved,
   remaining,
   price,
+  scannerCode,
 }: {
   registrationId: string;
   approved: boolean;
   remaining: number;
   price: number;
+  /** Desde el escáner: al guardar vuelve a la ficha rápida en vez del detalle. */
+  scannerCode?: string;
 }) {
   if (approved && remaining <= 0) return null;
   const min = approved ? 1 : 50;
@@ -34,6 +37,7 @@ export function CashPaymentForm({
       </p>
       <form action={registerCashPayment} className="mt-4 grid gap-3">
         <input type="hidden" name="id" value={registrationId} />
+        {scannerCode && <input type="hidden" name="scanner_code" value={scannerCode} />}
         <label className="block text-xs font-semibold text-slate-700">
           Monto recibido (S/)
           <input

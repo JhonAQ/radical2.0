@@ -95,6 +95,8 @@ export const errorMessages: Record<string, string> = {
   registration_data:
     "No se pudieron guardar los datos. Revisa que el documento (6 a 12 letras o números), el correo y los teléfonos sean válidos.",
   cash: "No se pudo registrar el efectivo. El monto no puede superar el saldo pendiente; si la inscripción aún no está aprobada, debe ser de S/ 50 como mínimo.",
+  checkin: "No se pudo registrar el ingreso. Vuelve a escanear la entrada e inténtalo otra vez.",
+  ticket: "Ese código no corresponde a ninguna entrada. Revisa que esté bien escrito.",
   payment_review:
     "No se pudo actualizar el abono. Comprueba que no supere el saldo pendiente y que la inscripción esté aprobada.",
 };
@@ -106,6 +108,7 @@ export const successMessages: Record<string, string> = {
   settings: "Configuración guardada.",
   registration_data: "Datos de la inscripción actualizados.",
   cash: "Pago en efectivo registrado y aprobado.",
+  checkin: "Ingreso registrado.",
   password: "Contraseña actualizada.",
   admin_existing: "Se concedió acceso a la cuenta existente.",
   admin_password: "Contraseña de la cuenta administradora actualizada.",

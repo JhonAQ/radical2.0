@@ -1,0 +1,164 @@
+/* ═══════════════════════════════════════════════════════════
+   Mi entrada — boleto con talón
+   Paleta del panel: #0b2d36 · #f8f4e9 · #ff6b00 · #00aeb8 · #ffc629
+═══════════════════════════════════════════════════════════ */
+.entrada { display: grid; gap: 16px; justify-items: center; }
+
+.entrada-ticket {
+  --notch: 13px;
+  --paper: #fffdf6;
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  border-radius: 20px;
+  background: var(--paper);
+  color: #0b2d36;
+  box-shadow: 0 1px 0 rgba(11,45,54,.06), 0 14px 34px -14px rgba(11,45,54,.35);
+  overflow: hidden;
+}
+
+/* Cabecera oscura */
+.entrada-top {
+  position: relative;
+  padding: 18px 20px 20px;
+  background: #0b2d36;
+  color: #f8f4e9;
+  isolation: isolate;
+}
+.entrada-top::before {
+  content: "";
+  position: absolute;
+  inset: auto -30px -10px auto;
+  width: 230px;
+  height: 64px;
+  background: url("/assets/textures/t1-06-cyan-horizontal.webp") center / contain no-repeat;
+  opacity: .28;
+  z-index: -1;
+}
+.entrada-top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.entrada-logo { width: 112px; height: auto; }
+.entrada-kind {
+  padding: 4px 9px 3px;
+  border: 1px solid rgba(255,198,41,.55);
+  border-radius: 6px;
+  color: #ffc629;
+  font: 400 15px/1 var(--font-bebas);
+  letter-spacing: .14em;
+}
+.entrada-event {
+  margin: 14px 0 12px;
+  font: 400 26px/1 var(--font-blowbrush);
+  color: #fff;
+}
+.entrada-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.entrada-meta span {
+  display: block;
+  color: rgba(248,244,233,.6);
+  font: 400 12px/1 var(--font-bebas);
+  letter-spacing: .12em;
+}
+.entrada-meta strong { display: block; margin-top: 4px; font: 400 19px/1 var(--font-bebas); letter-spacing: .04em; }
+
+/* Línea de corte con muescas laterales */
+.entrada-tear {
+  position: relative;
+  height: calc(var(--notch) * 2);
+  margin: calc(var(--notch) * -1) 0;
+  z-index: 1;
+}
+.entrada-tear::before,
+.entrada-tear::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: calc(var(--notch) * 2);
+  height: calc(var(--notch) * 2);
+  border-radius: 50%;
+  background: #f8f4e9;
+}
+.entrada-tear::before { left: calc(var(--notch) * -1); }
+.entrada-tear::after { right: calc(var(--notch) * -1); }
+.entrada-body {
+  padding: 26px 22px 20px;
+  border-top: 2px dashed rgba(11,45,54,.18);
+  text-align: center;
+}
+
+/* QR */
+.entrada-qr-wrap { position: relative; width: min(220px, 70%); margin: 0 auto; }
+.entrada-qr { aspect-ratio: 1; padding: 12px; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1px rgba(11,45,54,.1); }
+.entrada-qr svg { display: block; width: 100%; height: 100%; }
+.entrada-ticket:not([data-state="active"]) .entrada-qr { filter: blur(5px); opacity: .45; }
+.entrada-qr-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px;
+  color: #0b2d36;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.entrada-qr-lock svg { color: #b07a00; margin-bottom: 2px; }
+.entrada-ticket[data-state="rejected"] .entrada-qr-lock svg { color: #b4412b; }
+.entrada-qr-lock strong { font-size: 14px; font-weight: 800; }
+
+.entrada-code {
+  margin: 12px 0 0;
+  font: 700 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .12em;
+  color: #0b2d36;
+}
+.entrada-ticket:not([data-state="active"]) .entrada-code { opacity: .4; }
+
+/* Titular */
+.entrada-holder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(11,45,54,.1);
+  text-align: left;
+}
+.entrada-holder-name { grid-column: 1 / -1; }
+.entrada-holder dt {
+  color: #6b8586;
+  font: 400 12px/1 var(--font-bebas);
+  letter-spacing: .12em;
+}
+.entrada-holder dd { margin: 4px 0 0; font-size: 15px; font-weight: 800; line-height: 1.2; }
+.entrada-holder-name dd { font: 400 26px/1 var(--font-bebas); letter-spacing: .02em; }
+.entrada-cap { text-transform: capitalize; }
+
+.entrada-chip { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.entrada-chip--paid { background: #dff3ec; color: #0f6b4f; }
+.entrada-chip--due { background: #ffe9d6; color: #a64300; }
+.entrada-chip--wait { background: #f3ecd6; color: #6b5300; }
+
+.entrada-minor {
+  margin: 14px 0 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fff4cf;
+  color: #5c4300;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Acciones */
+.entrada-actions { display: grid; gap: 10px; width: 100%; max-width: 360px; }
+.entrada-actions .mi-inscripcion-btn-primary,
+.entrada-actions .mi-inscripcion-btn-secondary { width: 100%; justify-content: center; }
+.entrada-hint { margin: 0; color: #617b7c; font-size: 12px; line-height: 1.4; text-align: center; }
+
+/* Escritorio: tarjeta en la columna izquierda */
+@media (min-width: 851px) {
+  .mi-inscripcion-dashboard-grid .entrada { margin: 4px 0 22px; justify-items: stretch; }
+  .mi-inscripcion-dashboard-grid .entrada-ticket,
+  .mi-inscripcion-dashboard-grid .entrada-actions { max-width: none; }
+  /* En escritorio ya está "Registrar nuevo abono" a la derecha */
+  .mi-inscripcion-dashboard-grid .entrada-actions .mi-inscripcion-btn-secondary { display: none; }
+}

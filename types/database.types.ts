@@ -14,6 +14,280 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      camp_settings: {
+        Row: {
+          id: boolean
+          preventa_deadline: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          preventa_deadline: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          preventa_deadline?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      registration_check_ins: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: number
+          kind: string
+          note: string | null
+          registration_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          kind?: string
+          note?: string | null
+          registration_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          kind?: string
+          note?: string | null
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_check_ins_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          method: string
+          receipt_path: string | null
+          registration_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          method?: string
+          receipt_path?: string | null
+          registration_id: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          method?: string
+          receipt_path?: string | null
+          registration_id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_review_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: number
+          new_amount: number | null
+          new_receipt_path: string | null
+          new_status: string
+          note: string | null
+          old_amount: number | null
+          old_receipt_path: string | null
+          old_status: string | null
+          payment_id: string | null
+          registration_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          new_amount?: number | null
+          new_receipt_path?: string | null
+          new_status: string
+          note?: string | null
+          old_amount?: number | null
+          old_receipt_path?: string | null
+          old_status?: string | null
+          payment_id?: string | null
+          registration_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          new_amount?: number | null
+          new_receipt_path?: string | null
+          new_status?: string
+          note?: string | null
+          old_amount?: number | null
+          old_receipt_path?: string | null
+          old_status?: string | null
+          payment_id?: string | null
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_review_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "registration_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_review_events_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registrations: {
+        Row: {
+          amount: number
+          birth_date: string
+          created_at: string
+          document: string
+          email: string
+          emergency_name: string
+          emergency_phone: string
+          emergency_relation: string
+          first_name: string
+          gender: string
+          id: string
+          last_name: string
+          original_receipt_path: string | null
+          payment_method: string
+          payment_type: string
+          phone: string
+          plan: string
+          price: number
+          receipt_path: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          ticket_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          birth_date: string
+          created_at?: string
+          document: string
+          email: string
+          emergency_name: string
+          emergency_phone: string
+          emergency_relation: string
+          first_name: string
+          gender: string
+          id?: string
+          last_name: string
+          original_receipt_path?: string | null
+          payment_method?: string
+          payment_type: string
+          phone: string
+          plan: string
+          price: number
+          receipt_path: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          ticket_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          birth_date?: string
+          created_at?: string
+          document?: string
+          email?: string
+          emergency_name?: string
+          emergency_phone?: string
+          emergency_relation?: string
+          first_name?: string
+          gender?: string
+          id?: string
+          last_name?: string
+          original_receipt_path?: string | null
+          payment_method?: string
+          payment_type?: string
+          phone?: string
+          plan?: string
+          price?: number
+          receipt_path?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          ticket_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           created_at: string
@@ -37,7 +311,65 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_check_in_registration: {
+        Args: { p_kind?: string; p_note?: string; p_registration_id: string }
+        Returns: number
+      }
+      admin_regenerate_ticket_code: {
+        Args: { p_registration_id: string }
+        Returns: string
+      }
+      admin_register_cash_payment: {
+        Args: { p_amount: number; p_note?: string; p_registration_id: string }
+        Returns: undefined
+      }
+      admin_update_registration: {
+        Args: {
+          p_birth_date: string
+          p_document: string
+          p_email: string
+          p_emergency_name: string
+          p_emergency_phone: string
+          p_emergency_relation: string
+          p_first_name: string
+          p_gender: string
+          p_id: string
+          p_last_name: string
+          p_phone: string
+        }
+        Returns: undefined
+      }
+      review_initial_registration: {
+        Args: { p_id: string; p_note?: string; p_status: string }
+        Returns: undefined
+      }
+      review_registration_payment: {
+        Args: { p_id: string; p_note?: string; p_status: string }
+        Returns: undefined
+      }
+      submit_registration_payment: {
+        Args: {
+          p_amount: number
+          p_kind: string
+          p_receipt_path: string
+          p_registration_id: string
+        }
+        Returns: string
+      }
+      update_my_registration: {
+        Args: {
+          p_birth_date: string
+          p_emergency_name: string
+          p_emergency_phone: string
+          p_emergency_relation: string
+          p_first_name: string
+          p_gender: string
+          p_id: string
+          p_last_name: string
+          p_phone: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

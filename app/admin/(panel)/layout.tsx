@@ -50,14 +50,14 @@ export default async function AdminPanelLayout({
   ]);
 
   return (
-    <div className="min-h-screen bg-[#f4f6f2] text-[#10343d] lg:pl-[260px]">
+    <div className="min-h-screen bg-[#f4f6f2] text-[#10343d] lg:pl-[260px] print:bg-white print:pl-0">
       <AdminNav
         userEmail={user?.email || ""}
         isMaster={membership?.role === "master"}
         pendingRegistrationsCount={pendingRegs || 0}
         pendingPaymentsCount={pendingPays || 0}
       />
-      <div className="mx-auto max-w-[1540px] px-4 pb-12 pt-7 sm:px-8 lg:px-10 lg:pt-9">
+      <div className="mx-auto max-w-[1540px] px-4 pb-12 pt-7 sm:px-8 lg:px-10 lg:pt-9 print:p-0">
         {children}
       </div>
     </div>

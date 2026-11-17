@@ -760,7 +760,9 @@
   /* Solo se ve la pestaña activa */
   .mi-inscripcion-dashboard-grid[data-tab="inicio"] [data-panel]:not([data-panel="inicio"]),
   .mi-inscripcion-dashboard-grid[data-tab="pagos"]  [data-panel]:not([data-panel="pagos"]),
+  .mi-inscripcion-dashboard-grid[data-tab="entrada"] [data-panel]:not([data-panel="entrada"]),
   .mi-inscripcion-dashboard-grid[data-tab="datos"]  [data-panel]:not([data-panel="datos"]) { display: none; }
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-entrada { order: 5; padding-top: 4px; }
   .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-signout-mobile{display:block}
 
   .mi-inscripcion-dashboard-grid .mi-inscripcion-heading,
@@ -787,7 +789,7 @@
     z-index: 50;
     inset: auto 0 0 0;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(11,45,54,.1);
     background: rgba(255,254,250,.96);
@@ -821,6 +823,7 @@
   .mi-inscripcion-dashboard-grid[data-tab="inicio"] .mi-inscripcion-card[data-panel="datos"],
   .mi-inscripcion-dashboard-grid[data-tab="pagos"] .mi-inscripcion-card[data-panel="datos"],
   .mi-inscripcion-dashboard-grid[data-tab="datos"] .mi-inscripcion-card[data-panel="datos"]{display:block}
+  .mi-inscripcion-dashboard-grid .mi-inscripcion-entrada{display:block}
 }
 
 .mi-inscripcion-payment-method p.mi-inscripcion-cash-hint{margin-top:4px;font-size:11px;opacity:.85}
