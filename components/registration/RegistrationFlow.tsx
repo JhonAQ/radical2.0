@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, Clock3, Copy, Download, FileText, IdCard, Mail, Ticket, Trash2, UserRound, UsersRound, Wallet, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { createClient } from "@/utils/supabase/client";
+import { WhatsAppMark } from "@/components/common/WhatsAppMark";
 import { preventaDates } from "@/utils/preventa";
 
 import "./RegistrationFlow.css";
@@ -194,6 +195,7 @@ function RegistrationProgress({ currentStep, className }: { currentStep: number;
 
 export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName }: { preventaDeadline: string; initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string }) {
   const [step, setStep] = useState(0);
+  const [whatsappGroupUrl, setWhatsappGroupUrl] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const navigationLocked = useRef(false);
   const navigationTimer = useRef<number | null>(null);
@@ -259,6 +261,20 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
     const timer = window.setInterval(() => { if (Date.now() >= preventaDeadlineMs) closePreventa(); }, 15000);
     return () => window.clearInterval(timer);
   }, [preventaDeadlineMs]);
+
+  // Con la inscripción ya enviada, la base devuelve el enlace del grupo de campistas.
+  useEffect(() => {
+    if (step !== 5 || registrationStatus === "rejected") return;
+    let cancelled = false;
+    createClient()
+      .rpc("get_camp_whatsapp_group")
+      .then(({ data }) => {
+        if (!cancelled && typeof data === "string") setWhatsappGroupUrl(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, registrationStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -641,6 +657,11 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                 <p>{registrationStatus === "rejected" ? "Comunícate con el equipo para revisar tu comprobante." : "El equipo revisará tu comprobante y actualizará el estado de tu inscripción."}</p>
                 {registrationStatus === "rejected" && reviewNote && <p>Nota del equipo: {reviewNote}</p>}
                 <div className="registration-ticket-status"><Clock3 size={19} /><span>{registrationStatus === "approved" ? "Pago aprobado" : registrationStatus === "rejected" ? "Comprobante observado" : "Pendiente de revisión"}</span></div>
+                {whatsappGroupUrl && registrationStatus !== "rejected" && <a href={whatsappGroupUrl} target="_blank" rel="noopener noreferrer" className="registration-whatsapp">
+                  <span className="registration-whatsapp-icon"><WhatsAppMark className="size-[22px]" /></span>
+                  <span className="registration-whatsapp-text"><strong>Únete al grupo de campistas</strong><span>Ahí compartimos avisos, horarios y novedades del campamento.</span></span>
+                  <ArrowRight size={18} aria-hidden />
+                </a>}
                 <Link href="/mi-inscripcion" className="registration-mi-espacio-link">Ir a mi espacio<ArrowRight size={18} /></Link>
                 <p className="registration-mi-espacio-hint">Desde ahí podrás gestionar tus abonos y ver tu historial.</p>
               </div>}
