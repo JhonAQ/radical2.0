@@ -32,6 +32,27 @@ export type Database = {
         }
         Relationships: []
       }
+      camp_private_settings: {
+        Row: {
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+          whatsapp_group_url: string | null
+        }
+        Insert: {
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_group_url?: string | null
+        }
+        Update: {
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_group_url?: string | null
+        }
+        Relationships: []
+      }
       camp_settings: {
         Row: {
           id: boolean
@@ -339,6 +360,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_camp_whatsapp_group: { Args: never; Returns: string }
       review_initial_registration: {
         Args: { p_id: string; p_note?: string; p_status: string }
         Returns: undefined

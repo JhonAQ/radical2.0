@@ -24,6 +24,7 @@ import {
 import { signOut } from "@/app/login/actions";
 import { HistorialTimeline } from "../historial/components/HistorialTimeline";
 import { EntradaTicket } from "./EntradaTicket";
+import { WhatsAppMark } from "@/components/common/WhatsAppMark";
 import { ticketState } from "@/utils/ticket";
 
 type Registration = {
@@ -100,6 +101,7 @@ export function MiInscripcionDashboard({
   remaining,
   avatarUrl,
   qrSvg,
+  whatsappGroupUrl,
   initialTab = "inicio",
 }: {
   registration: Registration;
@@ -109,6 +111,7 @@ export function MiInscripcionDashboard({
   remaining: number;
   avatarUrl: string | null;
   qrSvg: string;
+  whatsappGroupUrl: string | null;
   initialTab?: Tab;
 }) {
   const config =
@@ -208,6 +211,28 @@ export function MiInscripcionDashboard({
           </div>
           <button type="button" className="mi-inscripcion-status-close" aria-label="Cerrar aviso" onClick={() => setStatusToastOpen(false)}><X size={17} /></button>
         </motion.div>}
+
+        {whatsappGroupUrl && (
+          <motion.a
+            href={whatsappGroupUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mi-inscripcion-whatsapp"
+            data-panel="inicio"
+            {...fade(0.08)}
+          >
+            <span className="mi-inscripcion-whatsapp-icon"><WhatsAppMark className="size-[22px]" /></span>
+            <span className="mi-inscripcion-whatsapp-text">
+              <strong>Únete al grupo de campistas</strong>
+              <span>
+                {registration.status === "approved"
+                  ? "Avisos, horarios y novedades del campamento."
+                  : "Mientras revisamos tu pago, entérate de los avisos y novedades."}
+              </span>
+            </span>
+            <ArrowRight size={18} aria-hidden className="mi-inscripcion-whatsapp-arrow" />
+          </motion.a>
+        )}
 
         {/* Payment progress */}
         <motion.div className="mi-inscripcion-progress" data-panel="inicio" {...fade(0.1)}>

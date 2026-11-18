@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-export function GoogleLoginButton({ next }: { next?: "admin" }) {
+export function GoogleLoginButton({ next }: { next?: "admin" | "abonar" }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,7 +17,7 @@ export function GoogleLoginButton({ next }: { next?: "admin" }) {
       // for local development.
       const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const callback = new URL("/auth/callback", origin);
-      if (next === "admin") callback.searchParams.set("next", "/admin");
+      if (next) callback.searchParams.set("next", `/${next}`);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: callback.toString() },

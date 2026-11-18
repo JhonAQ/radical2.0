@@ -13,6 +13,7 @@ import {
   LogOut,
   ScanLine,
   DoorOpen,
+  QrCode,
 } from "lucide-react";
 import { logout } from "../actions";
 
@@ -51,6 +52,13 @@ export function AdminNav({
       label: "Control de ingreso",
       icon: DoorOpen,
       active: pathname.startsWith("/admin/ingresos"),
+      badge: 0,
+    },
+    {
+      href: "/admin/qr-abonos",
+      label: "QR para abonar",
+      icon: QrCode,
+      active: pathname.startsWith("/admin/qr-abonos"),
       badge: 0,
     },
     {

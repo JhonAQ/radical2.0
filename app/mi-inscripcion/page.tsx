@@ -47,6 +47,9 @@ export default async function MiInscripcionPage({
 
   const allPayments = payments ?? [];
 
+  // Solo devuelve el enlace si la inscripción está en revisión o aprobada.
+  const { data: whatsappGroupUrl } = await supabase.rpc("get_camp_whatsapp_group");
+
   const { totalPaid, pendingAmount, remaining } = computeBalance(registration, allPayments);
 
   // QR vectorial generado en el servidor; solo lleva la URL con el código.
@@ -66,6 +69,7 @@ export default async function MiInscripcionPage({
       remaining={remaining}
       avatarUrl={avatarUrl}
       qrSvg={qrSvg}
+      whatsappGroupUrl={whatsappGroupUrl ?? null}
       initialTab={tab === "entrada" || tab === "pagos" || tab === "datos" ? tab : "inicio"}
     />
   );

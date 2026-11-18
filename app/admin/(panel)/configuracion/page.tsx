@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { updateCampSettings } from "../../actions";
+import { updateCampSettings, updateWhatsappGroup } from "../../actions";
 import { DEFAULT_PREVENTA_DEADLINE, preventaDates } from "@/utils/preventa";
 import {
   adminButtonClass,
@@ -18,11 +18,12 @@ export default async function ConfiguracionPage({
 }) {
   const params = await searchParams;
   const client = createClient(await cookies());
-  const { data } = await client
-    .from("camp_settings")
-    .select("preventa_deadline")
-    .eq("id", true)
-    .maybeSingle();
+  const [{ data }, { data: privateSettings }] = await Promise.all([
+    client.from("camp_settings").select("preventa_deadline").eq("id", true).maybeSingle(),
+    client.from("camp_private_settings").select("whatsapp_group_url").eq("id", true).maybeSingle(),
+  ]);
+  const groupUrl = privateSettings?.whatsapp_group_url ?? "";
+  const isPlaceholder = groupUrl.endsWith("/RadicalCampPlaceholder");
 
   return (
     <div className="max-w-xl space-y-6">
@@ -55,6 +56,30 @@ export default async function ConfiguracionPage({
           La preventa vale hasta las 12 de la noche de ese día (hora de Lima). Después, nadie podrá inscribirse con el plan Preventa; quienes tengan el formulario abierto verán un aviso y pasarán al plan Regular. Los textos de fechas de la página principal, el FAQ y el formulario se actualizan solos (la landing puede tardar hasta un minuto).
         </p>
         <button className={adminButtonClass}>Guardar</button>
+      </form>
+
+      <form action={updateWhatsappGroup} className="space-y-4 rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
+        <label className="block text-sm font-semibold text-[#082e39]">
+          Grupo de WhatsApp de campistas
+          <input
+            type="url"
+            name="whatsapp_group_url"
+            defaultValue={groupUrl}
+            placeholder="https://chat.whatsapp.com/…"
+            inputMode="url"
+            className={`${adminInputClass} mt-2 font-mono text-xs`}
+          />
+        </label>
+        {isPlaceholder && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            Es un enlace de ejemplo: reemplázalo por la invitación real del grupo.
+          </p>
+        )}
+        <p className="text-xs text-slate-500">
+          Se muestra en «Mi inscripción» a quienes tienen su inscripción en revisión o aprobada. No aparece en la
+          página pública. Déjalo vacío para ocultarlo. En WhatsApp: grupo → Invitar con enlace → Copiar enlace.
+        </p>
+        <button className={adminButtonClass}>Guardar enlace</button>
       </form>
     </div>
   );

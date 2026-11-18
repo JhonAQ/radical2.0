@@ -91,6 +91,7 @@ export const errorMessages: Record<string, string> = {
     "Falta configurar la clave de servidor de Supabase para gestionar administradores.",
   note: "Escribe una nota para explicar la observación al participante.",
   settings: "No se pudo guardar la configuración. Revisa la fecha e inténtalo de nuevo.",
+  whatsapp: "El enlace no es válido. Debe ser una invitación de grupo, como https://chat.whatsapp.com/AbC123…",
   document_taken: "Ese documento ya pertenece a otra inscripción.",
   registration_data:
     "No se pudieron guardar los datos. Revisa que el documento (6 a 12 letras o números), el correo y los teléfonos sean válidos.",
@@ -106,6 +107,7 @@ export const successMessages: Record<string, string> = {
     "Si el correo tiene una cuenta, recibirá un enlace. Ábrelo en este mismo navegador para crear o restablecer tu contraseña.",
   review: "Revisión actualizada.",
   settings: "Configuración guardada.",
+  whatsapp: "Enlace del grupo de WhatsApp guardado.",
   registration_data: "Datos de la inscripción actualizados.",
   cash: "Pago en efectivo registrado y aprobado.",
   checkin: "Ingreso registrado.",

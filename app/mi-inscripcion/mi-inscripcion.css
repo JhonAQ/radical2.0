@@ -827,3 +827,14 @@
 }
 
 .mi-inscripcion-payment-method p.mi-inscripcion-cash-hint{margin-top:4px;font-size:11px;opacity:.85}
+
+/* ── Grupo de WhatsApp ───────────────────────────────────── */
+.mi-inscripcion-whatsapp{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:13px 14px;border:1px solid rgba(18,140,76,.22);border-radius:16px;background:#effaf3;color:#0b3d24;text-decoration:none;transition:border-color .15s,background .15s}
+.mi-inscripcion-whatsapp:hover{border-color:rgba(18,140,76,.45);background:#e6f7ed}
+.mi-inscripcion-whatsapp:focus-visible{outline:2px solid #128c4c;outline-offset:3px}
+.mi-inscripcion-whatsapp-icon{display:grid;flex:none;width:40px;height:40px;place-items:center;border-radius:12px;background:#25d366;color:#fff}
+.mi-inscripcion-whatsapp-text{display:grid;gap:2px;min-width:0;flex:1}
+.mi-inscripcion-whatsapp-text strong{font-size:14px;font-weight:800}
+.mi-inscripcion-whatsapp-text span{font-size:12px;line-height:1.4;color:#2f6146}
+.mi-inscripcion-whatsapp-arrow{flex:none;color:#128c4c}
+@media (max-width: 850px){.mi-inscripcion-dashboard-grid .mi-inscripcion-whatsapp{order:1;margin:0}}

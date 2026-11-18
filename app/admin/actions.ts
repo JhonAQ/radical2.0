@@ -360,6 +360,22 @@ export async function checkInRegistration(form: FormData) {
   redirect(`/admin/escaner?c=${code}&${error ? "error=checkin" : "success=checkin"}`);
 }
 
+export async function updateWhatsappGroup(form: FormData) {
+  const context = await adminContext();
+  if (!context) redirect("/admin?error=access");
+  // Vacío = ocultar el enlace a los campistas.
+  const url = String(form.get("whatsapp_group_url") || "").trim().replace(/\/$/, "").split("?")[0];
+  if (url && !/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+$/.test(url))
+    redirect("/admin/configuracion?error=whatsapp");
+  const { error } = await context.client
+    .from("camp_private_settings")
+    .update({ whatsapp_group_url: url || null, updated_at: new Date().toISOString(), updated_by: context.user.id })
+    .eq("id", true);
+  if (error) redirect("/admin/configuracion?error=whatsapp");
+  revalidatePath("/mi-inscripcion", "layout");
+  redirect("/admin/configuracion?success=whatsapp");
+}
+
 export async function updateCampSettings(form: FormData) {
   const context = await adminContext();
   if (!context) redirect("/admin?error=access");

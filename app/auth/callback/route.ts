@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const requestedNext = url.searchParams.get("next");
-  const next = requestedNext === "/admin/reset" || requestedNext === "/admin" ? requestedNext : "/inscripcion";
+  const next = requestedNext === "/admin/reset" || requestedNext === "/admin" || requestedNext === "/abonar" ? requestedNext : "/inscripcion";
   if (code && !url.searchParams.has("error")) {
     const supabase = createClient(await cookies());
     const { error } = await supabase.auth.exchangeCodeForSession(code);
