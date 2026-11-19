@@ -56,14 +56,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Texto e imagen que muestran WhatsApp, Facebook, etc. al compartir el enlace.
+const shareDescription =
+  "Campamento de verano del 30 de diciembre al 3 de enero en Campel Mejía, Arequipa. Adoración, comunidad y playa. ¡Inscríbete!";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://radical2.com"),
+  // Dominio público: las redes necesitan URLs absolutas para la imagen de vista previa.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://radical.ielp.org"),
   title: {
     default: "Radical 2.0 — Viviendo Radikalmente",
     template: "%s | Radical 2.0",
   },
-  description:
-    "Experiencia oficial Radical 2.0 Tropical. Comunidad, eventos, cultura y estilo de vida con energía tropical auténtica.",
+  description: shareDescription,
   keywords: [
     "Radical 2.0",
     "Radical",
@@ -76,15 +80,15 @@ export const metadata: Metadata = {
   creator: "Radical 2.0",
   openGraph: {
     title: "Radical 2.0 — Viviendo Radikalmente",
-    description:
-      "Experiencia oficial Radical 2.0 Tropical. Comunidad, eventos, cultura y estilo de vida con energía tropical auténtica.",
+    description: shareDescription,
     siteName: "Radical 2.0",
     images: [
       {
-        url: "/assets/brand/og-image.png",
+        url: "/assets/brand/og-radical-camp.jpg",
         width: 1200,
         height: 630,
-        alt: "Radical 2.0 Tropical",
+        type: "image/jpeg",
+        alt: "Radical 2.0 · Campamento de verano, 30 dic – 03 ene en Campel Mejía, Arequipa",
       },
     ],
     locale: "es_LA",
@@ -93,9 +97,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Radical 2.0 — Viviendo Radikalmente",
-    description:
-      "Experiencia oficial Radical 2.0 Tropical. Comunidad, eventos, cultura y estilo de vida con energía tropical auténtica.",
-    images: ["/assets/brand/og-image.png"],
+    description: shareDescription,
+    images: ["/assets/brand/og-radical-camp.jpg"],
   },
   icons: {
     icon: [
