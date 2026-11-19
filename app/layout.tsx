@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Plus_Jakarta_Sans, Yellowtail, Bebas_Neue, Kalam } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // UI Base
@@ -115,7 +116,10 @@ export default function RootLayout({
       lang="es"
       className={`h-full antialiased ${sans.variable} ${edosz.variable} ${blowBrush.variable} ${yellowtail.variable} ${bebas.variable} ${marker.variable}`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

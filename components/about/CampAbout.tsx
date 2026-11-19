@@ -265,7 +265,7 @@ export function CampAbout() {
           <motion.p {...reveal(0.28, 12, 0.42)} className="font-sans text-sm sm:text-base md:text-lg lg:text-base text-azul-profundo/90 leading-relaxed font-normal mb-2 sm:mb-5 lg:mb-0">
             Radikal 2.0 es un campamento cristiano de jóvenes donde vivirás cinco
             días inolvidables en la playa, con amistad, enseñanza y propósito.
-            Además, <strong className="font-bold">¡Recibiremos juntos el Año Nuevo 2028!</strong>
+            Además, <strong className="font-bold">¡Recibiremos juntos el Año Nuevo 2027!</strong>
             <span className="block">Un espacio para desconectarte de la rutina, conectar con Dios y dar el siguiente nivel
             en tu vida.</span>
           </motion.p>
