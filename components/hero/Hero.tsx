@@ -77,6 +77,11 @@ export function Hero() {
 
       <div className="relative z-10 w-full max-w-6xl mx-auto px-5 sm:px-6 h-full flex flex-col pt-16 sm:pt-20 md:pt-24 pb-5 sm:pb-8">
 
+        {/* El título del sitio es el logo (imagen): este h1 lo da en texto a Google y lectores de pantalla */}
+        <h1 className="sr-only">
+          Radical 2.0: campamento de verano para adolescentes y jóvenes del 30 de diciembre de 2026 al 3 de enero de 2027 en Campel Mejía, Arequipa
+        </h1>
+
         {/* ── MOBILE LAYOUT ── */}
         <div className="flex-1 sm:hidden flex items-center justify-center">
           {/* Sin opacity:0 inline — GSAP lo setea desde el fromTo */}

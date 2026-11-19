@@ -13,14 +13,14 @@ const sans = Plus_Jakarta_Sans({
 
 // Estilo 01: Display / Logo (Protest Riot)
 const edosz = localFont({
-  src: "../public/fonts/protest-riot.ttf",
+  src: "../public/fonts/protest-riot.woff2",
   variable: "--font-edosz",
   display: "swap",
 });
 
 // Estilo 02: Brush Italic / Acentos (BlowBrush)
 const blowBrush = localFont({
-  src: "../public/fonts/blowbrush.ttf",
+  src: "../public/fonts/blowbrush.woff2",
   variable: "--font-blowbrush",
   display: "swap",
 });
@@ -59,27 +59,29 @@ export const viewport: Viewport = {
 // Texto e imagen que muestran WhatsApp, Facebook, etc. al compartir el enlace.
 const shareDescription =
   "Campamento de verano del 30 de diciembre al 3 de enero en Campel Mejía, Arequipa. Adoración, comunidad y playa. ¡Inscríbete!";
+const homeTitle = "Radical 2.0 · Campamento de verano juvenil en Arequipa (30 dic – 3 ene)";
 
 export const metadata: Metadata = {
   // Dominio público: las redes necesitan URLs absolutas para la imagen de vista previa.
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://radical.ielp.org"),
   title: {
-    default: "Radical 2.0 — Viviendo Radikalmente",
+    default: homeTitle,
     template: "%s | Radical 2.0",
   },
   description: shareDescription,
   keywords: [
     "Radical 2.0",
-    "Radical",
+    "campamento de verano",
+    "campamento juvenil Arequipa",
+    "campamento cristiano",
+    "Campel Mejía",
+    "Año Nuevo 2027",
     "Viviendo Radikalmente",
-    "Next Level",
-    "Eventos Radical",
-    "Comunidad Radical",
   ],
   authors: [{ name: "Radical 2.0" }],
   creator: "Radical 2.0",
   openGraph: {
-    title: "Radical 2.0 — Viviendo Radikalmente",
+    title: homeTitle,
     description: shareDescription,
     siteName: "Radical 2.0",
     images: [
@@ -91,12 +93,12 @@ export const metadata: Metadata = {
         alt: "Radical 2.0 · Campamento de verano, 30 dic – 03 ene en Campel Mejía, Arequipa",
       },
     ],
-    locale: "es_LA",
+    locale: "es_PE",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Radical 2.0 — Viviendo Radikalmente",
+    title: homeTitle,
     description: shareDescription,
     images: ["/assets/brand/og-radical-camp.jpg"],
   },

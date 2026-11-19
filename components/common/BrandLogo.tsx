@@ -8,6 +8,7 @@ interface BrandLogoProps {
   priority?: boolean;
   width?: number;
   height?: number;
+  alt?: string;
 }
 
 export function BrandLogo({
@@ -16,6 +17,7 @@ export function BrandLogo({
   priority = false,
   width,
   height,
+  alt = "Radical 2.0 · Next Level · Viviendo Radikalmente",
 }: BrandLogoProps) {
   const logo = BRAND_LOGOS[variant];
 
@@ -27,7 +29,7 @@ export function BrandLogo({
   return (
     <Image
       src={logo.webp}
-      alt={logo.name}
+      alt={alt}
       width={targetWidth}
       height={targetHeight}
       priority={priority}
