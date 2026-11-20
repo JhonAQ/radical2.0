@@ -5,6 +5,7 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 import { CAMP_CONFIG } from "@/config/site";
 import { TICKET_BASE_URL } from "@/utils/ticket";
 import { PrintButton } from "../../components/PrintButton";
+import { PageHeader } from "../../components/PageHeader";
 
 export const metadata = { title: "QR para abonar | Radical 2.0" };
 
@@ -30,15 +31,18 @@ export default async function QrAbonosPage() {
     <div className="space-y-6">
       <style>{`@page { size: A4 portrait; margin: 0; }`}</style>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">QR para abonar</h1>
-          <p className="mt-1 max-w-xl text-sm text-[#5f7a75]">
-            Para pegar en las puertas de las cabañas y afiches. Lleva a{" "}
-            <span className="font-mono text-xs">{ABONAR_URL.replace("https://", "")}</span>: cada campista entra con su
-            cuenta y llega directo a registrar su abono (o a corregir su comprobante, si está observado).
-          </p>
-        </div>
+      <div className="print:hidden">
+        <PageHeader
+          title="QR para abonar"
+          description={
+            <>
+              Para pegar en las puertas de las cabañas y afiches. Lleva a{" "}
+              <span className="font-mono text-xs">{ABONAR_URL.replace("https://", "")}</span>: cada campista entra con su cuenta y llega
+              directo a registrar su abono (o a corregir su comprobante, si está observado).
+            </>
+          }
+          mobileDescription="Afiche para las cabañas: cada campista lo escanea y llega directo a registrar su abono."
+          actions={
         <div className="flex flex-wrap items-center gap-2">
           <PrintButton />
           <a
@@ -63,6 +67,8 @@ export default async function QrAbonosPage() {
             Probar enlace <ExternalLink size={13} aria-hidden />
           </Link>
         </div>
+          }
+        />
       </div>
 
       {/* Afiche A4: en pantalla se ve como vista previa; al imprimir ocupa la hoja completa */}

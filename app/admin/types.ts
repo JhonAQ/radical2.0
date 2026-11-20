@@ -132,7 +132,7 @@ export const successMessages: Record<string, string> = {
 };
 
 export const adminInputClass =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-[#082e39] outline-none focus:border-[#00a7ad] focus:ring-2 focus:ring-[#00a7ad]/20";
+  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-[#082e39] outline-none sm:text-sm focus:border-[#00a7ad] focus:ring-2 focus:ring-[#00a7ad]/20";
 
 export const adminButtonClass =
   "inline-flex items-center justify-center rounded-xl bg-[#ffbc1f] px-5 py-3 text-sm font-bold text-[#082e39] transition hover:bg-[#ffca44]";

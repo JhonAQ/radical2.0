@@ -133,14 +133,14 @@ export function TicketScanner({ autoStart }: { autoStart: boolean }) {
           id="scanner-q"
           name="q"
           className={`${adminInputClass} py-2.5`}
-          placeholder="Código (K7QX-93FD-2MHT), nombre o DNI"
+          placeholder="Código, nombre o DNI"
           autoComplete="off"
           autoCapitalize="characters"
         />
         <button
           type="submit"
           aria-label="Buscar"
-          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#e7f0ed] px-4 text-[#07333d] transition hover:bg-[#d7e8e3]"
+          className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f0ed] px-4 text-[#07333d] transition hover:bg-[#d7e8e3]"
         >
           <Search size={18} aria-hidden />
         </button>

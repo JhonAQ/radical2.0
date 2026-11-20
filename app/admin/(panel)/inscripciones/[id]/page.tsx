@@ -1,53 +1,59 @@
+import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { createClient } from "@/utils/supabase/server";
 import { emailsForUsers } from "@/utils/supabase/service";
-import { isMinorAtCamp } from "@/utils/minors";
+import { ageAtCamp, isMinorAtCamp } from "@/utils/minors";
 import { formatTicketCode, ticketState, ticketUrl } from "@/utils/ticket";
+import { observationMessage, whatsappUrl } from "@/utils/whatsapp";
+import { WhatsAppMark } from "@/components/common/WhatsAppMark";
 import { CamperReceiptModal } from "../../../components/CamperReceiptModal";
 import { RegistrationDataForm } from "../../../components/RegistrationDataForm";
 import { CashPaymentForm } from "../../../components/CashPaymentForm";
 import { ReviewResolutionForm } from "../../../components/ReviewResolutionForm";
-import { deleteRegistration, review, reviewPayment } from "../../../actions";
 import { ConfirmSubmitButton } from "../../../components/ConfirmSubmitButton";
+import { FlashMessage } from "../../../components/FlashMessage";
+import { StatusBadge } from "../../../components/StatusBadge";
+import { AccountChip } from "../../../components/AccountChip";
+import { ObservedNotice } from "../../../components/ObservedNotice";
+import { deleteRegistration, review, reviewPayment } from "../../../actions";
+import { statusLabels, type Registration, type RegistrationPayment, type ReviewEvent } from "../../../types";
 import {
-  statusLabels,
-  type Registration,
-  type RegistrationPayment,
-  type ReviewEvent,
-} from "../../../types";
-import {
+  AlertTriangle,
   ArrowLeft,
   BadgeCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
   DoorOpen,
-  MessageCircle,
+  History,
   Phone,
+  RotateCcw,
   ScanLine,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
-import { FlashMessage } from "../../../components/FlashMessage";
-import { StatusBadge } from "../../../components/StatusBadge";
 
 const dateTimeFmt = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "short",
-  timeStyle: "short",
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
   timeZone: "America/Lima",
 });
+const dayFmt = new Intl.DateTimeFormat("es-PE", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Lima" });
+// La fecha de nacimiento es un día calendario: se formatea en UTC para que no se corra un día.
+const birthFmt = new Intl.DateTimeFormat("es-PE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 export default async function AdminInscripcionDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{
-    error?: string;
-    success?: string;
-  }>;
+  searchParams: Promise<{ error?: string; success?: string; observado?: string; tipo?: string }>;
 }) {
   const { id } = await params;
   const search = await searchParams;
@@ -61,26 +67,13 @@ export default async function AdminInscripcionDetailPage({
   // Un pago ya aprobado solo lo cambia la cuenta maestra.
   const isMaster = viewerRole?.role === "master";
 
-  const { data: rawRegistration, error: regError } = await client
-    .from("registrations")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (regError || !rawRegistration) {
-    notFound();
-  }
+  const { data: rawRegistration, error: regError } = await client.from("registrations").select("*").eq("id", id).maybeSingle();
+  if (regError || !rawRegistration) notFound();
 
   const registration = rawRegistration as Registration & { ticket_code: string | null };
   const selfUrl = `/admin/inscripciones/${registration.id}`;
 
-  const [
-    { data: rawPayments },
-    { data: rawHistory },
-    { data: rawCheckIns },
-    { data: prevReg },
-    { data: nextReg },
-  ] = await Promise.all([
+  const [{ data: rawPayments }, { data: rawHistory }, { data: rawCheckIns }, { data: prevReg }, { data: nextReg }] = await Promise.all([
     client
       .from("registration_payments")
       .select("*")
@@ -93,11 +86,7 @@ export default async function AdminInscripcionDetailPage({
       .eq("registration_id", id)
       .order("created_at", { ascending: false })
       .limit(30),
-    client
-      .from("registration_check_ins")
-      .select("id,created_at,actor_id")
-      .eq("registration_id", id)
-      .order("created_at", { ascending: false }),
+    client.from("registration_check_ins").select("id,created_at,actor_id").eq("registration_id", id).order("created_at", { ascending: false }),
     client
       .from("registrations")
       .select("id,first_name,last_name")
@@ -118,6 +107,7 @@ export default async function AdminInscripcionDetailPage({
   const history = (rawHistory as ReviewEvent[]) || [];
   const checkIns = rawCheckIns ?? [];
   const actorEmails = await emailsForUsers(checkIns.flatMap((c) => (c.actor_id ? [c.actor_id] : [])));
+  const isCashInitial = registration.payment_method === "efectivo";
 
   const paymentLabels = new Map<string, string>();
   let additionalNumber = 0;
@@ -130,88 +120,50 @@ export default async function AdminInscripcionDetailPage({
       paymentLabels.set(payment.id, `Pago en efectivo #${cashNumber}`);
     } else {
       additionalNumber += 1;
-      paymentLabels.set(payment.id, `Abono adicional #${additionalNumber}`);
+      paymentLabels.set(payment.id, `Abono #${additionalNumber}`);
     }
   }
 
-  // URLs firmadas de todos los comprobantes (el visor permite pasar de uno a otro)
-  const receiptsList: Array<{
-    id: string;
-    label: string;
-    url: string;
-    amount?: number;
-    kind?: string;
-    status?: string;
-  }> = [];
-
-  if (registration.receipt_path) {
-    const { data } = await client.storage
+  // URLs firmadas de todos los comprobantes en una sola consulta (el visor permite pasar de uno a otro).
+  const receiptSources = [
+    registration.receipt_path
+      ? { id: "main-receipt", path: registration.receipt_path, label: "Pago inicial", amount: registration.amount as number | undefined, kind: undefined as string | undefined, status: registration.status as string | undefined }
+      : null,
+    registration.original_receipt_path && registration.original_receipt_path !== registration.receipt_path
+      ? { id: "original-receipt", path: registration.original_receipt_path, label: "Voucher original (reemplazado)", amount: undefined, kind: undefined, status: undefined }
+      : null,
+    ...payments.map((p) =>
+      p.receipt_path ? { id: p.id, path: p.receipt_path, label: paymentLabels.get(p.id) ?? `Abono S/ ${p.amount}`, amount: p.amount, kind: p.kind, status: p.status } : null,
+    ),
+  ].filter((r) => r !== null);
+  const signedByPath = new Map<string, string>();
+  if (receiptSources.length) {
+    const { data: signed } = await client.storage
       .from("registration-receipts")
-      .createSignedUrl(registration.receipt_path, 600);
-    if (data?.signedUrl) {
-      receiptsList.push({
-        id: "main-receipt",
-        label: "Comprobante inicial",
-        url: data.signedUrl,
-        amount: registration.amount,
-        status: registration.status,
-      });
-    }
+      .createSignedUrls([...new Set(receiptSources.map((r) => r.path))], 600);
+    for (const s of signed ?? []) if (s.path && s.signedUrl) signedByPath.set(s.path, s.signedUrl);
   }
+  const receiptsList = receiptSources.flatMap(({ path, ...r }) => {
+    const url = signedByPath.get(path);
+    return url ? [{ ...r, url }] : [];
+  });
+  const receiptFor = (receiptId: string) => (receiptsList.some((r) => r.id === receiptId) ? receiptId : null);
 
-  if (
-    registration.original_receipt_path &&
-    registration.original_receipt_path !== registration.receipt_path
-  ) {
-    const { data } = await client.storage
-      .from("registration-receipts")
-      .createSignedUrl(registration.original_receipt_path, 600);
-    if (data?.signedUrl) {
-      receiptsList.push({
-        id: "original-receipt",
-        label: "Voucher original (reemplazado)",
-        url: data.signedUrl,
-      });
-    }
-  }
-
-  for (const p of payments) {
-    if (!p.receipt_path) continue;
-    const { data } = await client.storage
-      .from("registration-receipts")
-      .createSignedUrl(p.receipt_path, 600);
-    if (data?.signedUrl) {
-      receiptsList.push({
-        id: p.id,
-        label: paymentLabels.get(p.id) ?? `Abono S/ ${p.amount}`,
-        url: data.signedUrl,
-        amount: p.amount,
-        kind: p.kind,
-        status: p.status,
-      });
-    }
-  }
-  const hasReceipt = (receiptId: string) => receiptsList.some((r) => r.id === receiptId);
-
-  // Estado de cuenta
-  const totalApproved =
-    registration.amount +
-    payments
-      .filter((p) => p.kind === "additional" && p.status === "approved")
-      .reduce((n, p) => n + p.amount, 0);
-  const pendingPayments = payments.filter((p) => p.status === "pending");
-  const pendingAmount = pendingPayments
-    .filter((p) => p.kind === "additional")
-    .reduce((n, p) => n + p.amount, 0);
-  const remainingBalance = Math.max(0, registration.price - totalApproved);
+  // Estado de cuenta: solo cuenta lo aprobado.
   const isApproved = registration.status === "approved";
+  const approvedExtra = payments.filter((p) => p.kind === "additional" && p.status === "approved").reduce((n, p) => n + p.amount, 0);
+  const totalApproved = (isApproved ? registration.amount : 0) + approvedExtra;
+  const remainingBalance = Math.max(0, registration.price - totalApproved);
+  const paidPercent = registration.price ? Math.min(100, Math.round((totalApproved / registration.price) * 100)) : 0;
+  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const pendingAmount = pendingPayments.filter((p) => p.kind === "additional").reduce((n, p) => n + p.amount, 0);
+
   // Si observaron el pago inicial y la persona subió uno corregido, lo que se revisa es el corregido.
   const hasPendingReplacement = pendingPayments.some((p) => p.kind === "replacement");
-  const initialNeedsReview = registration.status === "pending" || (registration.status === "rejected" && !hasPendingReplacement);
-  const canReviewPayment = (p: RegistrationPayment) =>
-    p.kind === "replacement" ? registration.status === "rejected" : isApproved;
-  const hasWork = initialNeedsReview || pendingPayments.length > 0;
-  const isCashInitial = registration.payment_method === "efectivo";
+  const initialPending = registration.status === "pending";
+  const observedInitial = registration.status === "rejected" && !hasPendingReplacement;
+  const canReviewPayment = (p: RegistrationPayment) => (p.kind === "replacement" ? registration.status === "rejected" : isApproved);
+  const toReviewCount = (initialPending ? 1 : 0) + pendingPayments.length;
 
   // Entrada
   const ticket = registration.ticket_code
@@ -229,450 +181,533 @@ export default async function AdminInscripcionDetailPage({
   const lastCheckIn = checkIns[0];
   const actorLabel = (actorId: string | null) => (actorId && actorEmails.get(actorId)) || "un admin";
 
-  const cleanPhone = registration.phone.replace(/\D/g, "");
-  const waNumber = cleanPhone.length === 9 ? `51${cleanPhone}` : cleanPhone;
-  const waMessage = encodeURIComponent(
+  const age = ageAtCamp(registration.birth_date);
+  const minor = isMinorAtCamp(registration.birth_date);
+  const birth = new Date(`${registration.birth_date.slice(0, 10)}T00:00:00Z`);
+  const birthText = Number.isNaN(birth.getTime()) ? registration.birth_date : birthFmt.format(birth);
+
+  const waUrl = whatsappUrl(
+    registration.phone,
     `Hola ${registration.first_name}, te escribimos del equipo del campamento Radical 2.0 respecto a tu inscripción.`,
   );
-  const waUrl = `https://wa.me/${waNumber}?text=${waMessage}`;
+  const observedWa = (what: string, note: string | null) =>
+    note ? whatsappUrl(registration.phone, observationMessage(registration.first_name, what, note)) : null;
+  // El aviso de un abono observado tiene sentido mientras sea lo último que envió.
+  const lastPayment = payments[payments.length - 1];
 
+  const card = "rounded-2xl border border-[#e2e8e4] bg-white p-4 sm:p-5";
+  const rowSummary =
+    "flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2 sm:px-5 [&::-webkit-details-marker]:hidden";
   const navButton =
-    "inline-flex min-h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50";
-  const navButtonDisabled =
-    "inline-flex min-h-9 cursor-not-allowed items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2.5 text-xs font-semibold text-slate-300";
+    "inline-flex min-h-10 items-center gap-1 rounded-xl border border-[#d8e3df] bg-white px-3 text-sm font-semibold text-[#2c4a47] transition hover:bg-[#f3f7f5]";
+  const navDisabled = "inline-flex min-h-10 cursor-not-allowed items-center gap-1 rounded-xl border border-[#eef2ef] px-3 text-sm font-semibold text-[#b9c7c3]";
+  const callButton =
+    "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-[#d8e3df] bg-white px-3 text-sm font-semibold text-[#2c4a47] transition hover:bg-[#f3f7f5]";
+  const waButton =
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#187a42] px-4 text-sm font-bold text-white transition hover:bg-[#136536]";
+
+  const reviewHead = (label: string, amount: number, date: string, receiptId: string | null, inPerson = false) => (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-[#0a3039]">{label}</p>
+        <p className="text-xs text-[#6b5a3a]">Enviado el {dateTimeFmt.format(new Date(date))}</p>
+        <div className="mt-2">
+          {receiptId ? (
+            <CamperReceiptModal receipts={receiptsList} initialReceiptId={receiptId} />
+          ) : (
+            <span className="text-xs font-semibold text-[#6b5a3a]">{inPerson ? "Recibido en persona" : "Sin foto de comprobante"}</span>
+          )}
+        </div>
+      </div>
+      <p className="shrink-0 text-2xl font-black tabular-nums tracking-tight text-[#082e39]">S/ {amount}</p>
+    </div>
+  );
+
+  const dataRow = (label: string, value: ReactNode, action?: ReactNode) => (
+    <div className="flex items-center justify-between gap-3 py-2.5">
+      <div className="min-w-0">
+        <dt className="text-xs text-[#5f7a75]">{label}</dt>
+        <dd className="mt-0.5 text-sm font-semibold text-[#0a3039]">{value}</dd>
+      </div>
+      {action}
+    </div>
+  );
+
+  const paymentRows = [
+    {
+      key: "initial",
+      label: isCashInitial ? "Pago inicial en efectivo" : "Pago inicial",
+      amount: registration.amount,
+      date: registration.created_at,
+      status: registration.status,
+      // Si está observado, la nota ya se muestra arriba con el aviso.
+      note: observedInitial ? null : registration.review_note,
+      receiptId: receiptFor("main-receipt"),
+      wa: null as string | null,
+    },
+    ...payments.map((p) => ({
+      key: p.id,
+      label: paymentLabels.get(p.id) ?? "Abono",
+      amount: p.amount,
+      date: p.created_at,
+      status: p.status,
+      note: p.review_note,
+      receiptId: receiptFor(p.id),
+      wa:
+        p.status === "rejected" && p.id === lastPayment?.id
+          ? observedWa(p.kind === "replacement" ? "tu comprobante corregido" : `tu abono de S/ ${p.amount}`, p.review_note)
+          : null,
+    })),
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* ── Encabezado ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-1">
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3.5">
-          <Link
-            href="/admin/inscripciones"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <ArrowLeft size={14} />
-            <span>Campistas</span>
-          </Link>
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-xl font-bold text-[#082e39] sm:text-2xl">
-                {registration.first_name} {registration.last_name}
-              </h1>
-              <StatusBadge status={registration.status} size="md" />
-              {isMinorAtCamp(registration.birth_date) && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                  <ShieldAlert size={12} aria-hidden />
+      <header className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link
+              href="/admin/inscripciones"
+              className="mb-2 hidden items-center gap-1.5 text-sm font-semibold text-[#5f7a75] transition hover:text-[#0a3039] lg:inline-flex"
+            >
+              <ArrowLeft size={15} aria-hidden />
+              Campistas
+            </Link>
+            <h1 className="text-2xl font-bold tracking-tight text-[#082e39] sm:text-3xl">
+              {registration.first_name} {registration.last_name}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <AccountChip status={registration.status} due={remainingBalance} size="md" />
+              {minor && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-900">
+                  <ShieldAlert size={14} aria-hidden />
                   Menor de edad
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              DNI {registration.document} · Plan <span className="capitalize">{registration.plan}</span> · Inscrito el{" "}
-              {new Date(registration.created_at).toLocaleDateString("es-PE", {
-                dateStyle: "medium",
-                timeZone: "America/Lima",
-              })}
+            <p className="mt-2 text-sm text-[#5f7a75]">
+              DNI {registration.document} · <span className="capitalize">{registration.plan}</span>
+              {age !== null && ` · ${age} años`} · inscrito el {dayFmt.format(new Date(registration.created_at))}
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#25D366] px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#20ba59]"
-          >
-            <MessageCircle size={14} />
-            <span className="hidden sm:inline">Escribir por WhatsApp</span>
-            <span className="sm:hidden">WhatsApp</span>
-          </a>
-
-          <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+          <nav aria-label="Otras inscripciones" className="hidden shrink-0 items-center gap-1.5 lg:flex">
             {prevReg ? (
-              <Link href={`/admin/inscripciones/${prevReg.id}`} title={`Anterior: ${prevReg.first_name}`} className={navButton}>
-                <ChevronLeft size={14} />
-                <span className="hidden sm:inline">Anterior</span>
+              <Link href={`/admin/inscripciones/${prevReg.id}`} title={`Anterior: ${prevReg.first_name} ${prevReg.last_name}`} className={navButton}>
+                <ChevronLeft size={16} aria-hidden />
+                Anterior
               </Link>
             ) : (
-              <span className={navButtonDisabled}>
-                <ChevronLeft size={14} />
+              <span className={navDisabled}>
+                <ChevronLeft size={16} aria-hidden />
+                Anterior
               </span>
             )}
             {nextReg ? (
-              <Link href={`/admin/inscripciones/${nextReg.id}`} title={`Siguiente: ${nextReg.first_name}`} className={navButton}>
-                <span className="hidden sm:inline">Siguiente</span>
-                <ChevronRight size={14} />
+              <Link href={`/admin/inscripciones/${nextReg.id}`} title={`Siguiente: ${nextReg.first_name} ${nextReg.last_name}`} className={navButton}>
+                Siguiente
+                <ChevronRight size={16} aria-hidden />
               </Link>
             ) : (
-              <span className={navButtonDisabled}>
-                <ChevronRight size={14} />
+              <span className={navDisabled}>
+                Siguiente
+                <ChevronRight size={16} aria-hidden />
               </span>
             )}
-          </div>
+          </nav>
         </div>
-      </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <a href={waUrl} target="_blank" rel="noopener noreferrer" className={waButton}>
+            <WhatsAppMark className="size-4" />
+            WhatsApp
+          </a>
+          <a href={`tel:${registration.phone}`} className={`${callButton} min-h-11 justify-center px-4`}>
+            <Phone size={16} aria-hidden />
+            Llamar
+          </a>
+        </div>
+      </header>
 
       <FlashMessage error={search.error} success={search.success} />
+      {search.tipo === "abono" && <ObservedNotice client={client} id={search.observado} tipo="abono" />}
 
-      {/* ── Por resolver: todo lo que espera una decisión, arriba y con sus botones ── */}
-      {hasWork && (
-        <section className="rounded-xl border-2 border-amber-200 bg-amber-50/40 p-4 shadow-sm sm:p-5">
-          <h2 className="text-base font-bold text-[#082e39]">Por resolver</h2>
-          <p className="mt-0.5 text-xs text-slate-600">
-            Revisa el comprobante y aprueba, u observa con una nota para avisarle por WhatsApp.
-          </p>
-
-          <div className="mt-4 space-y-4">
-            {initialNeedsReview && (
-              <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[1fr_1.1fr]">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">
-                      {isCashInitial ? "Pago inicial en efectivo" : "Pago inicial de la inscripción"}
-                    </span>
-                    <StatusBadge status={registration.status} />
-                  </div>
-                  <p className="mt-1 text-2xl font-black tabular-nums text-[#082e39]">S/ {registration.amount}</p>
-                  <p className="text-xs text-slate-500">Enviado el {dateTimeFmt.format(new Date(registration.created_at))}</p>
-                  {registration.review_note && (
-                    <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
-                      Observación anterior: {registration.review_note}
-                    </p>
-                  )}
-                  <div className="mt-3">
-                    {hasReceipt("main-receipt") ? (
-                      <CamperReceiptModal receipts={receiptsList} initialReceiptId="main-receipt" triggerLabel="Ver comprobante" />
-                    ) : (
-                      <span className="text-xs font-semibold text-slate-500">Sin foto de comprobante</span>
-                    )}
-                  </div>
-                </div>
+      {/* ── Lo que espera una decisión ── */}
+      {toReviewCount > 0 && (
+        <section aria-labelledby="por-validar" className="rounded-2xl border border-amber-200 bg-[#fffaf0]">
+          <h2 id="por-validar" className="px-4 pt-4 text-base font-bold text-[#5c3400] sm:px-5">
+            {toReviewCount === 1 ? "1 comprobante por validar" : `${toReviewCount} comprobantes por validar`}
+          </h2>
+          <ul className="divide-y divide-amber-200/70">
+            {initialPending && (
+              <li className="space-y-3 px-4 py-4 sm:px-5">
+                {reviewHead(isCashInitial ? "Pago inicial en efectivo" : "Pago inicial", registration.amount, registration.created_at, receiptFor("main-receipt"), isCashInitial)}
+<div className="lg:max-w-md">
                 <ReviewResolutionForm
                   action={review}
                   isInitial
                   id={registration.id}
                   currentStatus={registration.status}
-                  initialNote={registration.review_note || ""}
                   view="registrations"
                   returnTo={selfUrl}
-                  entityType="inscripcion"
-                  participantPhone={registration.phone}
-                  participantFirstName={registration.first_name}
+                  entityType="comprobante"
+                  approveText={`Aprobar S/ ${registration.amount}`}
                 />
-              </div>
-            )}
-
-            {pendingPayments.map((p) => (
-              <div key={p.id} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[1fr_1.1fr]">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{paymentLabels.get(p.id) ?? "Abono adicional"}</span>
-                    <StatusBadge status={p.status} />
-                  </div>
-                  <p className="mt-1 text-2xl font-black tabular-nums text-[#082e39]">S/ {p.amount}</p>
-                  <p className="text-xs text-slate-500">Enviado el {dateTimeFmt.format(new Date(p.created_at))}</p>
-                  <div className="mt-3">
-                    {hasReceipt(p.id) ? (
-                      <CamperReceiptModal receipts={receiptsList} initialReceiptId={p.id} triggerLabel="Ver comprobante" />
-                    ) : (
-                      <span className="text-xs font-semibold text-slate-500">Sin foto de comprobante</span>
-                    )}
-                  </div>
                 </div>
-                {canReviewPayment(p) ? (
-                  <ReviewResolutionForm
-                    action={reviewPayment}
-                    isInitial={false}
-                    id={p.id}
-                    registrationId={registration.id}
-                    currentStatus={p.status}
-                    initialNote={p.review_note || ""}
-                    view="payments"
-                    returnTo={selfUrl}
-                    entityType="comprobante"
-                    participantPhone={registration.phone}
-                    participantFirstName={registration.first_name}
-                  />
-                ) : (
-                  <p className="self-center rounded-lg bg-slate-50 p-3 text-xs font-semibold text-slate-600">
-                    Primero resuelve el pago inicial. Este abono se puede validar cuando la inscripción esté aprobada.
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+              </li>
+            )}
+            {pendingPayments.map((p) => {
+              const exceeds = p.kind === "additional" && isApproved && totalApproved + p.amount > registration.price;
+              return (
+                <li key={p.id} className="space-y-3 px-4 py-4 sm:px-5">
+                  {reviewHead(paymentLabels.get(p.id) ?? "Abono", p.amount, p.created_at, receiptFor(p.id), p.method === "efectivo")}
+                  {p.kind === "replacement" && registration.review_note && (
+                    <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-900">Corrige la observación: «{registration.review_note}»</p>
+                  )}
+                  {exceeds && (
+                    <p className="flex items-start gap-2 rounded-xl bg-amber-100/70 px-3 py-2 text-sm text-amber-900">
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden />
+                      Supera el saldo pendiente (S/ {remainingBalance}). No se puede aprobar; obsérvalo para que lo corrija.
+                    </p>
+                  )}
+                  {canReviewPayment(p) ? (
+                    <div className="lg:max-w-md">
+                    <ReviewResolutionForm
+                      action={reviewPayment}
+                      isInitial={false}
+                      id={p.id}
+                      registrationId={registration.id}
+                      currentStatus={p.status}
+                      view="payments"
+                      returnTo={selfUrl}
+                      entityType="comprobante"
+                      approveText={`Aprobar S/ ${p.amount}`}
+                      approveBlocked={exceeds}
+                    />
+                    </div>
+                  ) : (
+                    <p className="rounded-xl bg-white/80 px-3 py-2 text-sm text-[#5c4a1f]">
+                      Primero resuelve el pago inicial: este abono se puede validar cuando la inscripción esté aprobada.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </section>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
-        {/* ── Columna izquierda: pagos y datos ── */}
-        <div className="space-y-6">
-          <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-[#082e39]">Pagos</h2>
-              <p className="mt-0.5 text-xs text-slate-500">Todo lo que ha pagado, en orden.</p>
+      {observedInitial && (
+        <section aria-labelledby="observado" className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 sm:p-5">
+          <h2 id="observado" className="text-base font-bold text-rose-900">
+            Pago inicial observado
+          </h2>
+          <p className="mt-1 text-sm text-rose-900/85">Falta que {registration.first_name} suba un comprobante corregido desde su cuenta.</p>
+          {registration.review_note && (
+            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-[#2c4a47]">«{registration.review_note}»</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {observedWa("tu comprobante de inscripción", registration.review_note) && (
+              <a
+                href={observedWa("tu comprobante de inscripción", registration.review_note) ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={waButton}
+              >
+                <WhatsAppMark className="size-4" />
+                Avisar por WhatsApp
+              </a>
+            )}
+            {receiptFor("main-receipt") && <CamperReceiptModal receipts={receiptsList} initialReceiptId="main-receipt" triggerLabel="Ver comprobante" />}
+          </div>
+          <details className="group mt-3 border-t border-rose-200/70">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 pt-1 text-sm font-semibold text-[#2c4a47] [&::-webkit-details-marker]:hidden">
+              Aprobar de todos modos o devolver a pendiente
+              <ChevronDown size={16} className="ml-auto shrink-0 transition group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="pt-1">
+              <ReviewResolutionForm
+                action={review}
+                isInitial
+                id={registration.id}
+                currentStatus={registration.status}
+                initialNote={registration.review_note || ""}
+                view="registrations"
+                returnTo={selfUrl}
+                entityType="comprobante"
+              />
             </div>
+          </details>
+        </section>
+      )}
 
-            <ul className="mt-4 space-y-3">
-              <li className="flex flex-col justify-between gap-3 rounded-lg border border-slate-200 bg-[#fafcfb] p-3.5 text-xs sm:flex-row sm:items-center">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">
-                      {isCashInitial ? "Pago inicial en efectivo" : "Pago inicial de la inscripción"}
-                    </span>
-                    <StatusBadge status={registration.status} />
-                  </div>
-                  <p className="mt-1 text-slate-500">
-                    <strong className="text-slate-800">S/ {registration.amount}</strong> · {dateTimeFmt.format(new Date(registration.created_at))}
-                  </p>
-                </div>
-                {hasReceipt("main-receipt") && (
-                  <CamperReceiptModal receipts={receiptsList} initialReceiptId="main-receipt" triggerLabel="Ver comprobante" />
-                )}
-              </li>
-
-              {payments.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex flex-col justify-between gap-3 rounded-lg border border-slate-200 bg-[#fafcfb] p-3.5 text-xs sm:flex-row sm:items-center"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{paymentLabels.get(p.id) ?? "Abono adicional"}</span>
-                      <StatusBadge status={p.status} />
-                    </div>
-                    <p className="mt-1 text-slate-500">
-                      <strong className="text-slate-800">S/ {p.amount}</strong> · {dateTimeFmt.format(new Date(p.created_at))}
+      {/* En celular: cuenta → pagos → datos → entrada → más acciones. En computadora, dos columnas. */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-6">
+        <div className="max-lg:contents lg:space-y-6">
+          <section aria-labelledby="pagos" className={`${card} max-lg:order-2`}>
+            <h2 id="pagos" className="text-base font-bold text-[#0a3039]">
+              Pagos
+            </h2>
+            <ul className="mt-1 divide-y divide-[#eef2ef]">
+              {paymentRows.map((r) => (
+                <li key={r.key} className="flex items-start gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-sm font-semibold text-[#0a3039]">{r.label}</span>
+                      <StatusBadge status={r.status} />
                     </p>
-                    {p.review_note && (
-                      <p className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">Nota: {p.review_note}</p>
+                    <p className="mt-0.5 text-xs text-[#6b8580]">{dateTimeFmt.format(new Date(r.date))}</p>
+                    {r.note && <p className="mt-1.5 rounded-lg bg-[#f5f3ec] px-2.5 py-1.5 text-xs text-[#5c4a1f]">Nota: {r.note}</p>}
+                    {(r.receiptId || r.wa) && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {r.receiptId && <CamperReceiptModal receipts={receiptsList} initialReceiptId={r.receiptId} />}
+                        {r.wa && (
+                          <a href={r.wa} target="_blank" rel="noopener noreferrer" className={`${waButton} min-h-10 px-3`}>
+                            <WhatsAppMark className="size-4" />
+                            Avisar
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {hasReceipt(p.id) && (
-                    <CamperReceiptModal receipts={receiptsList} initialReceiptId={p.id} triggerLabel="Ver comprobante" />
-                  )}
+                  <p className="shrink-0 text-base font-bold tabular-nums text-[#0b2d36]">S/ {r.amount}</p>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-base font-bold text-[#082e39]">Datos del participante</h2>
-            <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3.5 text-xs sm:grid-cols-2">
-              <div className="border-b border-slate-100 pb-2">
-                <dt className="text-slate-500">Documento de identidad</dt>
-                <dd className="mt-0.5 text-sm font-semibold text-slate-900">{registration.document}</dd>
-              </div>
-              <div className="border-b border-slate-100 pb-2">
-                <dt className="text-slate-500">Fecha de nacimiento</dt>
-                <dd className="mt-0.5 text-sm font-semibold text-slate-900">{registration.birth_date}</dd>
-              </div>
-              <div className="border-b border-slate-100 pb-2">
-                <dt className="text-slate-500">Género</dt>
-                <dd className="mt-0.5 text-sm font-semibold capitalize text-slate-900">{registration.gender}</dd>
-              </div>
-              <div className="border-b border-slate-100 pb-2">
-                <dt className="text-slate-500">Correo electrónico</dt>
-                <dd className="mt-0.5 truncate text-sm font-semibold text-slate-900">
-                  <a href={`mailto:${registration.email}`} className="hover:text-[#008e95] hover:underline">
-                    {registration.email}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:col-span-2">
-                <div>
-                  <dt className="text-slate-500">Celular</dt>
-                  <dd className="mt-0.5 text-sm font-semibold text-slate-900">{registration.phone}</dd>
-                </div>
-                <a
-                  href={`tel:${registration.phone}`}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  <Phone size={12} />
-                  <span>Llamar</span>
-                </a>
-              </div>
-              <div className="flex items-center justify-between gap-3 sm:col-span-2">
-                <div>
-                  <dt className="text-slate-500">Contacto de emergencia</dt>
-                  <dd className="mt-0.5 text-sm font-semibold text-slate-900">
-                    {registration.emergency_name}{" "}
-                    <span className="font-normal capitalize text-slate-500">({registration.emergency_relation})</span>
-                    <span className="block font-bold text-[#0a4249]">{registration.emergency_phone}</span>
-                  </dd>
-                </div>
-                <a
-                  href={`tel:${registration.emergency_phone}`}
-                  className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  <Phone size={12} />
-                  <span>Llamar</span>
-                </a>
-              </div>
+          <section aria-labelledby="datos" className={`${card} max-lg:order-3`}>
+            <h2 id="datos" className="text-base font-bold text-[#0a3039]">
+              Datos
+            </h2>
+            <dl className="mt-1 divide-y divide-[#eef2ef]">
+              {dataRow("Documento", registration.document)}
+              {dataRow(
+                "Nacimiento",
+                <>
+                  {birthText}
+                  {age !== null && <span className="font-normal text-[#5f7a75]"> · {age} años en el campamento</span>}
+                </>,
+              )}
+              {dataRow("Género", <span className="capitalize">{registration.gender}</span>)}
+              {dataRow(
+                "Correo",
+                <a href={`mailto:${registration.email}`} className="break-all hover:text-[#007b80] hover:underline">
+                  {registration.email}
+                </a>,
+              )}
+              {dataRow(
+                "Celular",
+                registration.phone,
+                <a href={`tel:${registration.phone}`} className={callButton}>
+                  <Phone size={15} aria-hidden />
+                  Llamar
+                </a>,
+              )}
+              {dataRow(
+                "Contacto de emergencia",
+                <>
+                  {registration.emergency_name}{" "}
+                  <span className="font-normal capitalize text-[#5f7a75]">({registration.emergency_relation})</span>
+                  <span className="block">{registration.emergency_phone}</span>
+                </>,
+                <a href={`tel:${registration.emergency_phone}`} className={callButton}>
+                  <Phone size={15} aria-hidden />
+                  Llamar
+                </a>,
+              )}
             </dl>
           </section>
 
-          <RegistrationDataForm registration={registration} />
+          <section aria-labelledby="mas-acciones" className="overflow-hidden rounded-2xl border border-[#e2e8e4] bg-white max-lg:order-5">
+            <h2 id="mas-acciones" className="px-4 pb-2 pt-4 text-base font-bold text-[#0a3039] sm:px-5">
+              Más acciones
+            </h2>
+            <div className="divide-y divide-[#eef2ef] border-t border-[#eef2ef]">
+              <RegistrationDataForm registration={registration} />
 
-          {history.length > 0 && (
-            <details className="rounded-xl border border-slate-200 bg-white p-4 text-xs shadow-sm">
-              <summary className="cursor-pointer font-bold text-slate-700">
-                Historial de cambios ({history.length})
-              </summary>
-              <ul className="mt-3 divide-y divide-slate-100">
-                {history.map((event) => (
-                  <li key={event.id} className="py-2.5">
-                    <div className="flex items-center justify-between text-slate-500">
-                      <span className="font-medium text-slate-700">
-                        {event.payment_id ? paymentLabels.get(event.payment_id) ?? "Abono" : "Pago inicial"}
+              {history.length > 0 && (
+                <details className="group">
+                  <summary className={rowSummary}>
+                    <History size={17} className="shrink-0 text-[#0a524a]" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-[#0a3039]">Historial de cambios</span>
+                      <span className="block text-xs text-[#5f7a75]">
+                        {history.length === 1 ? "1 registro" : `${history.length} registros`}: revisiones y datos editados
                       </span>
-                      <span>{dateTimeFmt.format(new Date(event.created_at))}</span>
-                    </div>
-                    <p className="mt-0.5 font-semibold text-slate-800">
-                      Estado: {statusLabels[event.new_status] || event.new_status}
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 text-[#7d948f] transition group-open:rotate-180" aria-hidden />
+                  </summary>
+                  <ul className="divide-y divide-[#eef2ef] px-4 pb-3 sm:px-5">
+                    {history.map((event) => (
+                      <li key={event.id} className="py-2.5 text-sm">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="font-semibold text-[#0a3039]">
+                            {event.payment_id ? (paymentLabels.get(event.payment_id) ?? "Abono") : "Pago inicial"}
+                          </span>
+                          <span className="shrink-0 text-xs text-[#6b8580]">{dateTimeFmt.format(new Date(event.created_at))}</span>
+                        </div>
+                        {event.old_status !== event.new_status && (
+                          <p className="text-[#4d6a64]">
+                            {statusLabels[event.old_status] ?? event.old_status} → {statusLabels[event.new_status] ?? event.new_status}
+                          </p>
+                        )}
+                        {event.note && <p className="mt-1 rounded-lg bg-[#f3f6f4] px-2.5 py-1.5 text-xs text-[#2c4a47]">{event.note}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
+              {isApproved && isMaster && (
+                <details className="group">
+                  <summary className={rowSummary}>
+                    <RotateCcw size={17} className="shrink-0 text-[#0a524a]" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-[#0a3039]">Cambiar estado del pago inicial</span>
+                      <span className="block text-xs text-[#5f7a75]">Para observarlo o devolverlo a pendiente si se aprobó por error.</span>
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 text-[#7d948f] transition group-open:rotate-180" aria-hidden />
+                  </summary>
+                  <div className="px-4 pb-4 sm:px-5">
+                    <ReviewResolutionForm
+                      action={review}
+                      isInitial
+                      id={registration.id}
+                      currentStatus={registration.status}
+                      view="registrations"
+                      returnTo={selfUrl}
+                      entityType="comprobante"
+                    />
+                  </div>
+                </details>
+              )}
+
+              {isMaster && (
+                <details className="group">
+                  <summary className={rowSummary}>
+                    <Trash2 size={17} className="shrink-0 text-red-700" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-red-800">Eliminar inscripción</span>
+                      <span className="block text-xs text-[#5f7a75]">Solo la cuenta maestra. No se puede deshacer.</span>
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 text-[#7d948f] transition group-open:rotate-180" aria-hidden />
+                  </summary>
+                  <form action={deleteRegistration} className="space-y-3 px-4 pb-4 sm:px-5">
+                    <input type="hidden" name="id" value={registration.id} />
+                    <p className="text-sm text-[#4d6a64]">
+                      Borra la inscripción con sus abonos, historial e ingresos. La cuenta de Google sigue existiendo y podrá volver a
+                      inscribirse. Se guarda una copia interna de lo eliminado.
                     </p>
-                    {event.note && <p className="mt-1 rounded bg-slate-50 p-2 text-slate-600">{event.note}</p>}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
+                    <ConfirmSubmitButton
+                      message={`¿Eliminar la inscripción de ${registration.first_name} ${registration.last_name}? Se borran sus abonos e historial y no se puede deshacer.`}
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-4 text-sm font-bold text-white transition hover:bg-red-800 sm:w-auto"
+                    >
+                      Eliminar inscripción
+                    </ConfirmSubmitButton>
+                  </form>
+                </details>
+              )}
+            </div>
+          </section>
         </div>
 
-        {/* ── Columna derecha: cuenta, entrada y acciones (en celular va primero) ── */}
-        <div className="order-first space-y-6 lg:order-none">
-          <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-[#082e39]">Estado de cuenta</h2>
-              <span className="text-xs font-semibold capitalize text-slate-500">Plan {registration.plan}</span>
+        <div className="max-lg:contents lg:space-y-6">
+          <section aria-labelledby="cuenta" className={`${card} max-lg:order-1`}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="cuenta" className="text-base font-bold text-[#0a3039]">
+                Estado de cuenta
+              </h2>
+              <span className="text-sm text-[#5f7a75]">
+                <span className="capitalize">{registration.plan}</span> · S/ {registration.price}
+              </span>
             </div>
-            <div className="mt-4 space-y-3 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Costo del plan</span>
-                <span className="text-sm font-bold text-slate-800">S/ {registration.price}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Pagado</span>
-                <span className="text-sm font-bold text-emerald-700">S/ {totalApproved}</span>
-              </div>
-              {pendingAmount > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Por revisar</span>
-                  <span className="text-sm font-bold text-amber-700">S/ {pendingAmount}</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <span className="font-semibold text-slate-700">Saldo pendiente</span>
-                <span className={`text-base font-black ${remainingBalance > 0 ? "text-amber-700" : "text-emerald-700"}`}>
-                  S/ {remainingBalance}
-                </span>
-              </div>
-              {isApproved && remainingBalance === 0 && (
-                <p className="rounded-lg bg-emerald-50 p-2.5 text-center font-semibold text-emerald-800">Pagado completo</p>
-              )}
-              {!isApproved && (
-                <p className="rounded-lg bg-amber-50 p-2.5 text-amber-900">
-                  El pago inicial aún no está aprobado; el saldo se confirma al aprobarlo.
+            {isApproved ? (
+              <>
+                <p className={`mt-3 text-2xl font-black tabular-nums tracking-tight ${remainingBalance > 0 ? "text-[#8a4b07]" : "text-emerald-700"}`}>
+                  {remainingBalance > 0 ? `Debe S/ ${remainingBalance}` : "Pagó completo"}
                 </p>
-              )}
-            </div>
+                <div
+                  className="mt-2 h-2 overflow-hidden rounded-full bg-[#edf3f0]"
+                  role="progressbar"
+                  aria-label="Pagado del total"
+                  aria-valuemin={0}
+                  aria-valuemax={registration.price}
+                  aria-valuenow={totalApproved}
+                >
+                  <div className="h-full rounded-full bg-[#0f8f87]" style={{ width: `${paidPercent}%` }} />
+                </div>
+                <p className="mt-2 text-sm text-[#4d6a64]">
+                  Pagó S/ {totalApproved} de S/ {registration.price}
+                  {pendingAmount > 0 && (
+                    <>
+                      {" · "}
+                      <span className="font-semibold text-sky-800">S/ {pendingAmount} por validar</span>
+                    </>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-lg font-bold text-[#0a3039]">
+                  {initialPending ? "Pago inicial por validar" : hasPendingReplacement ? "Comprobante corregido por validar" : "Pago inicial observado"}
+                </p>
+                <p className="mt-1 text-sm text-[#4d6a64]">
+                  Declaró S/ {registration.amount} de S/ {registration.price}. El saldo se confirma al aprobar el pago inicial.
+                </p>
+              </>
+            )}
+            <CashPaymentForm collapsible registrationId={registration.id} approved={isApproved} remaining={remainingBalance} price={registration.price} />
           </section>
 
-          {/* Entrada y control de ingreso */}
-          <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-base font-bold text-[#082e39]">Entrada al campamento</h2>
+          <section aria-labelledby="entrada" className={`${card} max-lg:order-4`}>
+            <h2 id="entrada" className="text-base font-bold text-[#0a3039]">
+              Entrada al campamento
+            </h2>
             {ticket ? (
-              <div className="mt-4 flex items-start gap-4">
-                <div
-                  className={`size-24 shrink-0 rounded-lg border border-slate-200 p-2 [&_svg]:size-full ${ticket.state === "active" ? "" : "opacity-30"}`}
-                  role="img"
-                  aria-label={`Código QR de la entrada ${formatTicketCode(ticket.code)}`}
-                  dangerouslySetInnerHTML={{ __html: ticket.svg }}
-                />
-                <div className="min-w-0 text-xs">
-                  <p className="font-mono text-sm font-bold tracking-wider text-[#082e39]">{formatTicketCode(ticket.code)}</p>
-                  <p className="mt-1 font-semibold text-slate-600">
-                    {ticket.state === "active"
-                      ? "Entrada activa"
-                      : ticket.state === "rejected"
-                        ? "Entrada bloqueada: pago observado"
-                        : "Se activa al aprobar el pago inicial"}
-                  </p>
-                  {lastCheckIn ? (
-                    <p className="mt-2 flex items-start gap-1.5 font-semibold text-emerald-800">
-                      <BadgeCheck size={14} className="mt-px shrink-0" aria-hidden />
-                      Ingresó el {dateTimeFmt.format(new Date(lastCheckIn.created_at))}, registrado por {actorLabel(lastCheckIn.actor_id)}
-                      {checkIns.length > 1 && ` (${checkIns.length} registros)`}.
+              <>
+                <div className="mt-3 flex items-start gap-4">
+                  <div
+                    className={`size-20 shrink-0 rounded-lg border border-[#e2e8e4] p-1.5 [&_svg]:size-full ${ticket.state === "active" ? "" : "opacity-30"}`}
+                    role="img"
+                    aria-label={`Código QR de la entrada ${formatTicketCode(ticket.code)}`}
+                    dangerouslySetInnerHTML={{ __html: ticket.svg }}
+                  />
+                  <div className="min-w-0 text-sm">
+                    <p className="font-mono font-bold tracking-wider text-[#082e39]">{formatTicketCode(ticket.code)}</p>
+                    <p className="mt-0.5 text-[#4d6a64]">
+                      {ticket.state === "active"
+                        ? "Entrada activa"
+                        : ticket.state === "rejected"
+                          ? "Bloqueada: pago observado"
+                          : "Se activa al aprobar el pago inicial"}
                     </p>
-                  ) : (
-                    <p className="mt-2 flex items-center gap-1.5 text-slate-500">
-                      <Clock3 size={14} className="shrink-0" aria-hidden />
-                      Aún no ingresa al campamento.
-                    </p>
-                  )}
-                  <Link
-                    href={`/admin/escaner?c=${ticket.code}`}
-                    className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#082f39] px-3 text-xs font-bold text-white hover:bg-[#0b4248]"
-                  >
-                    {lastCheckIn ? <ScanLine size={14} aria-hidden /> : <DoorOpen size={14} aria-hidden />}
-                    {lastCheckIn ? "Abrir en el escáner" : "Registrar ingreso"}
-                  </Link>
+                    {lastCheckIn ? (
+                      <p className="mt-2 flex items-start gap-1.5 font-semibold text-emerald-800">
+                        <BadgeCheck size={16} className="mt-0.5 shrink-0" aria-hidden />
+                        <span>
+                          Ingresó el {dateTimeFmt.format(new Date(lastCheckIn.created_at))}, registrado por {actorLabel(lastCheckIn.actor_id)}
+                          {checkIns.length > 1 && ` (${checkIns.length} registros)`}.
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="mt-2 flex items-center gap-1.5 text-[#5f7a75]">
+                        <Clock3 size={15} className="shrink-0" aria-hidden />
+                        Aún no ingresa al campamento.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+                <Link
+                  href={`/admin/escaner?c=${ticket.code}`}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#082f39] px-4 text-sm font-bold text-white transition hover:bg-[#0b4248] sm:w-auto"
+                >
+                  {lastCheckIn ? <ScanLine size={16} aria-hidden /> : <DoorOpen size={16} aria-hidden />}
+                  {lastCheckIn ? "Abrir en el escáner" : "Registrar ingreso"}
+                </Link>
+              </>
             ) : (
-              <p className="mt-2 text-xs text-slate-500">Esta inscripción no tiene código de entrada.</p>
+              <p className="mt-2 text-sm text-[#5f7a75]">Esta inscripción no tiene código de entrada.</p>
             )}
           </section>
-
-          <CashPaymentForm
-            registrationId={registration.id}
-            approved={isApproved}
-            remaining={remainingBalance}
-            price={registration.price}
-          />
-
-          {isApproved && isMaster && (
-            <details className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-              <summary className="cursor-pointer text-sm font-bold text-[#082e39]">
-                Cambiar el estado de la inscripción
-                <span className="mt-0.5 block text-xs font-normal text-slate-500">
-                  Para observarla o devolverla a pendiente si se aprobó por error.
-                </span>
-              </summary>
-              <div className="mt-4">
-                <ReviewResolutionForm
-                  action={review}
-                  isInitial
-                  id={registration.id}
-                  currentStatus={registration.status}
-                  initialNote={registration.review_note || ""}
-                  view="registrations"
-                  returnTo={selfUrl}
-                  entityType="inscripcion"
-                  participantPhone={registration.phone}
-                  participantFirstName={registration.first_name}
-                />
-              </div>
-            </details>
-          )}
-
-          {isMaster && (
-            <form action={deleteRegistration} className="rounded-xl border border-red-200 bg-white p-5 shadow-sm sm:p-6">
-              <input type="hidden" name="id" value={registration.id} />
-              <h2 className="text-sm font-bold text-red-800">Eliminar inscripción</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Borra la inscripción con sus abonos, historial e ingresos. La cuenta de Google sigue existiendo y podrá volver a
-                inscribirse. Se guarda una copia interna de lo eliminado.
-              </p>
-              <ConfirmSubmitButton
-                message={`¿Eliminar la inscripción de ${registration.first_name} ${registration.last_name}? Se borran sus abonos e historial y no se puede deshacer.`}
-                className="mt-3 inline-flex min-h-9 items-center rounded-lg bg-red-600 px-3 text-xs font-bold text-white hover:bg-red-700"
-              >
-                Eliminar inscripción
-              </ConfirmSubmitButton>
-            </form>
-          )}
         </div>
       </div>
     </div>

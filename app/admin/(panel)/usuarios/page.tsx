@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
-import { ChevronRight, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Mail, Search, Trash2, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { serviceClient } from "@/utils/supabase/service";
-import { adminInputClass } from "../../types";
 import { StatusBadge } from "../../components/StatusBadge";
 import { FlashMessage } from "../../components/FlashMessage";
+import { PageHeader } from "../../components/PageHeader";
 import { ConfirmSubmitButton } from "../../components/ConfirmSubmitButton";
 import { deleteAccount } from "../../actions";
 
@@ -143,47 +143,55 @@ export default async function UsuariosPage({
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">{titles[view].title}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-[#5f7a75]">{titles[view].description}</p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title={titles[view].title}
+        description={titles[view].description}
+        mobileDescription={view === "sin" ? titles.sin.description : undefined}
+      />
       <FlashMessage error={params.error} success={params.success} />
 
-      <section className="grid grid-cols-3 gap-2 sm:gap-3">
-        {[
-          { label: "Cuentas", value: campers.length, hint: "Sin contar al equipo administrador" },
-          { label: "Inscritos", value: withReg.length, hint: "Enviaron el formulario" },
-          { label: "Sin inscribir", value: withoutReg.length, hint: "Entraron y no se inscribieron" },
-        ].map((c) => (
-          <div key={c.label} className="rounded-xl border border-[#e2e8e4] bg-white p-3 shadow-sm sm:p-4">
-            <p className="text-xs font-medium text-[#657d77]">{c.label}</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-[#0a3039] sm:mt-2 sm:text-3xl">{c.value}</p>
-            <p className="mt-1 hidden text-[11px] text-[#7d948f] sm:block">{c.hint}</p>
-          </div>
-        ))}
-      </section>
+      <form className="relative" action="/admin/usuarios" role="search">
+        <input type="hidden" name="ver" value={view} />
+        <label className="sr-only" htmlFor="usuarios-q">
+          Buscar por nombre o correo
+        </label>
+        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7d948f]" aria-hidden />
+        <input
+          id="usuarios-q"
+          name="q"
+          type="search"
+          defaultValue={q}
+          placeholder="Buscar por nombre o correo"
+          autoComplete="off"
+          enterKeyHint="search"
+          className="min-h-12 w-full rounded-xl border border-[#cfdcd7] bg-white pl-11 pr-11 text-base text-[#082e39] outline-none placeholder:text-[#7d948f] focus:border-[#00a7ad] focus:ring-2 focus:ring-[#00a7ad]/20 sm:max-w-md sm:text-sm"
+        />
+        {q && (
+          <Link
+            href={`/admin/usuarios${view === "todos" ? "" : `?ver=${view}`}`}
+            aria-label="Borrar búsqueda"
+            className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-[#5f7a75] hover:bg-[#eef3f1] sm:left-[calc(28rem-2.75rem)] sm:right-auto"
+          >
+            <X size={17} aria-hidden />
+          </Link>
+        )}
+      </form>
 
-      <div className="flex">
-        <form className="flex w-full gap-2 sm:w-96" action="/admin/usuarios">
-          <input type="hidden" name="ver" value={view} />
-          <label className="sr-only" htmlFor="usuarios-q">Buscar</label>
-          <input id="usuarios-q" name="q" defaultValue={q} placeholder="Nombre o correo" className={`${adminInputClass} py-2`} />
-          <button type="submit" aria-label="Buscar" className="rounded-xl bg-[#e7f0ed] px-3 text-[#07333d] hover:bg-[#d7e8e3]">
-            <Search size={16} aria-hidden />
-          </button>
-        </form>
-      </div>
+      <p className="text-xs text-[#5f7a75]">
+        {rows.length === 1 ? "1 cuenta" : `${rows.length} cuentas`}
+        {view === "todos" && ` · ${withReg.length} inscritas, ${withoutReg.length} sin inscribir`} · no incluye al equipo administrador
+      </p>
 
-      <section className="overflow-hidden rounded-xl border border-[#e2e8e4] bg-white shadow-sm">
+      <section className="-mx-4 overflow-hidden border-y border-[#e2e8e4] bg-white sm:mx-0 sm:rounded-2xl sm:border">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-[#edf1ee] bg-[#fafcfb] text-[11px] uppercase tracking-wider text-[#78918a]">
+          <thead className="border-b border-[#edf1ee] bg-[#fafcfb] text-[11px] uppercase tracking-wider text-[#78918a] max-sm:hidden">
             <tr>
               <th className="px-4 py-2.5 font-semibold">Usuario</th>
               <th className="hidden px-4 py-2.5 font-semibold sm:table-cell">Inscripción</th>
               <th className="hidden px-4 py-2.5 font-semibold md:table-cell">Cuenta creada</th>
               <th className="hidden px-4 py-2.5 font-semibold lg:table-cell">Último ingreso</th>
-              {isMaster && <th className="w-10"><span className="sr-only">Eliminar</span></th>}
+              <th className="w-10"><span className="sr-only">Acciones</span></th>
               <th className="w-8" aria-hidden />
             </tr>
           </thead>
@@ -225,9 +233,17 @@ export default async function UsuariosPage({
                 <td className="hidden px-4 py-2.5 text-xs text-[#52716f] lg:table-cell">
                   {r.lastSignInAt ? timeFmt.format(new Date(r.lastSignInAt)) : "—"}
                 </td>
-                {isMaster && (
-                  <td className="px-1 py-2.5">
-                    {!r.role && r.id !== user.id && (
+                <td className="px-1 py-2.5">
+                    {!r.registration && r.email && (
+                      <a
+                        href={`mailto:${r.email}?subject=${encodeURIComponent("Tu inscripción a Radical 2.0")}`}
+                        aria-label={`Escribir a ${r.email}`}
+                        className="relative z-10 mb-1 grid size-10 place-items-center rounded-lg text-[#5f7a75] hover:bg-[#eef3f1] hover:text-[#0a3039]"
+                      >
+                        <Mail size={16} aria-hidden />
+                      </a>
+                    )}
+                    {isMaster && !r.role && r.id !== user.id && (
                       <form action={deleteAccount} className="relative z-10">
                         <input type="hidden" name="id" value={r.id} />
                         <input type="hidden" name="return_to" value={returnTo} />
@@ -238,14 +254,13 @@ export default async function UsuariosPage({
                               ? `¿Eliminar la cuenta ${r.email}? También se borra su inscripción con sus abonos e historial. No se puede deshacer.`
                               : `¿Eliminar la cuenta ${r.email}? No se puede deshacer.`
                           }
-                          className="grid size-8 place-items-center rounded-lg text-[#9cb2ac] hover:bg-red-50 hover:text-red-700"
+                          className="grid size-10 place-items-center rounded-lg text-[#9cb2ac] hover:bg-red-50 hover:text-red-700"
                         >
                           <Trash2 size={15} aria-hidden />
                         </ConfirmSubmitButton>
                       </form>
                     )}
                   </td>
-                )}
                 <td className="pr-3 text-[#9cb2ac]">{r.registration && <ChevronRight size={15} aria-hidden />}</td>
               </tr>
             ))}

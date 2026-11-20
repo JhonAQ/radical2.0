@@ -20,6 +20,8 @@ export function FlashMessage({ error, success, fallbackError }: { error?: string
       const url = new URL(window.location.href);
       url.searchParams.delete("error");
       url.searchParams.delete("success");
+      url.searchParams.delete("observado");
+      url.searchParams.delete("tipo");
       window.history.replaceState(window.history.state, "", url);
     } catch {}
     if (!successText) return;

@@ -22,9 +22,11 @@ interface ReceiptItem {
 
 interface ReceiptViewerProps {
   receipts: ReceiptItem[];
+  /** "compact": un solo comprobante que llena su espacio; tocarlo lo abre en tamaño completo. */
+  variant?: "full" | "compact";
 }
 
-export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
+export function ReceiptViewer({ receipts, variant = "full" }: ReceiptViewerProps) {
   const [activeReceiptId, setActiveReceiptId] = useState<string>(
     receipts[0]?.id || "",
   );
@@ -47,6 +49,34 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
     return (
       <div className="flex h-80 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
         No se encontró ningún comprobante disponible.
+      </div>
+    );
+  }
+
+  if (variant === "compact") {
+    const control = "grid size-11 place-items-center rounded-xl bg-[#03232b]/75 text-white backdrop-blur transition hover:bg-[#03232b]";
+    return (
+      <div className="relative flex h-full min-h-[300px] items-center justify-center overflow-hidden bg-[#0c2830] p-3">
+        <a href={activeReceipt.url} target="_blank" rel="noreferrer" aria-label="Abrir el comprobante en tamaño completo" className="block">
+          <Image
+            src={activeReceipt.url}
+            alt={activeReceipt.label}
+            width={700}
+            height={900}
+            unoptimized
+            priority
+            style={{ transform: `rotate(${rotation}deg)` }}
+            className="mx-auto max-h-[min(54svh,640px)] w-auto rounded-lg object-contain transition-transform duration-200 ease-out"
+          />
+        </a>
+        <div className="absolute right-2 top-2 flex gap-1.5">
+          <button type="button" onClick={handleRotateRight} aria-label="Girar la imagen" className={control}>
+            <RotateCw size={18} aria-hidden />
+          </button>
+          <a href={activeReceipt.url} target="_blank" rel="noreferrer" aria-label="Abrir en tamaño completo" className={control}>
+            <ExternalLink size={18} aria-hidden />
+          </a>
+        </div>
       </div>
     );
   }
@@ -85,7 +115,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             type="button"
             title="Rotar a la izquierda (90°)"
             onClick={handleRotateLeft}
-            className="grid size-8 place-items-center rounded-lg bg-white/10 transition hover:bg-white/20 hover:text-white"
+            className="grid size-10 place-items-center rounded-lg sm:size-8 bg-white/10 transition hover:bg-white/20 hover:text-white"
           >
             <RotateCcw size={15} />
           </button>
@@ -93,7 +123,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             type="button"
             title="Rotar a la derecha (90°)"
             onClick={handleRotateRight}
-            className="grid size-8 place-items-center rounded-lg bg-white/10 transition hover:bg-white/20 hover:text-white"
+            className="grid size-10 place-items-center rounded-lg sm:size-8 bg-white/10 transition hover:bg-white/20 hover:text-white"
           >
             <RotateCw size={15} />
           </button>
@@ -102,7 +132,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             type="button"
             title="Acercar zoom"
             onClick={handleZoomIn}
-            className="grid size-8 place-items-center rounded-lg bg-white/10 transition hover:bg-white/20 hover:text-white"
+            className="grid size-10 place-items-center rounded-lg sm:size-8 bg-white/10 transition hover:bg-white/20 hover:text-white"
           >
             <ZoomIn size={15} />
           </button>
@@ -110,7 +140,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             type="button"
             title="Alejar zoom"
             onClick={handleZoomOut}
-            className="grid size-8 place-items-center rounded-lg bg-white/10 transition hover:bg-white/20 hover:text-white"
+            className="grid size-10 place-items-center rounded-lg sm:size-8 bg-white/10 transition hover:bg-white/20 hover:text-white"
           >
             <ZoomOut size={15} />
           </button>
@@ -119,7 +149,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
               type="button"
               title="Restablecer vista"
               onClick={handleReset}
-              className="grid size-8 place-items-center rounded-lg bg-[#00aeb8]/20 text-[#00aeb8] transition hover:bg-[#00aeb8]/30 hover:text-white"
+              className="grid size-10 place-items-center rounded-lg sm:size-8 bg-[#00aeb8]/20 text-[#00aeb8] transition hover:bg-[#00aeb8]/30 hover:text-white"
             >
               <RefreshCw size={14} />
             </button>
@@ -130,7 +160,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             target="_blank"
             rel="noreferrer"
             title="Abrir imagen en nueva pestaña"
-            className="grid size-8 place-items-center rounded-lg bg-white/10 transition hover:bg-white/20 hover:text-white"
+            className="grid size-10 place-items-center rounded-lg sm:size-8 bg-white/10 transition hover:bg-white/20 hover:text-white"
           >
             <ExternalLink size={15} />
           </a>
@@ -138,7 +168,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
       </div>
 
       {/* ── Image Canvas Container ── */}
-      <div className="relative flex min-h-[440px] max-h-[640px] items-center justify-center overflow-hidden p-6 sm:p-8">
+      <div className="relative flex min-h-[50svh] max-h-[640px] items-center justify-center overflow-hidden p-3 sm:min-h-[440px] sm:p-8">
         <div
           className="relative transition-transform duration-200 ease-out"
           style={{
@@ -152,7 +182,7 @@ export function ReceiptViewer({ receipts }: ReceiptViewerProps) {
             height={900}
             unoptimized
             priority
-            className="max-h-[520px] w-auto rounded-xl object-contain shadow-2xl"
+            className="max-h-[60svh] w-auto rounded-xl sm:max-h-[520px] object-contain shadow-2xl"
           />
         </div>
       </div>

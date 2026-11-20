@@ -1,4 +1,4 @@
-import { Banknote } from "lucide-react";
+import { Banknote, ChevronDown } from "lucide-react";
 import { registerCashPayment } from "../actions";
 import { adminInputClass } from "../types";
 import { PendingFieldset } from "./PendingFieldset";
@@ -13,6 +13,7 @@ export function CashPaymentForm({
   remaining,
   price,
   scannerCode,
+  collapsible = false,
 }: {
   registrationId: string;
   approved: boolean;
@@ -20,27 +21,22 @@ export function CashPaymentForm({
   price: number;
   /** Desde el escáner: al guardar vuelve a la ficha rápida en vez del detalle. */
   scannerCode?: string;
+  /** Plegado dentro de otra tarjeta (ficha): se abre al tocar «Registrar pago en efectivo». */
+  collapsible?: boolean;
 }) {
   if (approved && remaining <= 0) return null;
   const min = approved ? 1 : 50;
   const max = approved ? remaining : price;
+  const explanation = approved
+    ? "Para dinero recibido en mano. Queda aprobado al instante y se descuenta del saldo."
+    : "La inscripción aún no está aprobada: el efectivo reemplaza al comprobante inicial y la inscripción queda aprobada.";
 
-  return (
-    <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="flex items-center gap-2 text-base font-bold text-[#082e39]">
-        <Banknote size={18} className="text-emerald-700" />
-        Registrar pago en efectivo
-      </h2>
-      <p className="mt-0.5 text-xs text-slate-500">
-        {approved
-          ? "Para dinero recibido en mano. Queda aprobado al instante y se descuenta del saldo."
-          : "La inscripción aún no está aprobada: el efectivo reemplaza al comprobante inicial y la inscripción queda aprobada."}
-      </p>
-      <form action={registerCashPayment} className="mt-4 grid gap-3">
-        <PendingFieldset className="contents">
+  const form = (
+    <form action={registerCashPayment} className="mt-3 grid gap-3">
+      <PendingFieldset className="contents">
         <input type="hidden" name="id" value={registrationId} />
         {scannerCode && <input type="hidden" name="scanner_code" value={scannerCode} />}
-        <label className="block text-xs font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-[#2c4a47]">
           Monto recibido (S/)
           <input
             className={`${adminInputClass} mt-1`}
@@ -53,32 +49,51 @@ export function CashPaymentForm({
             defaultValue={max}
             required
           />
-          <span className="mt-1 block font-normal text-slate-500">
+          <span className="mt-1 block text-xs font-normal text-[#5f7a75]">
             Entre S/ {min} y S/ {max}.
           </span>
         </label>
-        <label className="block text-xs font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-[#2c4a47]">
           Nota (opcional)
-          <input
-            className={`${adminInputClass} mt-1`}
-            name="note"
-            maxLength={200}
-            placeholder="Ej.: recibido en el campamento, recibo N° 012"
-          />
+          <input className={`${adminInputClass} mt-1`} name="note" maxLength={200} placeholder="Ej.: recibido en el campamento, recibo N° 012" />
         </label>
-        <label className="flex items-start gap-2 text-xs font-semibold text-slate-700">
-          <input type="checkbox" name="confirm" required className="mt-0.5 size-4 accent-emerald-700" />
+        <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-[#2c4a47]">
+          <input type="checkbox" name="confirm" required className="size-5 shrink-0 accent-emerald-700" />
           Conté el dinero y lo recibí en mano.
         </label>
         <button
           type="submit"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-base font-bold text-white shadow-sm transition hover:bg-emerald-800 sm:text-sm"
         >
-          <Banknote size={16} />
+          <Banknote size={17} aria-hidden />
           Registrar efectivo
         </button>
-        </PendingFieldset>
-      </form>
+      </PendingFieldset>
+    </form>
+  );
+
+  if (collapsible) {
+    return (
+      <details className="group mt-4 border-t border-[#eef2ef]">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 pt-1 text-sm font-semibold text-emerald-800 [&::-webkit-details-marker]:hidden">
+          <Banknote size={17} aria-hidden />
+          Registrar pago en efectivo
+          <ChevronDown size={16} className="ml-auto transition group-open:rotate-180" aria-hidden />
+        </summary>
+        <p className="text-xs text-[#5f7a75]">{explanation}</p>
+        {form}
+      </details>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-[#e2e8e4] bg-white p-4 sm:p-5">
+      <h2 className="flex items-center gap-2 text-base font-bold text-[#082e39]">
+        <Banknote size={18} className="text-emerald-700" aria-hidden />
+        Registrar pago en efectivo
+      </h2>
+      <p className="mt-0.5 text-xs text-[#5f7a75]">{explanation}</p>
+      {form}
     </section>
   );
 }

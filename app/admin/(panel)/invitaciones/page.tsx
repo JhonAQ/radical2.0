@@ -8,6 +8,7 @@ import { FlashMessage } from "../../components/FlashMessage";
 import { PendingFieldset } from "../../components/PendingFieldset";
 import { CopyLinkButton } from "../../components/CopyLinkButton";
 import { ConfirmSubmitButton } from "../../components/ConfirmSubmitButton";
+import { PageHeader } from "../../components/PageHeader";
 
 export const metadata = { title: "Invitaciones | Radical 2.0" };
 
@@ -57,15 +58,12 @@ export default async function InvitacionesPage({
   );
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Invitaciones con pago recibido</h1>
-        <p className="mt-1 max-w-2xl text-sm text-[#5f7a75]">
-          Para quien ya pagó por otro medio (por ejemplo, una familia que yapeó a una directora). Cada persona entra con su
-          cuenta de Google desde el enlace, llena sus datos y su inscripción queda aprobada con el abono indicado, sin subir
-          comprobante. Si eliminas una inscripción hecha con el enlace, su cupo vuelve a quedar libre.
-        </p>
-      </div>
+    <div className="max-w-3xl space-y-4 lg:space-y-6">
+      <PageHeader
+        title="Invitaciones con pago recibido"
+        description="Para quien ya pagó por otro medio (por ejemplo, una familia que yapeó a una directora). Cada persona entra con su cuenta de Google desde el enlace, llena sus datos y su inscripción queda aprobada con el abono indicado, sin subir comprobante. Si eliminas una inscripción hecha con el enlace, su cupo vuelve a quedar libre."
+        mobileDescription="Para quien ya pagó por otro medio: entra con el enlace, llena sus datos y queda aprobada sin subir comprobante."
+      />
       <FlashMessage error={params.error} success={params.success} />
 
       <form action={createInvite} className="space-y-4 rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">

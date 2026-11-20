@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { ChevronRight, ScanLine, Search } from "lucide-react";
+import { ChevronRight, ScanLine, Search, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { loadCheckInRoster, type RosterRow } from "@/utils/check-in-roster";
+import { loadCheckInRoster } from "@/utils/check-in-roster";
 import { isMinorAtCamp } from "@/utils/minors";
 import { formatTicketCode } from "@/utils/ticket";
 import { PrintButton } from "../../components/PrintButton";
-import { adminInputClass } from "../../types";
+import { PageHeader } from "../../components/PageHeader";
+import { AccountChip } from "../../components/AccountChip";
 
 export const metadata = { title: "Control de ingreso | Radical 2.0" };
 
@@ -19,18 +20,6 @@ const timeFmt = new Intl.DateTimeFormat("es-PE", {
   hour: "numeric",
   minute: "2-digit",
 });
-
-function PayChip({ row }: { row: RosterRow }) {
-  if (row.status !== "approved")
-    return (
-      <span className="rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
-        {row.status === "rejected" ? "Observado" : "Sin validar"}
-      </span>
-    );
-  if (row.remaining > 0)
-    return <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Debe S/ {row.remaining}</span>;
-  return <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Pagado</span>;
-}
 
 export default async function IngresosPage({
   searchParams,
@@ -58,15 +47,10 @@ export default async function IngresosPage({
   const percent = roster.length ? Math.round((inside.length / roster.length) * 100) : 0;
 
   const base = view === "faltan" ? missing : view === "ingresaron" ? inside : roster;
-  const needle = q.toLocaleLowerCase("es").normalize("NFD").replace(/\p{M}/gu, "");
+  const fold = (s: string) => s.toLocaleLowerCase("es").normalize("NFD").replace(/\p{M}/gu, "");
+  const needle = fold(q);
   const rows = needle
-    ? base.filter((r) =>
-        `${r.first_name} ${r.last_name} ${r.document} ${r.ticket_code}`
-          .toLocaleLowerCase("es")
-          .normalize("NFD")
-          .replace(/\p{M}/gu, "")
-          .includes(needle.replace(/-/g, "")),
-      )
+    ? base.filter((r) => fold(`${r.first_name} ${r.last_name} ${r.document} ${r.ticket_code}`).includes(needle.replace(/-/g, "")))
     : base;
 
   const tabs: { id: View; label: string; count: number }[] = [
@@ -74,101 +58,135 @@ export default async function IngresosPage({
     { id: "ingresaron", label: "Ingresaron", count: inside.length },
     { id: "todos", label: "Todos", count: roster.length },
   ];
-  const tabHref = (id: View) => `/admin/ingresos?ver=${id}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+  const tabHref = (id: View, query = q) => `/admin/ingresos?ver=${id}${query ? `&q=${encodeURIComponent(query)}` : ""}`;
   const printTitle = view === "faltan" ? "Faltan ingresar" : view === "ingresaron" ? "Ingresaron" : "Padrón completo";
+  const chipClass = (on: boolean) =>
+    `inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition ${
+      on ? "bg-[#0a4249] text-white" : "bg-white text-[#2c4a47] ring-1 ring-inset ring-[#d8e3df] hover:bg-[#f1f6f4]"
+    }`;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Control de ingreso</h1>
-          <p className="mt-1 text-sm text-[#5f7a75]">Quién llegó, quién falta y quién entró con saldo pendiente.</p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <PrintButton />
-          <Link
-            href="/admin/escaner"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0a4249] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#08363c]"
-          >
-            <ScanLine size={15} aria-hidden />
-            Abrir escáner
-          </Link>
-        </div>
+    <div className="space-y-4">
+      <div className="print:hidden">
+        <PageHeader
+          title="Control de ingreso"
+          description="Quién llegó, quién falta y quién entró con saldo pendiente."
+          actions={
+            <div className="hidden items-center gap-2.5 lg:flex">
+              <PrintButton />
+              <Link
+                href="/admin/escaner"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0a4249] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#08363c]"
+              >
+                <ScanLine size={15} aria-hidden />
+                Abrir escáner
+              </Link>
+            </div>
+          }
+        />
       </div>
 
-      {/* Resumen */}
-      <section className="grid grid-cols-3 gap-2 sm:grid-cols-[2fr_1fr_1fr] sm:gap-3 print:hidden">
-        <div className="rounded-xl border border-[#e2e8e4] bg-white p-3 shadow-sm sm:p-4">
-          <p className="text-xs font-medium text-[#657d77]">Ingresaron</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-[#0a3039] sm:mt-2 sm:text-3xl">
-            {inside.length}
-            <span className="text-sm font-semibold text-[#9cb2ac] sm:text-lg"> /{roster.length}</span>
+      {/* Resumen en una sola tarjeta */}
+      <section aria-label="Resumen" className="rounded-2xl border border-[#e2e8e4] bg-white p-4 sm:p-5 print:hidden">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-base text-[#2c4a47]">
+            Ingresaron <strong className="text-2xl font-black tabular-nums text-[#0a3039]">{inside.length}</strong> de{" "}
+            <span className="tabular-nums">{roster.length}</span>
           </p>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#edf3f0]" aria-hidden>
-            <div className="h-full rounded-full bg-[#0f8f87]" style={{ width: `${percent}%` }} />
-          </div>
-          <p className="mt-1.5 hidden text-[11px] text-[#7d948f] sm:block">{percent}% del padrón</p>
+          <span className="text-sm font-semibold tabular-nums text-[#5f7a75]">{percent}%</span>
         </div>
-        <div className="rounded-xl border border-[#e2e8e4] bg-white p-3 shadow-sm sm:p-4">
-          <p className="text-xs font-medium text-[#657d77]">Faltan</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-[#0a3039] sm:mt-2 sm:text-3xl">{missing.length}</p>
-          <p className="mt-1 text-[11px] text-[#7d948f]">Sin ingreso registrado</p>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#edf3f0]" aria-hidden>
+          <div className="h-full rounded-full bg-[#0f8f87]" style={{ width: `${percent}%` }} />
         </div>
-        <div
-          className={`rounded-xl border p-3 shadow-sm sm:p-4 ${
-            insideWithDebt.length ? "border-amber-200/90 bg-[#fffdf9]" : "border-[#e2e8e4] bg-white"
-          }`}
-        >
-          <p className="text-xs font-medium text-[#657d77]">Adentro con deuda</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-[#0a3039] sm:mt-2 sm:text-3xl">{insideWithDebt.length}</p>
-          <p className="mt-1 text-[11px] text-[#7d948f]">
-            {insideWithDebt.length ? `S/ ${debtTotal} por cobrar` : "Nadie debe"}
-          </p>
-        </div>
+        <p className="mt-2 text-sm text-[#4d6a64]">
+          Faltan {missing.length}
+          {insideWithDebt.length > 0 ? (
+            <>
+              {" · "}
+              <Link href="/admin/ingresos?ver=ingresaron" className="font-semibold text-[#8a4b07] underline decoration-amber-300 underline-offset-4">
+                {insideWithDebt.length === 1 ? "1 adentro con deuda" : `${insideWithDebt.length} adentro con deuda`} (S/ {debtTotal})
+              </Link>
+            </>
+          ) : (
+            " · nadie adentro con deuda"
+          )}
+        </p>
       </section>
 
-      {/* Filtros */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <nav aria-label="Filtrar lista" className="flex gap-1 rounded-xl bg-[#e7f0ed] p-1">
-          {tabs.map((t) => (
-            <Link
-              key={t.id}
-              href={tabHref(t.id)}
-              aria-current={view === t.id ? "page" : undefined}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                view === t.id ? "bg-white text-[#073b43] shadow-sm" : "text-[#52716f] hover:text-[#073b43]"
-              }`}
-            >
-              {t.label} <span className="tabular-nums opacity-60">{t.count}</span>
-            </Link>
-          ))}
-        </nav>
-        <form className="flex gap-2 sm:w-80" action="/admin/ingresos">
-          <input type="hidden" name="ver" value={view} />
-          <label className="sr-only" htmlFor="ingresos-q">Buscar</label>
-          <input id="ingresos-q" name="q" defaultValue={q} placeholder="Nombre, DNI o código" className={`${adminInputClass} py-2`} />
-          <button type="submit" aria-label="Buscar" className="rounded-xl bg-[#e7f0ed] px-3 text-[#07333d] hover:bg-[#d7e8e3]">
-            <Search size={16} aria-hidden />
-          </button>
-        </form>
-      </div>
+      {/* Búsqueda y filtros */}
+      <form className="relative print:hidden" action="/admin/ingresos" role="search">
+        <input type="hidden" name="ver" value={view} />
+        <label className="sr-only" htmlFor="ingresos-q">
+          Buscar por nombre, DNI o código
+        </label>
+        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7d948f]" aria-hidden />
+        <input
+          id="ingresos-q"
+          name="q"
+          type="search"
+          defaultValue={q}
+          placeholder="Nombre, DNI o código"
+          autoComplete="off"
+          enterKeyHint="search"
+          className="min-h-12 w-full rounded-xl border border-[#cfdcd7] bg-white pl-11 pr-11 text-base text-[#082e39] outline-none placeholder:text-[#7d948f] focus:border-[#00a7ad] focus:ring-2 focus:ring-[#00a7ad]/20 sm:max-w-md sm:text-sm"
+        />
+        {q && (
+          <Link
+            href={tabHref(view, "")}
+            aria-label="Borrar búsqueda"
+            className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-[#5f7a75] hover:bg-[#eef3f1] sm:left-[calc(28rem-2.75rem)] sm:right-auto"
+          >
+            <X size={17} aria-hidden />
+          </Link>
+        )}
+      </form>
 
-      {/* Lista (también es la versión impresa de respaldo) */}
-      <section className="overflow-hidden rounded-xl border border-[#e2e8e4] bg-white shadow-sm print:border-0 print:shadow-none">
+      <nav aria-label="Filtrar lista" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 print:hidden">
+        {tabs.map((t) => (
+          <Link key={t.id} href={tabHref(t.id)} aria-current={view === t.id ? "true" : undefined} className={chipClass(view === t.id)}>
+            {t.label}
+            <span className={`tabular-nums ${view === t.id ? "text-white/75" : "text-[#7d948f]"}`}>{t.count}</span>
+          </Link>
+        ))}
+      </nav>
+
+      {/* Lista. En celular, filas; en computadora e impresión, la tabla (también es el respaldo en papel). */}
+      <section className="-mx-4 border-y border-[#e2e8e4] bg-white sm:mx-0 sm:rounded-2xl sm:border print:mx-0 print:border-0">
+        <ul className="divide-y divide-[#eef2ef] lg:hidden print:hidden">
+          {rows.map((r) => (
+            <li key={r.id}>
+              <Link href={`/admin/escaner?c=${r.ticket_code}`} className="flex min-h-[64px] items-center gap-3 px-4 py-2.5 active:bg-[#f3f7f5]">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold text-[#082e39]">
+                    {r.last_name}, {r.first_name}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-[#5f7a75]">
+                    DNI {r.document}
+                    {isMinorAtCamp(r.birth_date) && <span className="font-semibold text-amber-700"> · Menor</span>}
+                    {r.checkedInAt && ` · entró ${timeFmt.format(new Date(r.checkedInAt))}`}
+                  </span>
+                </span>
+                <AccountChip status={r.status} due={r.remaining} />
+                <ChevronRight size={16} className="shrink-0 text-[#a9bab5]" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+
         <div className="hidden px-1 pb-3 print:block">
           <h1 className="text-lg font-bold">Radical 2.0 · {printTitle}</h1>
           <p className="text-xs">
             {inside.length} de {roster.length} ingresaron · impreso el {timeFmt.format(new Date())}
           </p>
         </div>
-        <table className="w-full text-left text-sm">
+        <table className="hidden w-full text-left text-sm lg:table print:table">
           <thead className="border-b border-[#edf1ee] bg-[#fafcfb] text-[11px] uppercase tracking-wider text-[#78918a] print:bg-white">
             <tr>
               <th className="hidden w-8 px-3 py-2.5 print:table-cell" aria-label="Marcar" />
               <th className="px-4 py-2.5 font-semibold">Campista</th>
-              <th className="hidden px-4 py-2.5 font-semibold sm:table-cell print:table-cell">Código</th>
+              <th className="px-4 py-2.5 font-semibold">Código</th>
               <th className="px-4 py-2.5 font-semibold">Pago</th>
-              <th className="hidden px-4 py-2.5 font-semibold md:table-cell print:table-cell">Ingreso</th>
+              <th className="px-4 py-2.5 font-semibold">Ingreso</th>
               <th className="w-8 print:hidden" aria-hidden />
             </tr>
           </thead>
@@ -189,15 +207,11 @@ export default async function IngresosPage({
                     {isMinorAtCamp(r.birth_date) && <span className="ml-1.5 font-semibold text-amber-700">· Menor</span>}
                   </span>
                 </td>
-                <td className="hidden px-4 py-2.5 font-mono text-xs text-[#52716f] sm:table-cell print:table-cell">
-                  {formatTicketCode(r.ticket_code)}
-                </td>
+                <td className="px-4 py-2.5 font-mono text-xs text-[#52716f]">{formatTicketCode(r.ticket_code)}</td>
                 <td className="px-4 py-2.5">
-                  <PayChip row={r} />
+                  <AccountChip status={r.status} due={r.remaining} />
                 </td>
-                <td className="hidden px-4 py-2.5 text-xs text-[#52716f] md:table-cell print:table-cell">
-                  {r.checkedInAt ? timeFmt.format(new Date(r.checkedInAt)) : "—"}
-                </td>
+                <td className="px-4 py-2.5 text-xs text-[#52716f]">{r.checkedInAt ? timeFmt.format(new Date(r.checkedInAt)) : "—"}</td>
                 <td className="pr-3 text-[#9cb2ac] print:hidden">
                   <ChevronRight size={15} aria-hidden />
                 </td>
@@ -206,7 +220,7 @@ export default async function IngresosPage({
           </tbody>
         </table>
         {rows.length === 0 && (
-          <p className="py-10 text-center text-sm text-[#829992]">
+          <p className="py-10 text-center text-sm text-[#5f7a75]">
             {q ? "Nadie coincide con la búsqueda." : view === "faltan" ? "Ya ingresaron todos." : "Todavía no ingresó nadie."}
           </p>
         )}

@@ -8,6 +8,7 @@ import {
 } from "../../types";
 import { FlashMessage } from "../../components/FlashMessage";
 import { PendingFieldset } from "../../components/PendingFieldset";
+import { PageHeader } from "../../components/PageHeader";
 
 export const metadata = { title: "Configuración | Radical 2.0" };
 
@@ -39,11 +40,8 @@ export default async function ConfiguracionPage({
   const isPlaceholder = groupUrl.endsWith("/RadicalCampPlaceholder");
 
   return (
-    <div className="max-w-xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Configuración</h1>
-        <p className="mt-1 text-sm text-[#5f7a75]">Ajustes que afectan a las inscripciones.</p>
-      </div>
+    <div className="max-w-xl space-y-4 lg:space-y-6">
+      <PageHeader title="Ajustes del campamento" description="Fechas y enlaces que ven los campistas al inscribirse." />
       <FlashMessage error={params.error} success={params.success} />
       <form action={updateCampSettings} className="space-y-4 rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
         <PendingFieldset className="contents">

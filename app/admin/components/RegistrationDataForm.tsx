@@ -1,19 +1,23 @@
+import { ChevronDown, Pencil } from "lucide-react";
 import { updateRegistrationData } from "../actions";
 import { adminInputClass, type Registration } from "../types";
 import { PendingFieldset } from "./PendingFieldset";
 
-const label = "block text-xs font-semibold text-slate-700";
+const label = "block text-sm font-semibold text-[#2c4a47]";
 
+/** Fila plegable de «Más acciones» en la ficha. */
 export function RegistrationDataForm({ registration: r }: { registration: Registration }) {
   return (
-    <details className="group rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-      <summary className="cursor-pointer list-none text-base font-bold text-[#082e39]">
-        Editar datos del participante
-        <span className="ml-2 text-xs font-normal text-slate-500">
-          Documento, correo y contactos. Queda registrado en el historial.
+    <details className="group">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2 sm:px-5 [&::-webkit-details-marker]:hidden">
+        <Pencil size={17} className="shrink-0 text-[#0a524a]" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-[#0a3039]">Editar datos</span>
+          <span className="block text-xs text-[#5f7a75]">Nombre, documento, correo y contactos. Queda en el historial.</span>
         </span>
+        <ChevronDown size={16} className="shrink-0 text-[#7d948f] transition group-open:rotate-180" aria-hidden />
       </summary>
-      <form action={updateRegistrationData} className="mt-4 grid gap-3 sm:grid-cols-2">
+      <form action={updateRegistrationData} className="grid gap-3 px-4 pb-5 pt-1 sm:grid-cols-2 sm:px-5">
         <PendingFieldset className="contents">
         <input type="hidden" name="id" value={r.id} />
         <label className={label}>Nombres
@@ -51,7 +55,7 @@ export function RegistrationDataForm({ registration: r }: { registration: Regist
           <input className={`${adminInputClass} mt-1`} name="emergency_phone" defaultValue={r.emergency_phone} required minLength={9} maxLength={25} />
         </label>
         <div className="sm:col-span-2">
-          <button className="rounded-lg bg-[#008e87] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#007670]">
+          <button className="min-h-12 w-full rounded-xl bg-[#00766f] px-5 text-base font-bold text-white transition hover:bg-[#00635d] sm:w-auto sm:text-sm">
             Guardar datos
           </button>
         </div>

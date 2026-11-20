@@ -77,7 +77,7 @@ export async function requestPasswordReset(form: FormData) {
   redirect("/admin?success=reset_sent");
 }
 
-function reviewLocation(form: FormData, id: string, result: string) {
+function reviewLocation(form: FormData, id: string, result: string, extra?: Record<string, string>) {
   // En la cola de validación, el éxito pasa al siguiente comprobante; un error se queda en el actual.
   const errorReturnTo = result.startsWith("error=") ? form.get("error_return_to") : null;
   const candidate = String(errorReturnTo || form.get("return_to") || "");
@@ -92,6 +92,8 @@ function reviewLocation(form: FormData, id: string, result: string) {
     params.set("status", status);
   const [key, value] = result.split("=");
   params.set(key, value);
+  // Tras observar, la pantalla siguiente ofrece avisarle al campista por WhatsApp.
+  for (const [k, v] of Object.entries(extra ?? {})) params.set(k, v);
 
   if (returnTo) {
     const returnUrl = String(returnTo);
@@ -134,7 +136,7 @@ export async function review(form: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/inscripciones");
   revalidatePath("/admin/pagos");
-  redirect(reviewLocation(form, id, "success=review"));
+  redirect(reviewLocation(form, id, "success=review", status === "rejected" ? { observado: id, tipo: "inicial" } : undefined));
 }
 
 export async function reviewPayment(form: FormData) {
@@ -171,6 +173,7 @@ export async function reviewPayment(form: FormData) {
       form,
       registrationId,
       error ? "error=payment_review" : "success=review",
+      !error && status === "rejected" ? { observado: paymentId, tipo: "abono" } : undefined,
     ),
   );
 }

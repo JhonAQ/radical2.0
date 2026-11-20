@@ -2,15 +2,14 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowRight,
   BadgeCheck,
+  ChevronRight,
   CircleAlert,
   Clock3,
   DoorOpen,
-  IdCard,
   Phone,
+  ScanLine,
   ShieldAlert,
-  UserRound,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { emailsForUsers } from "@/utils/supabase/service";
@@ -20,6 +19,7 @@ import { computeBalance, formatTicketCode, normalizeTicketCode } from "@/utils/t
 import { checkInRegistration } from "../../actions";
 import { CashPaymentForm } from "../../components/CashPaymentForm";
 import { TicketScanner } from "../../components/TicketScanner";
+import { PageHeader } from "../../components/PageHeader";
 import { errorMessages, successMessages, type Registration } from "../../types";
 import { PendingFieldset } from "../../components/PendingFieldset";
 
@@ -33,12 +33,13 @@ const timeFmt = new Intl.DateTimeFormat("es-PE", {
   hour: "numeric",
   minute: "2-digit",
 });
+const hourFmt = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "numeric", minute: "2-digit" });
 
 type Tone = "ok" | "due" | "stop";
-const toneClass: Record<Tone, string> = {
-  ok: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  due: "border-amber-200 bg-amber-50 text-amber-900",
-  stop: "border-rose-200 bg-rose-50 text-rose-900",
+const bandClass: Record<Tone, string> = {
+  ok: "bg-emerald-50 text-emerald-900 border-emerald-200",
+  due: "bg-amber-50 text-amber-900 border-amber-200",
+  stop: "bg-rose-50 text-rose-900 border-rose-200",
 };
 const toneIcon = { ok: BadgeCheck, due: AlertTriangle, stop: CircleAlert };
 
@@ -93,19 +94,22 @@ export default async function EscanerPage({
 
   // Búsqueda manual por nombre o DNI
   const results = query
-    ? (
+    ? ((
         await client
           .from("registrations")
           .select("id,first_name,last_name,document,status,ticket_code")
           .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,document.ilike.%${query}%`)
           .order("last_name")
           .limit(8)
-      ).data ?? []
+      ).data ?? [])
     : [];
 
   const errorKey = notFoundCode ? "ticket" : params.error;
   const errorMessage = errorKey ? errorMessages[errorKey] : null;
-  const successMessage = params.success ? successMessages[params.success] : null;
+  const lastCheckIn = checkIns[0];
+  // Recién registrado: la tarjeta lo confirma y el siguiente paso es escanear a la próxima persona.
+  const justCheckedIn = params.success === "checkin" && Boolean(lastCheckIn);
+  const successMessage = params.success && params.success !== "checkin" ? successMessages[params.success] : null;
 
   let tone: Tone = "ok";
   let headline = "";
@@ -118,41 +122,49 @@ export default async function EscanerPage({
     } else if (registration.status !== "approved") {
       tone = "stop";
       headline = "Pago inicial sin validar";
-      detail = "Revisa su comprobante en Validar comprobantes o cóbrale en efectivo.";
+      detail = "Revisa su comprobante en Validar o cóbrale en efectivo aquí mismo.";
     } else if (balance.remaining > 0) {
       tone = "due";
       headline = `Debe S/ ${balance.remaining}`;
       detail =
         balance.pendingAmount > 0
-          ? `Tiene S/ ${balance.pendingAmount} en comprobantes por revisar.`
-          : "Puede ingresar; cobra el saldo si lo trae.";
+          ? `Tiene S/ ${balance.pendingAmount} en comprobantes por validar. Puede ingresar.`
+          : "Puede ingresar; cóbrale el saldo si lo trae.";
     } else {
       tone = "ok";
       headline = "Pagado completo";
-      detail = "Todo en orden.";
+      detail = "Todo en orden: puede ingresar.";
     }
   }
-  const ToneIcon = toneIcon[tone];
-  const lastCheckIn = checkIns[0];
+  const ToneIcon = justCheckedIn ? BadgeCheck : toneIcon[tone];
   const age = registration ? ageAtCamp(registration.birth_date) : null;
-  const actorLabel = (id: string | null) =>
-    !id ? "un admin" : id === user.id ? "ti" : (actorEmails.get(id) ?? "otro admin");
+  const actorLabel = (id: string | null) => (!id ? "un admin" : id === user.id ? "ti" : (actorEmails.get(id) ?? "otro admin"));
+
+  const primaryButton =
+    "inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#082f39] px-4 text-base font-bold text-white shadow-sm transition hover:bg-[#0b4248] active:bg-[#06242c]";
+  const secondaryButton =
+    "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#cfdcd7] bg-white px-4 text-base font-semibold text-[#082e39] transition hover:bg-[#f3f7f5]";
+  const callButton =
+    "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-[#d8e3df] bg-white px-3 text-sm font-semibold text-[#2c4a47] transition hover:bg-[#f3f7f5]";
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-[#082e39]">Escáner de entradas</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Escanea el QR o busca por código, nombre o DNI.</p>
-        </div>
-        <Link href="/admin/ingresos" className="shrink-0 rounded-xl px-2 py-1 text-right transition hover:bg-white">
-          <p className="text-2xl font-black tabular-nums text-[#082e39]">
-            {counts.checkedIn}
-            <span className="text-base font-bold text-slate-400">/{counts.total}</span>
-          </p>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#007b80]">ingresaron ›</p>
-        </Link>
-      </header>
+      <PageHeader title="Escáner de entradas" description="Escanea el QR o busca por código, nombre o DNI." />
+
+      <Link
+        href="/admin/ingresos"
+        className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-[#e2e8e4] bg-white px-4 text-sm transition hover:border-[#008e95]/40"
+      >
+        <span className="text-[#2c4a47]">
+          Ingresaron <strong className="tabular-nums text-[#0a3039]">{counts.checkedIn}</strong> de{" "}
+          <span className="tabular-nums">{counts.total}</span>
+          <span className="text-[#6b8580]"> · faltan {counts.total - counts.checkedIn}</span>
+        </span>
+        <span className="inline-flex items-center gap-0.5 font-semibold text-[#007b80]">
+          Lista
+          <ChevronRight size={15} aria-hidden />
+        </span>
+      </Link>
 
       {errorMessage && (
         <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
@@ -165,27 +177,25 @@ export default async function EscanerPage({
         </p>
       )}
 
-      <TicketScanner key={code ?? "scan"} autoStart={!registration && !query} />
+      {/* Sin entrada abierta: la cámara es lo principal */}
+      {!registration && <TicketScanner key={code ?? "scan"} autoStart={!query} />}
 
-      {query && (
-        <section className="rounded-2xl border border-[#dfe7e2] bg-white shadow-sm">
-          <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-[#082e39]">
+      {query && !registration && (
+        <section aria-labelledby="resultados" className="overflow-hidden rounded-2xl border border-[#e2e8e4] bg-white">
+          <h2 id="resultados" className="border-b border-[#eef2ef] px-4 py-3 text-sm font-bold text-[#082e39]">
             {results.length ? `Resultados para “${query}”` : `Sin resultados para “${query}”`}
           </h2>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-[#eef2ef]">
             {results.map((r) => (
               <li key={r.id}>
-                <Link
-                  href={`/admin/escaner?c=${r.ticket_code}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
-                >
+                <Link href={`/admin/escaner?c=${r.ticket_code}`} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2 transition hover:bg-[#fafcfb]">
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-bold text-[#082e39]">
+                    <span className="block truncate text-sm font-semibold text-[#082e39]">
                       {r.first_name} {r.last_name}
                     </span>
-                    <span className="text-xs text-slate-500">DNI {r.document}</span>
+                    <span className="text-xs text-[#5f7a75]">DNI {r.document}</span>
                   </span>
-                  <ArrowRight size={16} className="shrink-0 text-slate-400" aria-hidden />
+                  <ChevronRight size={16} className="shrink-0 text-[#a9bab5]" aria-hidden />
                 </Link>
               </li>
             ))}
@@ -195,93 +205,65 @@ export default async function EscanerPage({
 
       {registration && (
         <>
-          <section className={`rounded-2xl border p-4 ${toneClass[tone]}`}>
-            <div className="flex items-start gap-3">
-              <ToneIcon size={26} className="mt-0.5 shrink-0" aria-hidden />
-              <div>
-                <p className="text-xl font-black leading-tight">{headline}</p>
-                <p className="mt-0.5 text-sm">{detail}</p>
+          {/* Veredicto + persona + acción: todo en la primera pantalla */}
+          <section aria-live="polite" className="overflow-hidden rounded-2xl border border-[#e2e8e4] bg-white">
+            <div className={`flex items-start gap-3 border-b px-4 py-3 ${bandClass[justCheckedIn ? "ok" : tone]}`}>
+              <ToneIcon size={24} className="mt-0.5 shrink-0" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-xl font-black leading-tight">{justCheckedIn ? "Ingreso registrado" : headline}</p>
+                <p className="mt-0.5 text-sm">
+                  {justCheckedIn
+                    ? `A las ${hourFmt.format(new Date(lastCheckIn.created_at))}.${tone === "ok" ? " Pagado completo." : ` ${headline}.`}`
+                    : detail}
+                </p>
               </div>
             </div>
-            {lastCheckIn && (
-              <p className="mt-3 flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm font-semibold text-[#082e39]">
-                <Clock3 size={16} className="shrink-0" aria-hidden />
-                Ya ingresó: {timeFmt.format(new Date(lastCheckIn.created_at))}, registrado por {actorLabel(lastCheckIn.actor_id)}.
-              </p>
-            )}
+
+            <div className="space-y-3 p-4">
+              <div>
+                <p className="text-2xl font-black leading-tight text-[#082e39]">
+                  {registration.first_name} {registration.last_name}
+                </p>
+                <p className="mt-1 text-sm text-[#4d6a64]">
+                  DNI {registration.document}
+                  {age !== null && age > 0 && ` · ${age} años`} · <span className="capitalize">{registration.plan}</span>
+                </p>
+                <p className="mt-0.5 font-mono text-xs font-bold tracking-widest text-[#7d948f]">{formatTicketCode(registration.ticket_code)}</p>
+              </div>
+
+              {isMinorAtCamp(registration.birth_date) && (
+                <p className="flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-bold text-amber-900">
+                  <ShieldAlert size={17} className="shrink-0" aria-hidden />
+                  Menor de edad: pide el permiso notarial de viaje.
+                </p>
+              )}
+
+              {lastCheckIn && !justCheckedIn && (
+                <p className="flex items-start gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-900">
+                  <Clock3 size={16} className="mt-0.5 shrink-0" aria-hidden />
+                  Ya ingresó: {timeFmt.format(new Date(lastCheckIn.created_at))}, registrado por {actorLabel(lastCheckIn.actor_id)}.
+                </p>
+              )}
+
+              {justCheckedIn ? (
+                <Link href="/admin/escaner" className={primaryButton}>
+                  <ScanLine size={20} aria-hidden />
+                  Escanear siguiente entrada
+                </Link>
+              ) : (
+                <form action={checkInRegistration}>
+                  <PendingFieldset className="contents">
+                    <input type="hidden" name="id" value={registration.id} />
+                    <input type="hidden" name="scanner_code" value={registration.ticket_code} />
+                    <button type="submit" className={lastCheckIn || tone === "stop" ? secondaryButton : primaryButton}>
+                      <DoorOpen size={20} aria-hidden />
+                      {lastCheckIn ? "Registrar ingreso otra vez" : tone === "stop" ? "Registrar ingreso de todos modos" : "Registrar ingreso"}
+                    </button>
+                  </PendingFieldset>
+                </form>
+              )}
+            </div>
           </section>
-
-          <section className="rounded-2xl border border-[#dfe7e2] bg-white p-4 shadow-sm">
-            <p className="font-mono text-xs font-bold tracking-widest text-slate-400">
-              {formatTicketCode(registration.ticket_code)}
-            </p>
-            <h2 className="mt-1 text-2xl font-black leading-tight text-[#082e39]">
-              {registration.first_name} {registration.last_name}
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              DNI {registration.document}
-              {age !== null && age > 0 && ` · ${age} años`} · <span className="capitalize">{registration.plan}</span> S/ {registration.price}
-            </p>
-
-            {isMinorAtCamp(registration.birth_date) && (
-              <p className="mt-3 flex items-center gap-2 rounded-lg bg-amber-100 px-3 py-2 text-sm font-bold text-amber-900">
-                <ShieldAlert size={17} className="shrink-0" aria-hidden />
-                Menor de edad: pedir permiso notarial de viaje.
-              </p>
-            )}
-
-            <dl className="mt-4 grid gap-3 border-t border-slate-100 pt-4 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="flex items-center gap-2 text-slate-500">
-                  <Phone size={15} aria-hidden /> Celular
-                </dt>
-                <dd>
-                  <a href={`tel:${registration.phone}`} className="font-bold text-[#007b80] underline-offset-2 hover:underline">
-                    {registration.phone}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="flex items-center gap-2 text-slate-500">
-                  <UserRound size={15} aria-hidden /> Emergencia
-                </dt>
-                <dd className="text-right">
-                  <span className="block font-bold text-[#082e39]">
-                    {registration.emergency_name} <span className="font-normal text-slate-500">({registration.emergency_relation})</span>
-                  </span>
-                  <a href={`tel:${registration.emergency_phone}`} className="font-bold text-[#007b80] underline-offset-2 hover:underline">
-                    {registration.emergency_phone}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="flex items-center gap-2 text-slate-500">
-                  <IdCard size={15} aria-hidden /> Pagado
-                </dt>
-                <dd className="font-bold tabular-nums text-[#082e39]">
-                  S/ {balance.totalPaid} de S/ {registration.price}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <form action={checkInRegistration}>
-            <PendingFieldset className="contents">
-            <input type="hidden" name="id" value={registration.id} />
-            <input type="hidden" name="scanner_code" value={registration.ticket_code} />
-            <button
-              type="submit"
-              className={`inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 text-base font-bold shadow-sm transition ${
-                lastCheckIn
-                  ? "border border-slate-300 bg-white text-[#082e39] hover:bg-slate-50"
-                  : "bg-[#082f39] text-white hover:bg-[#0b4248]"
-              }`}
-            >
-              <DoorOpen size={20} aria-hidden />
-              {lastCheckIn ? "Registrar ingreso otra vez" : "Registrar ingreso"}
-            </button>
-            </PendingFieldset>
-          </form>
 
           <CashPaymentForm
             registrationId={registration.id}
@@ -291,26 +273,68 @@ export default async function EscanerPage({
             scannerCode={registration.ticket_code}
           />
 
-          {checkIns.length > 1 && (
-            <section className="rounded-2xl border border-[#dfe7e2] bg-white p-4 text-sm shadow-sm">
-              <h3 className="font-bold text-[#082e39]">Ingresos registrados</h3>
-              <ul className="mt-2 space-y-1 text-slate-600">
-                {checkIns.map((c) => (
-                  <li key={c.id}>
-                    {timeFmt.format(new Date(c.created_at))} · por {actorLabel(c.actor_id)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <section aria-labelledby="contacto" className="rounded-2xl border border-[#e2e8e4] bg-white p-4">
+            <h2 id="contacto" className="text-base font-bold text-[#0a3039]">
+              Contacto
+            </h2>
+            <dl className="mt-1 divide-y divide-[#eef2ef] text-sm">
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#5f7a75]">Celular</dt>
+                  <dd className="font-semibold text-[#0a3039]">{registration.phone}</dd>
+                </div>
+                <a href={`tel:${registration.phone}`} className={callButton}>
+                  <Phone size={15} aria-hidden />
+                  Llamar
+                </a>
+              </div>
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#5f7a75]">Emergencia</dt>
+                  <dd className="font-semibold text-[#0a3039]">
+                    {registration.emergency_name} <span className="font-normal capitalize text-[#5f7a75]">({registration.emergency_relation})</span>
+                    <span className="block">{registration.emergency_phone}</span>
+                  </dd>
+                </div>
+                <a href={`tel:${registration.emergency_phone}`} className={callButton}>
+                  <Phone size={15} aria-hidden />
+                  Llamar
+                </a>
+              </div>
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <dt className="text-xs text-[#5f7a75]">Pagado</dt>
+                <dd className="font-semibold tabular-nums text-[#0a3039]">
+                  S/ {balance.totalPaid} de S/ {registration.price}
+                </dd>
+              </div>
+            </dl>
+            {checkIns.length > 1 && (
+              <div className="border-t border-[#eef2ef] pt-2.5 text-sm">
+                <p className="text-xs text-[#5f7a75]">Ingresos registrados</p>
+                <ul className="mt-1 space-y-0.5 text-[#2c4a47]">
+                  {checkIns.map((c) => (
+                    <li key={c.id}>
+                      {timeFmt.format(new Date(c.created_at))} · por {actorLabel(c.actor_id)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Link
+              href={`/admin/inscripciones/${registration.id}`}
+              className="mt-2 flex min-h-11 items-center justify-center gap-1 rounded-xl text-sm font-semibold text-[#007b80] transition hover:bg-[#f3f7f5]"
+            >
+              Ver ficha completa
+              <ChevronRight size={15} aria-hidden />
+            </Link>
+          </section>
 
-          <Link
-            href={`/admin/inscripciones/${registration.id}`}
-            className="flex items-center justify-center gap-2 py-2 text-sm font-semibold text-[#007b80] underline-offset-4 hover:underline"
-          >
-            Ver ficha completa e historial
-            <ArrowRight size={15} aria-hidden />
-          </Link>
+          {!justCheckedIn && (
+            <Link href="/admin/escaner" className={secondaryButton}>
+              <ScanLine size={19} aria-hidden />
+              Escanear otra entrada
+            </Link>
+          )}
         </>
       )}
     </div>

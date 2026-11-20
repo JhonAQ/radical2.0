@@ -2,40 +2,34 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import {
-  UsersRound,
-  ClipboardCheck,
-  DoorOpen,
-  Clock3,
-  CircleDollarSign,
-  ChevronRight,
-  BadgeCheck,
-  ScanLine,
-  Printer,
-} from "lucide-react";
-import { type Registration } from "../types";
+import { BadgeCheck, ChevronRight, DoorOpen } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
 import { loadCheckInCounts } from "@/utils/check-in-roster";
+import { DEFAULT_PREVENTA_DEADLINE, preventaDates } from "@/utils/preventa";
+
+const money = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 0 });
+const limaDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" });
+const shortDate = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", day: "numeric", month: "short" });
+
+type Row = { id: string; first_name: string; last_name: string; status: string; plan: string; price: number; amount: number; created_at: string };
+
+/** Días enteros entre hoy y una fecha, en hora de Lima. */
+function daysUntil(iso: string) {
+  const today = Date.parse(`${limaDay.format(new Date())}T00:00:00-05:00`);
+  return Math.round((Date.parse(iso) - today) / 86_400_000);
+}
 
 export default async function AdminOverviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    view?: string;
-    selected?: string;
-    error?: string;
-    success?: string;
-  }>;
+  searchParams: Promise<{ view?: string; selected?: string }>;
 }) {
   const params = await searchParams;
 
-  // Backward compatibility with legacy ?view= queries
+  // Enlaces antiguos con ?view=
   if (params.view === "registrations") {
-    redirect(
-      params.selected
-        ? `/admin/inscripciones?selected=${encodeURIComponent(params.selected)}`
-        : "/admin/inscripciones",
-    );
+    redirect(params.selected ? `/admin/inscripciones/${encodeURIComponent(params.selected)}` : "/admin/inscripciones");
   }
   if (params.view === "payments") redirect("/admin/pagos");
   if (params.view === "team") redirect("/admin/equipo");
@@ -43,286 +37,214 @@ export default async function AdminOverviewPage({
 
   const client = createClient(await cookies());
 
-  // Supabase corta en 1000 filas por consulta: se suma por páginas para no truncar el total.
-  async function sumAmounts(
-    table: "registrations" | "registration_payments",
-    filters: Record<string, string>,
-  ) {
-    let total = 0;
+  // Supabase corta en 1000 filas por consulta: se lee por páginas para no truncar los totales.
+  async function readAll<T>(build: () => PromiseLike<{ data: T[] | null }> & { range: (a: number, b: number) => PromiseLike<{ data: T[] | null }> }) {
+    const out: T[] = [];
     for (let from = 0; ; from += 1000) {
-      let query = client.from(table).select("amount");
-      for (const [column, value] of Object.entries(filters)) {
-        query = query.eq(column, value);
-      }
-      const { data } = await query
-        .order("id", { ascending: true })
-        .range(from, from + 999);
+      const { data } = await build().range(from, from + 999);
       if (!data) break;
-      total += data.reduce((n, row) => n + row.amount, 0);
+      out.push(...data);
       if (data.length < 1000) break;
     }
-    return total;
+    return out;
   }
 
-  // Metrics queries in parallel
-  const [
-    { count: totalRegistrations },
-    { count: pendingRegistrations },
-    { count: pendingPayments },
-    { count: approvedRegistrations },
-    approvedRegsTotal,
-    approvedAddlTotal,
-    { data: recentRegistrations },
-    checkInCounts,
-  ] = await Promise.all([
-    client.from("registrations").select("*", { count: "exact", head: true }),
-    client
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending"),
-    client
-      .from("registration_payments")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending"),
-    client
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "approved"),
-    sumAmounts("registrations", { status: "approved" }),
-    sumAmounts("registration_payments", { status: "approved", kind: "additional" }),
-    client
-      .from("registrations")
-      .select("id,first_name,last_name,email,status,created_at,amount")
-      .order("created_at", { ascending: false })
-      .limit(6),
+  const [registrations, payments, checkInCounts, { data: settings }] = await Promise.all([
+    readAll<Row>(() =>
+      client.from("registrations").select("id,first_name,last_name,status,plan,price,amount,created_at").order("created_at", { ascending: false }),
+    ),
+    readAll<{ registration_id: string; amount: number; status: string; kind: string; created_at: string }>(() =>
+      client.from("registration_payments").select("registration_id,amount,status,kind,created_at").order("id", { ascending: true }),
+    ),
     loadCheckInCounts(client),
+    client.from("camp_settings").select("preventa_deadline").eq("id", true).maybeSingle(),
   ]);
-  const checkInPercent = checkInCounts.total
-    ? Math.round((checkInCounts.checkedIn / checkInCounts.total) * 100)
-    : 0;
 
-  const approvedTotal = approvedRegsTotal + approvedAddlTotal;
+  const extraPaid = new Map<string, number>();
+  for (const p of payments) {
+    if (p.kind === "additional" && p.status === "approved") extraPaid.set(p.registration_id, (extraPaid.get(p.registration_id) ?? 0) + p.amount);
+  }
 
-  const pendingReviewTotal =
-    (pendingRegistrations || 0) + (pendingPayments || 0);
+  const today = limaDay.format(new Date());
+  let collected = 0;
+  let owed = 0;
+  let paidInFull = 0;
+  let withBalance = 0;
+  let pendingRegs = 0;
+  let rejected = 0;
+  let preventa = 0;
+  let newToday = 0;
+  for (const r of registrations) {
+    if (r.plan === "preventa") preventa += 1;
+    if (limaDay.format(new Date(r.created_at)) === today) newToday += 1;
+    if (r.status === "approved") {
+      const paid = r.amount + (extraPaid.get(r.id) ?? 0);
+      collected += paid;
+      const due = Math.max(0, r.price - paid);
+      owed += due;
+      if (due > 0) withBalance += 1;
+      else paidInFull += 1;
+    } else if (r.status === "pending") pendingRegs += 1;
+    else rejected += 1;
+  }
 
-  const kpis = [
-    {
-      label: "Inscritos",
-      value: totalRegistrations || 0,
-      icon: UsersRound,
-      detail: "Enviaron el formulario",
-      highlight: false,
-    },
-    {
-      label: "Aprobados",
-      value: approvedRegistrations || 0,
-      icon: ClipboardCheck,
-      detail: "Con el pago inicial validado",
-      highlight: false,
-    },
-    {
-      label: "Por validar",
-      value: pendingReviewTotal,
-      icon: Clock3,
-      detail: "Comprobantes esperando revisión",
-      highlight: pendingReviewTotal > 0,
-    },
-    {
-      label: "Recaudado",
-      value: `S/ ${approvedTotal}`,
-      icon: CircleDollarSign,
-      detail: "Pagos aprobados",
-      highlight: false,
-    },
+  const pendingItems = [
+    ...registrations.filter((r) => r.status === "pending").map((r) => ({ amount: r.amount, date: r.created_at })),
+    ...payments.filter((p) => p.status === "pending").map((p) => ({ amount: p.amount, date: p.created_at })),
+  ];
+  const pendingCount = pendingItems.length;
+  const pendingAmount = pendingItems.reduce((n, i) => n + i.amount, 0);
+  const oldest = pendingItems.reduce<string | null>((min, i) => (!min || i.date < min ? i.date : min), null);
+  const oldestDays = oldest ? Math.max(0, -daysUntil(oldest)) : 0;
+
+  const deadline = settings?.preventa_deadline ?? DEFAULT_PREVENTA_DEADLINE;
+  const preventaLeft = daysUntil(deadline);
+  const { lastDay } = preventaDates(deadline);
+  const recent = registrations.slice(0, 5);
+  const total = registrations.length;
+  const checkInPercent = checkInCounts.total ? Math.round((checkInCounts.checkedIn / checkInCounts.total) * 100) : 0;
+
+  const breakdown = [
+    { label: "Pagaron completo", value: paidInFull, href: "/admin/inscripciones?estado=pagados", dot: "bg-emerald-500" },
+    { label: "Con saldo pendiente", value: withBalance, href: "/admin/inscripciones?estado=con_saldo", dot: "bg-amber-400" },
+    { label: "Pago inicial por validar", value: pendingRegs, href: "/admin/inscripciones?estado=por_validar", dot: "bg-sky-400" },
+    { label: "Observados", value: rejected, href: "/admin/inscripciones?estado=observados", dot: "bg-rose-400" },
   ];
 
-  const recent = (recentRegistrations as Registration[]) || [];
+  const card = "rounded-2xl border border-[#e2e8e4] bg-white";
 
   return (
-    <div className="space-y-6">
-      {/* ── Encabezado ── */}
-      <div className="pb-1">
-        <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Inicio</h1>
-        <p className="mt-1 text-sm text-[#5f7a75]">Lo que hay que hacer hoy y los números del campamento.</p>
-      </div>
+    <div className="space-y-4 lg:space-y-6">
+      <PageHeader title="Inicio" description="Lo que hay que hacer hoy y los números del campamento." />
 
-      {/* ── Lo pendiente: una sola tarjeta con una sola acción ── */}
-      {pendingReviewTotal > 0 ? (
-        <Link
-          href="/admin/pagos"
-          className="group flex flex-col gap-4 rounded-xl border border-amber-200/90 bg-[#fffaf0] p-4 text-[#784300] shadow-sm transition hover:border-amber-300 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <span className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800">
-              <Clock3 size={19} />
-            </span>
-            <span>
-              <span className="block text-sm font-bold text-[#683b00]">
-                {pendingReviewTotal === 1 ? "1 comprobante por validar" : `${pendingReviewTotal} comprobantes por validar`}
-              </span>
-              <span className="block text-xs text-[#8c5615]">
-                {[
-                  pendingRegistrations ? `${pendingRegistrations} de inscripción` : null,
-                  pendingPayments ? `${pendingPayments} ${pendingPayments === 1 ? "abono" : "abonos"}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                . Se atienden del más antiguo al más nuevo.
-              </span>
-            </span>
-          </span>
-          <span className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-[#d97706] px-4 text-sm font-bold text-white shadow-sm transition group-hover:bg-[#b45309]">
-            Empezar a validar
-            <ChevronRight size={16} aria-hidden />
-          </span>
-        </Link>
-      ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm font-semibold text-emerald-900">
-          <BadgeCheck size={19} className="shrink-0" aria-hidden />
-          Todo al día: no hay comprobantes por validar.
-        </div>
-      )}
-
-      {/* ── Control de ingreso (aparece cuando empieza a registrarse gente) ── */}
-      {checkInCounts.checkedIn > 0 && (
-        <Link
-          href="/admin/ingresos"
-          className="flex items-center gap-4 rounded-xl border border-[#cfe5df] bg-white p-4 shadow-sm transition hover:border-[#008e95]/40"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e3f4ef] text-[#0a524a]">
-            <DoorOpen size={19} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-[#0a3039]">
-              Ingresaron {checkInCounts.checkedIn} de {checkInCounts.total} campistas
-            </span>
-            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[#edf3f0]">
-              <span className="block h-full rounded-full bg-[#0f8f87]" style={{ width: `${checkInPercent}%` }} />
-            </span>
-          </span>
-          <span className="hidden text-xs font-semibold text-[#008e95] sm:block">
-            Faltan {checkInCounts.total - checkInCounts.checkedIn}
-          </span>
-          <ChevronRight size={15} className="text-[#9cb2ac]" />
-        </Link>
-      )}
-
-      {/* ── Unified Metric Cards ── */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {kpis.map(({ label, value, icon: Icon, detail, highlight }) => (
-          <div
-            key={label}
-            className={`rounded-xl border p-4.5 transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.03)] ${
-              highlight
-                ? "border-amber-200/90 bg-[#fffdf9]"
-                : "border-[#e2e8e4] bg-white"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#657d77]">{label}</span>
-              <span
-                className={`grid size-7 place-items-center rounded-md ${
-                  highlight
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-[#edf3f0] text-[#4d6a64]"
-                }`}
-              >
-                <Icon size={15} />
-              </span>
-            </div>
-            <p className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
-              {value}
-            </p>
-            <p className="mt-1 text-[11px] text-[#7d948f]">{detail}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Overview 2-Col Grid ── */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.5fr_1fr]">
-        {/* Recent Registrations */}
-        <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-4">
-            <div>
-              <h2 className="text-base font-bold text-[#0a3039]">
-                Últimas inscripciones
+      <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr] lg:gap-6">
+        <div className="space-y-4 lg:space-y-6">
+          {/* ── Por hacer ── */}
+          {pendingCount > 0 ? (
+            <section className="rounded-2xl border border-amber-200 bg-[#fff8ea] p-4 sm:p-5">
+              <h2 className="text-lg font-bold text-[#5c3400]">
+                {pendingCount === 1 ? "1 comprobante por validar" : `${pendingCount} comprobantes por validar`}
               </h2>
-              <p className="mt-0.5 text-xs text-[#78918a]">
-                Últimos participantes registrados en la plataforma
+              <p className="mt-1 text-sm text-[#7a4b0d]">
+                S/ {money.format(pendingAmount)} por confirmar
+                {oldestDays > 0 && ` · el más antiguo espera desde hace ${oldestDays === 1 ? "1 día" : `${oldestDays} días`}`}.
               </p>
-            </div>
-            <Link
-              href="/admin/inscripciones"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[#008e95] hover:text-[#006e74]"
-            >
-              <span>Ver todas</span>
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div className="mt-2 divide-y divide-[#edf1ee]">
-            {recent.map((r) => (
               <Link
-                key={r.id}
-                href={`/admin/inscripciones/${r.id}`}
-                className="flex items-center gap-3 py-3 transition hover:text-[#008e95]"
+                href="/admin/pagos?empezar=1"
+                className="mt-4 flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-[#b45309] px-4 text-base font-bold text-white transition hover:bg-[#9a4708] active:bg-[#8a3f07] sm:inline-flex"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eaf3f0] text-xs font-bold text-[#0a524a]">
-                  {r.first_name[0]?.toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-[#0a3039]">
-                    {r.first_name} {r.last_name}
-                  </span>
-                  <span className="block truncate text-xs text-[#7d948f]">
-                    {r.email}
-                  </span>
-                </span>
-                <StatusBadge status={r.status} />
-                <ChevronRight size={15} className="text-[#9cb2ac]" />
+                Validar ahora
+                <ChevronRight size={18} aria-hidden />
               </Link>
-            ))}
-            {recent.length === 0 && (
-              <p className="py-10 text-center text-sm text-[#829992]">
-                Todavía no hay inscripciones registradas.
-              </p>
-            )}
-          </div>
-        </section>
+            </section>
+          ) : (
+            <section className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm font-semibold text-emerald-900">
+              <BadgeCheck size={20} className="shrink-0" aria-hidden />
+              Todo al día: no hay comprobantes por validar.
+            </section>
+          )}
 
-        {/* Atajos */}
-        <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
-          <div className="border-b border-[#edf1ee] pb-4">
-            <h2 className="text-base font-bold text-[#0a3039]">Atajos</h2>
-            <p className="mt-0.5 text-xs text-[#78918a]">Lo que más se usa el día del campamento</p>
-          </div>
-          <div className="mt-4 space-y-2.5">
-            {[
-              { href: "/admin/escaner", label: "Escanear entradas", icon: ScanLine, tone: "bg-[#eaf3f0] text-[#0a524a]", external: false },
-              { href: "/admin/ingresos", label: "Control de ingreso", icon: DoorOpen, tone: "bg-[#eaf3f0] text-[#0a524a]", external: false },
-              {
-                href: "/admin/imprimir?type=campistas&status=approved",
-                label: "Lista de campistas para imprimir",
-                icon: Printer,
-                tone: "bg-[#edf3f6] text-[#145d70]",
-                external: true,
-              },
-            ].map(({ href, label, icon: Icon, tone, external }) => (
-              <Link
-                key={href}
-                href={href}
-                target={external ? "_blank" : undefined}
-                className="flex min-h-12 items-center gap-3 rounded-lg border border-[#e7eee9] bg-[#fafcfb] p-3 transition hover:border-[#008e95]/40 hover:bg-white"
-              >
-                <span className={`grid size-8 place-items-center rounded-md ${tone}`}>
-                  <Icon size={17} />
+          {checkInCounts.checkedIn > 0 && (
+            <Link href="/admin/ingresos" className={`${card} flex items-center gap-4 p-4 transition hover:border-[#008e95]/40`}>
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e3f4ef] text-[#0a524a]">
+                <DoorOpen size={19} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-[#0a3039]">
+                  Ingresaron {checkInCounts.checkedIn} de {checkInCounts.total} · faltan {checkInCounts.total - checkInCounts.checkedIn}
                 </span>
-                <span className="flex-1 text-sm font-semibold text-[#0a3039]">{label}</span>
-                <ChevronRight size={14} className="text-[#9cb2ac]" />
+                <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[#edf3f0]">
+                  <span className="block h-full rounded-full bg-[#0f8f87]" style={{ width: `${checkInPercent}%` }} />
+                </span>
+              </span>
+              <ChevronRight size={16} className="shrink-0 text-[#9cb2ac]" aria-hidden />
+            </Link>
+          )}
+
+          {/* ── Dinero ── */}
+          <section className={`${card} p-4 sm:p-5`} aria-labelledby="dinero">
+            <h2 id="dinero" className="text-base font-bold text-[#0a3039]">Dinero</h2>
+            <dl className="mt-3 divide-y divide-[#eef2ef]">
+              <div className="flex items-baseline justify-between gap-3 py-2.5">
+                <dt className="text-sm text-[#4d6a64]">Recaudado (aprobado)</dt>
+                <dd className="text-xl font-bold tabular-nums text-[#0a3039]">S/ {money.format(collected)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 py-2.5">
+                <dt className="text-sm text-[#4d6a64]">
+                  <Link href="/admin/inscripciones?estado=con_saldo" className="underline decoration-[#c9d8d3] underline-offset-4 hover:text-[#0a3039]">
+                    Por cobrar a inscritos
+                  </Link>
+                </dt>
+                <dd className="text-xl font-bold tabular-nums text-[#8a4b07]">S/ {money.format(owed)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 py-2.5">
+                <dt className="text-sm text-[#4d6a64]">En comprobantes sin validar</dt>
+                <dd className="text-base font-semibold tabular-nums text-[#4d6a64]">S/ {money.format(pendingAmount)}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+
+        <div className="space-y-4 lg:space-y-6">
+          {/* ── Inscritos ── */}
+          <section className={`${card} p-4 sm:p-5`} aria-labelledby="inscritos">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="inscritos" className="text-base font-bold text-[#0a3039]">
+                <span className="tabular-nums">{total}</span> inscritos
+              </h2>
+              {newToday > 0 && <span className="text-sm font-semibold text-[#0a7a6f]">+{newToday} hoy</span>}
+            </div>
+            <ul className="mt-2 divide-y divide-[#eef2ef]">
+              {breakdown.map((b) => (
+                <li key={b.label}>
+                  <Link href={b.href} className="flex min-h-11 items-center gap-3 py-1 text-sm transition hover:text-[#007b80]">
+                    <span className={`size-2 shrink-0 rounded-full ${b.dot}`} aria-hidden />
+                    <span className="flex-1 text-[#2c4a47]">{b.label}</span>
+                    <span className="font-bold tabular-nums text-[#0a3039]">{b.value}</span>
+                    <ChevronRight size={15} className="shrink-0 text-[#b3c4bf]" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 border-t border-[#eef2ef] pt-3 text-xs text-[#5f7a75]">
+              Preventa {preventa} · Regular {total - preventa}.{" "}
+              {preventaLeft <= 0
+                ? "La preventa ya cerró."
+                : preventaLeft === 1
+                  ? "Hoy es el último día de preventa."
+                  : `Último día de preventa: ${lastDay} (${preventaLeft === 2 ? "mañana" : `en ${preventaLeft - 1} días`}).`}
+            </p>
+          </section>
+
+          {/* ── Últimas inscripciones ── */}
+          <section className={card} aria-labelledby="ultimas">
+            <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
+              <h2 id="ultimas" className="text-base font-bold text-[#0a3039]">Últimas inscripciones</h2>
+              <Link href="/admin/inscripciones" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[#007b80]">
+                Ver todas
+                <ChevronRight size={15} aria-hidden />
               </Link>
-            ))}
-          </div>
-        </section>
+            </div>
+            <ul className="mt-1 divide-y divide-[#eef2ef] px-4 pb-2 sm:px-5">
+              {recent.map((r) => (
+                <li key={r.id}>
+                  <Link href={`/admin/inscripciones/${r.id}`} className="flex min-h-14 items-center gap-3 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-[#0a3039]">
+                        {r.first_name} {r.last_name}
+                      </span>
+                      <span className="block text-xs text-[#6b8580]">
+                        {shortDate.format(new Date(r.created_at))} · <span className="capitalize">{r.plan}</span>
+                      </span>
+                    </span>
+                    <StatusBadge status={r.status} />
+                  </Link>
+                </li>
+              ))}
+              {recent.length === 0 && <li className="py-8 text-center text-sm text-[#6b8580]">Todavía no hay inscripciones.</li>}
+            </ul>
+          </section>
+        </div>
       </div>
     </div>
   );

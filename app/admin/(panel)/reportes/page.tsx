@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ExportPanel } from "../../components/ExportPanel";
+import { PageHeader } from "../../components/PageHeader";
 
 export const metadata = { title: "Reportes | Radical 2.0" };
 
@@ -16,13 +17,12 @@ export default async function ReportesPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Reportes</h1>
-        <p className="mt-1 text-sm text-[#5f7a75]">
-          Documentos para imprimir o guardar en PDF y datos para Excel. Los filtros aplican a todos.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-4 lg:space-y-6">
+      <PageHeader
+        title="Reportes"
+        description="Documentos para imprimir o guardar en PDF y datos para Excel. Los filtros aplican a todos."
+        mobileDescription="Listas para imprimir o guardar en PDF y datos para Excel."
+      />
       <ExportPanel />
     </div>
   );

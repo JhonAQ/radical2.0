@@ -1,23 +1,38 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import {
-  adminInputClass,
-  adminButtonClass,
-  type Registration,
-  type RegistrationPayment,
-} from "../../types";
-import { Search, FileText, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Search, X } from "lucide-react";
 import { FlashMessage } from "../../components/FlashMessage";
-import { StatusBadge } from "../../components/StatusBadge";
+import { PageHeader } from "../../components/PageHeader";
+import { AccountChip } from "../../components/AccountChip";
 
-const PAGE_SIZE = 25;
+export const metadata = { title: "Campistas | Radical 2.0" };
+
+const PAGE_SIZE = 40;
+
+type Estado = "todos" | "con_saldo" | "pagados" | "por_validar" | "observados" | "aprobados";
+type Row = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  document: string;
+  plan: string;
+  price: number;
+  amount: number;
+  status: string;
+  created_at: string;
+};
+
+const fold = (s: string) => s.toLocaleLowerCase("es").normalize("NFD").replace(/\p{M}/gu, "");
+const dateFmt = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", day: "numeric", month: "short" });
 
 export default async function AdminInscripcionesPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string;
+    estado?: string;
     status?: string;
     plan?: string;
     page?: string;
@@ -28,385 +43,270 @@ export default async function AdminInscripcionesPage({
   const params = await searchParams;
   const client = createClient(await cookies());
 
-  const page = Math.max(1, parseInt(params.page || "1", 10));
-  const offset = (page - 1) * PAGE_SIZE;
+  // ?status= de enlaces antiguos sigue funcionando.
+  const legacy: Record<string, Estado> = { pending: "por_validar", rejected: "observados", approved: "aprobados" };
+  const estados: Estado[] = ["todos", "con_saldo", "pagados", "por_validar", "observados", "aprobados"];
+  const estado: Estado = estados.includes(params.estado as Estado)
+    ? (params.estado as Estado)
+    : (legacy[params.status ?? ""] ?? "todos");
+  const plan = params.plan === "preventa" || params.plan === "regular" ? params.plan : null;
+  const q = (params.q ?? "").trim().slice(0, 100);
+  const page = Math.max(1, parseInt(params.page || "1", 10) || 1);
 
-  // ── Build paginated, server-filtered query ──────────────────
-  let countQuery = client
-    .from("registrations")
-    .select("*", { count: "exact", head: true });
-  let dataQuery = client
-    .from("registrations")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(offset, offset + PAGE_SIZE - 1);
-
-  if (params.status && params.status !== "all") {
-    countQuery = countQuery.eq("status", params.status);
-    dataQuery = dataQuery.eq("status", params.status);
-  }
-  if (params.plan === "preventa" || params.plan === "regular") {
-    countQuery = countQuery.eq("plan", params.plan);
-    dataQuery = dataQuery.eq("plan", params.plan);
-  }
-  if (params.q && params.q.trim()) {
-    // Quita caracteres con significado en filtros PostgREST (, ( ) " \) y comodines LIKE.
-    const clean = params.q.replace(/[,()"\\%_*]/g, " ").trim().replace(/\s+/g, " ");
-    const term = `%${clean}%`;
-    const orClause = `first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},document.ilike.${term}`;
-    countQuery = countQuery.or(orClause);
-    dataQuery = dataQuery.or(orClause);
+  // El padrón cabe en memoria: así los filtros por saldo son exactos y los conteos salen de una vez.
+  async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>) {
+    const out: T[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await page(from, from + 999);
+      if (error) throw error;
+      if (!data) break;
+      out.push(...data);
+      if (data.length < 1000) break;
+    }
+    return out;
   }
 
-  const [{ count: totalCount }, { data: rawRows, error: loadError }] =
-    await Promise.all([countQuery, dataQuery]);
+  let loadError = false;
+  let registrations: Row[] = [];
+  let payments: { registration_id: string; amount: number; status: string; kind: string }[] = [];
+  try {
+    [registrations, payments] = await Promise.all([
+      readAll<Row>((a, b) =>
+        client
+          .from("registrations")
+          .select("id,first_name,last_name,email,document,plan,price,amount,status,created_at")
+          .order("created_at", { ascending: false })
+          .range(a, b),
+      ),
+      readAll<{ registration_id: string; amount: number; status: string; kind: string }>((a, b) =>
+        client.from("registration_payments").select("registration_id,amount,status,kind").order("id").range(a, b),
+      ),
+    ]);
+  } catch {
+    loadError = true;
+  }
 
-  const rows = (rawRows as Registration[]) || [];
-  const totalPages = Math.ceil((totalCount || 0) / PAGE_SIZE);
+  const extra = new Map<string, number>();
+  const pendingPayment = new Set<string>();
+  for (const p of payments) {
+    if (p.kind === "additional" && p.status === "approved") extra.set(p.registration_id, (extra.get(p.registration_id) ?? 0) + p.amount);
+    if (p.status === "pending") pendingPayment.add(p.registration_id);
+  }
 
-  // Fetch pending payment statuses for badge highlights (lightweight query)
-  const { data: pendingPayments } = await client
-    .from("registration_payments")
-    .select("registration_id")
-    .eq("status", "pending")
-    .in(
-      "registration_id",
-      rows.map((r) => r.id),
-    );
+  const rows = registrations.map((r) => {
+    const paid = r.status === "approved" ? r.amount + (extra.get(r.id) ?? 0) : 0;
+    const due = Math.max(0, r.price - paid);
+    const group: Exclude<Estado, "todos" | "aprobados"> =
+      r.status === "pending" ? "por_validar" : r.status === "rejected" ? "observados" : due > 0 ? "con_saldo" : "pagados";
+    return { ...r, paid, due, group, pendingPayment: pendingPayment.has(r.id) };
+  });
 
-  const pendingPaymentIds = new Set(
-    (pendingPayments || []).map((p) => p.registration_id),
-  );
+  const inPlan = plan ? rows.filter((r) => r.plan === plan) : rows;
+  const needle = fold(q);
+  const searched = needle ? inPlan.filter((r) => fold(`${r.first_name} ${r.last_name} ${r.email} ${r.document}`).includes(needle)) : inPlan;
+  const count = (g: Estado) =>
+    g === "todos" ? searched.length : g === "aprobados" ? searched.filter((r) => r.status === "approved").length : searched.filter((r) => r.group === g).length;
+  const filtered =
+    estado === "todos" ? searched : estado === "aprobados" ? searched.filter((r) => r.status === "approved") : searched.filter((r) => r.group === estado);
 
-  // Fetch approved additional payments for "total paid" column
-  const { data: approvedAddlPayments } = await client
-    .from("registration_payments")
-    .select("registration_id,amount")
-    .eq("status", "approved")
-    .eq("kind", "additional")
-    .in(
-      "registration_id",
-      rows.map((r) => r.id),
-    );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  const visible = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
-  const addlTotals = ((approvedAddlPayments || []) as Pick<RegistrationPayment, "registration_id" | "amount">[]).reduce(
-    (acc, p) => {
-      acc[p.registration_id] = (acc[p.registration_id] || 0) + p.amount;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  // Build the href for pagination/filter links
-  function buildHref(overrides: Record<string, string | undefined>) {
-    const merged = {
-      q: params.q,
-      status: params.status,
-      plan: params.plan,
-      page: String(page),
-      ...overrides,
-    };
+  function href(overrides: Partial<{ estado: Estado; plan: string | null; q: string; page: number }>) {
+    const next = { estado, plan, q, page: 1, ...overrides };
     const qs = new URLSearchParams();
-    Object.entries(merged).forEach(([k, v]) => {
-      if (v && v !== "all" && v !== "1" && k !== "page") qs.set(k, v);
-      if (k === "page" && v && v !== "1") qs.set(k, v);
-    });
-    return `/admin/inscripciones${qs.toString() ? `?${qs.toString()}` : ""}`;
+    if (next.estado && next.estado !== "todos") qs.set("estado", next.estado);
+    if (next.plan) qs.set("plan", next.plan);
+    if (next.q) qs.set("q", next.q);
+    if (next.page && next.page > 1) qs.set("page", String(next.page));
+    return `/admin/inscripciones${qs.size ? `?${qs}` : ""}`;
   }
+
+  const chips: { id: Estado; label: string }[] = [
+    { id: "todos", label: "Todos" },
+    { id: "con_saldo", label: "Con saldo" },
+    { id: "pagados", label: "Pagados" },
+    { id: "por_validar", label: "Por validar" },
+    { id: "observados", label: "Observados" },
+  ];
+  const chipClass = (active: boolean) =>
+    `inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition ${
+      active ? "bg-[#0a4249] text-white" : "bg-white text-[#2c4a47] ring-1 ring-inset ring-[#d8e3df] hover:bg-[#f1f6f4]"
+    }`;
+  const filtersOn = estado !== "todos" || plan || q;
 
   return (
-    <div className="space-y-6">
-      {/* ── Header ── */}
-      <div className="flex flex-wrap items-end justify-between gap-4 pb-1">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
-            Inscripciones
-          </h1>
-          <p className="mt-1 text-sm text-[#5f7a75]">
-            Quienes enviaron el formulario. Toca a una persona para ver su ficha completa.
-          </p>
-        </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Inscripciones"
+        description="Quienes enviaron el formulario. Toca a una persona para ver su ficha completa."
+        actions={
+          <Link
+            href="/admin/reportes"
+            className="hidden items-center gap-2 rounded-lg bg-[#0b2d36] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#08232a] lg:inline-flex"
+          >
+            <FileText size={15} className="text-[#ffc629]" aria-hidden />
+            Reportes PDF y Excel
+          </Link>
+        }
+      />
 
-        {/* Export Button */}
-        <Link
-          href="/admin/reportes"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#0b2d36] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#08232a]"
-        >
-          <FileText size={15} className="text-[#ffc629]" aria-hidden />
-          <span>Reportes PDF y Excel</span>
-        </Link>
-      </div>
-
-      {/* ── Notifications ── */}
       <FlashMessage error={params.error} success={params.success} />
       {loadError && (
         <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
-          No se pudieron cargar los registros.
+          No se pudieron cargar las inscripciones. Recarga la página.
         </p>
       )}
 
-      {/* ── Table Card ── */}
-      <section className="rounded-2xl border border-[#e2e8e4] bg-white p-5 shadow-[0_8px_35px_rgba(13,55,58,0.04)] sm:p-7">
-        {/* Filter Bar */}
-        <form
-          className="flex flex-wrap items-end gap-2"
-          method="GET"
-        >
-          {/* Search Input */}
-          <div className="relative min-w-[220px] flex-1">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              name="q"
-              defaultValue={params.q}
-              placeholder="Nombre, correo o documento..."
-              className={`${adminInputClass} pl-10`}
-            />
-          </div>
+      {/* Búsqueda */}
+      <form action="/admin/inscripciones" className="relative" role="search">
+        {estado !== "todos" && <input type="hidden" name="estado" value={estado} />}
+        {plan && <input type="hidden" name="plan" value={plan} />}
+        <label htmlFor="campistas-q" className="sr-only">Buscar por nombre, correo o documento</label>
+        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7d948f]" aria-hidden />
+        <input
+          id="campistas-q"
+          name="q"
+          type="search"
+          defaultValue={q}
+          placeholder="Buscar por nombre, correo o DNI"
+          autoComplete="off"
+          enterKeyHint="search"
+          className="min-h-12 w-full rounded-xl border border-[#cfdcd7] bg-white pl-11 pr-11 text-base text-[#082e39] outline-none placeholder:text-[#7d948f] focus:border-[#00a7ad] focus:ring-2 focus:ring-[#00a7ad]/20 sm:text-sm"
+        />
+        {q && (
+          <Link href={href({ q: "" })} aria-label="Borrar búsqueda" className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-[#5f7a75] hover:bg-[#eef3f1]">
+            <X size={17} aria-hidden />
+          </Link>
+        )}
+      </form>
 
-          {/* Status Filter */}
-          <select
-            name="status"
-            defaultValue={params.status || "all"}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-[#082e39] outline-none"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="pending">Pendiente de revisión</option>
-            <option value="approved">Aprobados</option>
-            <option value="rejected">Observados</option>
-          </select>
+      {/* Filtros */}
+      <nav aria-label="Filtrar campistas" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        {chips.map((c) => (
+          <Link key={c.id} href={href({ estado: c.id })} aria-current={estado === c.id ? "true" : undefined} className={chipClass(estado === c.id)}>
+            {c.label}
+            <span className={`tabular-nums ${estado === c.id ? "text-white/75" : "text-[#7d948f]"}`}>{count(c.id)}</span>
+          </Link>
+        ))}
+        <span className="mx-1 w-px shrink-0 self-stretch bg-[#d8e3df]" aria-hidden />
+        {(["preventa", "regular"] as const).map((p) => (
+          <Link key={p} href={href({ plan: plan === p ? null : p })} aria-pressed={plan === p} className={chipClass(plan === p)}>
+            {p === "preventa" ? "Preventa" : "Regular"}
+          </Link>
+        ))}
+      </nav>
 
-          {/* Plan Filter */}
-          <select
-            name="plan"
-            defaultValue={params.plan || "all"}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-medium text-[#082e39] outline-none"
-          >
-            <option value="all">Todos los planes</option>
-            <option value="preventa">Preventa</option>
-            <option value="regular">Regular</option>
-          </select>
+      <div className="flex items-center justify-between text-xs text-[#5f7a75]">
+        <span>
+          {filtered.length === 1 ? "1 campista" : `${filtered.length} campistas`}
+          {filtersOn ? " con estos filtros" : ""}
+        </span>
+        {filtersOn && (
+          <Link href="/admin/inscripciones" className="font-semibold text-[#007b80]">
+            Quitar filtros
+          </Link>
+        )}
+      </div>
 
-          <button type="submit" className={adminButtonClass}>
-            Buscar
-          </button>
-
-          {/* Reset link */}
-          {(params.q || (params.status && params.status !== "all") || (params.plan && params.plan !== "all")) && (
-            <Link
-              href="/admin/inscripciones"
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500 transition hover:bg-slate-50"
-            >
-              Limpiar
-            </Link>
-          )}
-        </form>
-
-        {/* Results summary */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <span>
-            Mostrando{" "}
-            <strong className="text-slate-700">{rows.length}</strong> de{" "}
-            <strong className="text-slate-700">{totalCount || 0}</strong>{" "}
-            inscripciones
-            {params.q || params.status || params.plan
-              ? " (filtrado)"
-              : ""}
-          </span>
-          <span>
-            Página <strong className="text-slate-700">{page}</strong> de{" "}
-            <strong className="text-slate-700">{Math.max(1, totalPages)}</strong>
-          </span>
-        </div>
-
-        {/* Celular: tarjetas en lugar de tabla */}
-        <ul className="mt-3 divide-y divide-slate-100 sm:hidden">
-          {rows.map((r) => {
-            const totalPaid = r.amount + (addlTotals[r.id] || 0);
-            const balance = Math.max(0, r.price - totalPaid);
-            return (
-              <li key={`m-${r.id}`}>
-                <Link href={`/admin/inscripciones/${r.id}`} className="flex items-center gap-3 py-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-[#082e39]">
-                      {r.last_name}, {r.first_name}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      <span className="capitalize">{r.plan}</span> · S/ {totalPaid}
-                      {balance > 0 ? ` · debe S/ ${balance}` : " · pagado"}
-                    </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <StatusBadge status={r.status} />
-                      {pendingPaymentIds.has(r.id) && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
-                          <AlertCircle size={11} aria-hidden />
-                          Abono por revisar
-                        </span>
-                      )}
-                    </span>
+      {/* Lista (celular: a todo el ancho; computadora: tabla) */}
+      <section className="-mx-4 border-y border-[#e2e8e4] bg-white sm:mx-0 sm:rounded-2xl sm:border">
+        <ul className="divide-y divide-[#eef2ef] lg:hidden">
+          {visible.map((r) => (
+            <li key={r.id}>
+              <Link href={`/admin/inscripciones/${r.id}`} className="flex min-h-[64px] items-center gap-3 px-4 py-2.5 active:bg-[#f3f7f5]">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold text-[#082e39]">
+                    {r.last_name}, {r.first_name}
                   </span>
-                  <ChevronRight size={16} className="shrink-0 text-slate-400" aria-hidden />
-                </Link>
-              </li>
-            );
-          })}
+                  <span className="mt-0.5 block truncate text-xs text-[#5f7a75]">
+                    <span className="capitalize">{r.plan}</span>
+                    {r.status === "approved" ? ` · pagó S/ ${r.paid} de ${r.price}` : ` · declaró S/ ${r.amount}`}
+                    {r.pendingPayment && <span className="font-semibold text-amber-700"> · abono por revisar</span>}
+                  </span>
+                </span>
+                <AccountChip status={r.status} due={r.due} />
+                <ChevronRight size={16} className="shrink-0 text-[#a9bab5]" aria-hidden />
+              </Link>
+            </li>
+          ))}
         </ul>
 
-        {/* Table */}
-        <div className="mt-3 hidden overflow-x-auto sm:block">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="py-3 pr-4">Participante</th>
-                <th className="pr-4">Plan</th>
-                <th className="pr-4">Total abonado</th>
-                <th className="pr-4">Estado</th>
-                <th className="text-right">Ficha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const hasPendingAddl = pendingPaymentIds.has(r.id);
-                const totalPaid = r.amount + (addlTotals[r.id] || 0);
-                const balance = Math.max(0, r.price - totalPaid);
-
-                return (
-                  <tr
-                    key={r.id}
-                    className="border-b border-slate-100 transition hover:bg-slate-50/60"
-                  >
-                    <td className="py-3.5 pr-4">
-                      <Link
-                        href={`/admin/inscripciones/${r.id}`}
-                        className="block"
-                      >
-                        <b className="text-sm font-bold text-[#082e39]">
-                          {r.last_name}, {r.first_name}
-                        </b>
-                        <div className="text-xs text-slate-400">{r.email}</div>
-                      </Link>
-                      {hasPendingAddl && (
-                        <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
-                          <AlertCircle size={11} />
-                          <span>Abono pendiente de revisión</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="pr-4">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold capitalize text-slate-700">
-                        {r.plan}
-                      </span>
-                    </td>
-                    <td className="pr-4">
-                      <span className="font-bold text-[#0b2d36]">
-                        S/ {totalPaid}
-                      </span>
-                      {balance > 0 && (
-                        <span className="ml-1.5 text-xs text-slate-400">
-                          (saldo S/ {balance})
-                        </span>
-                      )}
-                    </td>
-                    <td className="pr-4">
-                      <StatusBadge status={r.status} size="md" />
-                    </td>
-                    <td className="text-right">
-                      <Link
-                        href={`/admin/inscripciones/${r.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-[#0a4249] transition hover:border-[#008b96]/40 hover:bg-[#f4faf9]"
-                      >
-                        <span>Ver ficha</span>
-                        <ChevronRight size={13} />
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-        </div>
-
-        {rows.length === 0 && (
-          <p className="py-14 text-center text-sm text-slate-500">
-            {params.q || (params.status && params.status !== "all") || (params.plan && params.plan !== "all")
-              ? "No hay inscripciones que coincidan con los filtros."
-              : "Todavía no hay inscripciones."}
-          </p>
-        )}
-
-        {/* ── Pagination ── */}
-        {totalPages > 1 && (
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-1.5">
-            {/* Prev */}
-            {page > 1 ? (
-              <Link
-                href={buildHref({ page: String(page - 1) })}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                <ChevronLeft size={15} />
-                <span>Anterior</span>
-              </Link>
-            ) : (
-              <span className="inline-flex cursor-not-allowed items-center gap-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-300">
-                <ChevronLeft size={15} />
-                <span>Anterior</span>
-              </span>
-            )}
-
-            {/* Page Numbers */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  p === 1 ||
-                  p === totalPages ||
-                  Math.abs(p - page) <= 2,
-              )
-              .reduce<(number | "...")[]>((acc, p, i, arr) => {
-                if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((p, i) =>
-                p === "..." ? (
-                  <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-slate-400">
-                    …
-                  </span>
-                ) : (
-                  <Link
-                    key={p}
-                    href={buildHref({ page: String(p) })}
-                    className={`grid size-9 place-items-center rounded-xl text-xs font-bold transition ${
-                      p === page
-                        ? "bg-[#0b4248] text-white shadow-sm"
-                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    {p}
+        <table className="hidden w-full text-left text-sm lg:table">
+          <thead className="border-b border-[#edf1ee] bg-[#fafcfb] text-[11px] uppercase tracking-wider text-[#78918a]">
+            <tr>
+              <th className="px-5 py-3 font-semibold">Campista</th>
+              <th className="px-4 py-3 font-semibold">Plan</th>
+              <th className="px-4 py-3 font-semibold">Pagado</th>
+              <th className="px-4 py-3 font-semibold">Estado de cuenta</th>
+              <th className="px-4 py-3 font-semibold">Inscrito</th>
+              <th className="w-8" aria-hidden />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#eef2ef]">
+            {visible.map((r) => (
+              <tr key={r.id} className="relative transition hover:bg-[#fafcfb]">
+                <td className="px-5 py-3">
+                  <Link href={`/admin/inscripciones/${r.id}`} className="font-semibold text-[#082e39] after:absolute after:inset-0">
+                    {r.last_name}, {r.first_name}
                   </Link>
-                ),
-              )}
+                  <span className="block text-xs text-[#7d948f]">{r.email}</span>
+                </td>
+                <td className="px-4 py-3 capitalize text-[#2c4a47]">{r.plan}</td>
+                <td className="px-4 py-3 tabular-nums text-[#2c4a47]">
+                  {r.status === "approved" ? `S/ ${r.paid} de ${r.price}` : <span className="text-[#7d948f]">S/ {r.amount} declarado</span>}
+                </td>
+                <td className="px-4 py-3">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <AccountChip status={r.status} due={r.due} />
+                    {r.pendingPayment && <span className="text-xs font-semibold text-amber-700">Abono por revisar</span>}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-xs text-[#5f7a75]">{dateFmt.format(new Date(r.created_at))}</td>
+                <td className="pr-4 text-[#a9bab5]">
+                  <ChevronRight size={15} aria-hidden />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-            {/* Next */}
-            {page < totalPages ? (
-              <Link
-                href={buildHref({ page: String(page + 1) })}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                <span>Siguiente</span>
-                <ChevronRight size={15} />
+        {visible.length === 0 && !loadError && (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm font-semibold text-[#2c4a47]">
+              {filtersOn ? "Nadie coincide con estos filtros." : "Todavía no hay inscripciones."}
+            </p>
+            {filtersOn && (
+              <Link href="/admin/inscripciones" className="mt-2 inline-block text-sm font-semibold text-[#007b80]">
+                Ver todos los campistas
               </Link>
-            ) : (
-              <span className="inline-flex cursor-not-allowed items-center gap-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-300">
-                <span>Siguiente</span>
-                <ChevronRight size={15} />
-              </span>
             )}
           </div>
         )}
       </section>
+
+      {totalPages > 1 && (
+        <nav aria-label="Páginas" className="flex items-center justify-between gap-3">
+          {current > 1 ? (
+            <Link href={href({ page: current - 1 })} className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-[#d8e3df] bg-white px-4 text-sm font-semibold text-[#0a3039]">
+              <ChevronLeft size={16} aria-hidden /> Anterior
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-sm text-[#5f7a75]">
+            Página {current} de {totalPages}
+          </span>
+          {current < totalPages ? (
+            <Link href={href({ page: current + 1 })} className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-[#d8e3df] bg-white px-4 text-sm font-semibold text-[#0a3039]">
+              Siguiente <ChevronRight size={16} aria-hidden />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   );
 }

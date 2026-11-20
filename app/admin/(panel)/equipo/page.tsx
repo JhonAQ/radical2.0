@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
-import { AdminDialog } from "../../AdminDialog";
 import {
   adminInputClass,
   adminButtonClass,
@@ -15,9 +13,11 @@ import {
   grantExistingAdmin,
   resetAdminPassword,
 } from "../../actions";
-import { UserPlus, Shield, Trash2 } from "lucide-react";
+import { ChevronDown, KeyRound, Shield, Trash2, UserPlus } from "lucide-react";
 import { FlashMessage } from "../../components/FlashMessage";
 import { PendingFieldset } from "../../components/PendingFieldset";
+import { PageHeader } from "../../components/PageHeader";
+import { ConfirmSubmitButton } from "../../components/ConfirmSubmitButton";
 
 export default async function AdminEquipoPage({
   searchParams,
@@ -69,154 +69,105 @@ export default async function AdminEquipoPage({
     );
   }
 
-  return (
-    <div className="max-w-3xl space-y-6">
-      {/* Header Info */}
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
-          Equipo administrador
-        </h1>
-        <p className="mt-2 text-sm text-[#69827e]">
-          Gestiona los accesos y roles del equipo que trabaja en el campamento.
-        </p>
-      </div>
+  const card = "rounded-2xl border border-[#e2e8e4] bg-white";
+  const summaryRow =
+    "flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-[#0a524a] [&::-webkit-details-marker]:hidden";
 
-      {/* Notifications */}
+  return (
+    <div className="max-w-3xl space-y-4 lg:space-y-6">
+      <PageHeader title="Equipo" description="Quién tiene acceso al panel y con qué permisos." />
+
       <FlashMessage error={params.error} success={params.success} />
 
-      {/* Team Card */}
-      <section className="rounded-3xl border border-[#dce5df] bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-black">Miembros autorizados</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              La cuenta maestra tiene permisos para crear y remover administradores.
-            </p>
-          </div>
-          <Link
-            href="/admin/equipo?dialog=create"
-            className={`${adminButtonClass} gap-2`}
-          >
-            <UserPlus size={16} />
-            <span>Agregar administrador</span>
-          </Link>
+      <section aria-labelledby="miembros" className={card}>
+        <div className="px-4 pt-4 sm:px-5">
+          <h2 id="miembros" className="text-base font-bold text-[#0a3039]">
+            {admins.length === 1 ? "1 persona con acceso" : `${admins.length} personas con acceso`}
+          </h2>
+          <p className="mt-0.5 text-sm text-[#5f7a75]">La cuenta maestra puede agregar y quitar administradores.</p>
         </div>
-
-        <div className="mt-6 space-y-3">
+        <ul className="mt-2 divide-y divide-[#eef2ef] border-t border-[#eef2ef]">
           {admins.map((a) => (
-            <div
-              key={a.user_id}
-              className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 transition hover:bg-slate-50"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Shield
-                    size={16}
-                    className={
-                      a.role === "master" ? "text-amber-500" : "text-[#008e98]"
-                    }
-                  />
-                  <span className="font-semibold text-slate-900">{a.email}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      a.role === "master"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-teal-100 text-teal-800"
-                    }`}
-                  >
-                    {a.role === "master" ? "Maestra" : "Admin"}
-                  </span>
+            <li key={a.user_id} className="px-4 py-3 sm:px-5">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#eaf3f0] text-sm font-black text-[#0a524a]">
+                  {(a.email || "?")[0].toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#0a3039]">{a.email}</p>
+                  <p className="flex items-center gap-1 text-xs text-[#5f7a75]">
+                    <Shield size={12} className={a.role === "master" ? "text-amber-600" : "text-[#008e98]"} aria-hidden />
+                    {a.role === "master" ? "Cuenta maestra" : "Administrador"}
+                  </p>
                 </div>
+              </div>
+              <div className="mt-1 flex flex-wrap items-start justify-between gap-x-4">
+                <details className="group min-w-0 flex-1">
+                  <summary className={summaryRow}>
+                    <KeyRound size={15} aria-hidden />
+                    Asignar nueva contraseña
+                    <ChevronDown size={15} className="transition group-open:rotate-180" aria-hidden />
+                  </summary>
+                  <form action={resetAdminPassword} className="grid max-w-sm gap-2 pb-2">
+                    <PendingFieldset className="contents">
+                      <input type="hidden" name="id" value={a.user_id} />
+                      <input
+                        type="password"
+                        name="password"
+                        minLength={6}
+                        required
+                        autoComplete="new-password"
+                        placeholder="Nueva contraseña (mínimo 6 caracteres)"
+                        aria-label="Nueva contraseña"
+                        className={adminInputClass}
+                      />
+                      <input
+                        type="password"
+                        name="confirm"
+                        minLength={6}
+                        required
+                        autoComplete="new-password"
+                        placeholder="Repite la contraseña"
+                        aria-label="Repite la contraseña"
+                        className={adminInputClass}
+                      />
+                      <button type="submit" className={`${adminButtonClass} min-h-11`}>
+                        Actualizar contraseña
+                      </button>
+                    </PendingFieldset>
+                  </form>
+                </details>
                 {a.role === "admin" && (
                   <form action={removeAdmin}>
-                    <PendingFieldset className="contents">
                     <input type="hidden" name="id" value={a.user_id} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-red-700 hover:underline"
+                    <ConfirmSubmitButton
+                      message={`¿Quitarle el acceso al panel a ${a.email}? Su cuenta sigue existiendo.`}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
                     >
-                      <Trash2 size={13} />
-                      <span>Quitar</span>
-                    </button>
-                    </PendingFieldset>
+                      <Trash2 size={15} aria-hidden />
+                      Quitar acceso
+                    </ConfirmSubmitButton>
                   </form>
                 )}
               </div>
-
-              <details className="mt-3 text-xs">
-                <summary className="cursor-pointer font-bold text-[#008e98]">
-                  Asignar nueva contraseña
-                </summary>
-                <form action={resetAdminPassword} className="mt-3 space-y-2">
-                  <PendingFieldset className="contents">
-                  <input type="hidden" name="id" value={a.user_id} />
-                  <input
-                    type="password"
-                    name="password"
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                    placeholder="Nueva contraseña (mínimo 6 caracteres)"
-                    className={adminInputClass}
-                  />
-                  <input
-                    type="password"
-                    name="confirm"
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                    placeholder="Repite la contraseña"
-                    className={adminInputClass}
-                  />
-                  <button type="submit" className={`${adminButtonClass} text-xs py-2`}>
-                    Actualizar contraseña
-                  </button>
-                  </PendingFieldset>
-                </form>
-              </details>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      {/* Create Admin Dialog */}
-      {params.dialog === "create" && (
-        <AdminDialog closeHref="/admin/equipo" title="Agregar administrador">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-[#009aa3]">
-                Equipo Radical
-              </p>
-              <h2 className="mt-2 text-2xl font-black">
-                Agregar administrador
-              </h2>
-            </div>
-            <Link
-              href="/admin/equipo"
-              className="text-sm font-bold text-slate-500 hover:text-slate-800"
-            >
-              Cerrar ×
-            </Link>
-          </div>
-
-          <p className="text-sm leading-6 text-slate-500">
-            Crea una cuenta nueva con contraseña inicial o concede acceso a una
-            cuenta existente de Google.
-          </p>
-
-          <form action={createAdmin} className="mt-5 space-y-3">
-            <PendingFieldset className="contents">
-            <label className="block text-sm font-bold text-slate-700">
+      <section aria-labelledby="agregar" className={`${card} p-4 sm:p-5`}>
+        <h2 id="agregar" className="flex items-center gap-2 text-base font-bold text-[#0a3039]">
+          <UserPlus size={18} className="text-[#0a524a]" aria-hidden />
+          Agregar administrador
+        </h2>
+        <p className="mt-0.5 text-sm text-[#5f7a75]">Crea una cuenta con contraseña inicial. Comparte la contraseña por un canal seguro.</p>
+        <form action={createAdmin} className="mt-4 grid max-w-md gap-3">
+          <PendingFieldset className="contents">
+            <label className="block text-sm font-semibold text-[#2c4a47]">
               Correo electrónico
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="correo@ejemplo.com"
-                className={`${adminInputClass} mt-1`}
-              />
+              <input type="email" name="email" required placeholder="correo@ejemplo.com" autoComplete="off" className={`${adminInputClass} mt-1`} />
             </label>
-            <label className="block text-sm font-bold text-slate-700">
+            <label className="block text-sm font-semibold text-[#2c4a47]">
               Contraseña inicial
               <input
                 type="password"
@@ -228,33 +179,28 @@ export default async function AdminEquipoPage({
                 className={`${adminInputClass} mt-1`}
               />
             </label>
-            <button type="submit" className={`${adminButtonClass} w-full`}>
+            <button type="submit" className={`${adminButtonClass} min-h-12 w-full sm:w-auto`}>
               Crear administrador
             </button>
-            </PendingFieldset>
-          </form>
+          </PendingFieldset>
+        </form>
 
-          <details className="mt-6 border-t border-slate-200 pt-4 text-sm">
-            <summary className="cursor-pointer font-bold text-[#008e98]">
-              O dar acceso a una cuenta existente
-            </summary>
-            <form action={grantExistingAdmin} className="mt-3 flex flex-wrap gap-2">
-              <PendingFieldset className="contents">
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="Correo ya registrado"
-                className={`${adminInputClass} min-w-[200px] flex-1`}
-              />
-              <button type="submit" className={adminButtonClass}>
+        <details className="group mt-4 border-t border-[#eef2ef] pt-1">
+          <summary className={summaryRow}>
+            O dar acceso a una cuenta que ya existe
+            <ChevronDown size={15} className="transition group-open:rotate-180" aria-hidden />
+          </summary>
+          <p className="text-sm text-[#5f7a75]">Por ejemplo, alguien que ya entró con Google. Debe tener el correo verificado.</p>
+          <form action={grantExistingAdmin} className="mt-3 grid max-w-md gap-2 sm:flex">
+            <PendingFieldset className="contents">
+              <input type="email" name="email" required placeholder="Correo ya registrado" aria-label="Correo ya registrado" className={`${adminInputClass} sm:flex-1`} />
+              <button type="submit" className={`${adminButtonClass} min-h-12`}>
                 Dar acceso
               </button>
-              </PendingFieldset>
-            </form>
-          </details>
-        </AdminDialog>
-      )}
+            </PendingFieldset>
+          </form>
+        </details>
+      </section>
     </div>
   );
 }

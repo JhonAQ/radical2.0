@@ -3,7 +3,7 @@ import { statusLabels } from "../types";
 const tones: Record<string, string> = {
   approved: "bg-emerald-50 text-emerald-800 ring-emerald-200/70",
   rejected: "bg-red-50 text-red-800 ring-red-200/70",
-  pending: "bg-amber-50 text-amber-800 ring-amber-200/70",
+  pending: "bg-sky-50 text-sky-800 ring-sky-200/70",
 };
 
 /** Etiqueta única de estado (Pendiente / Aprobado / Observado) para todo el panel. */
