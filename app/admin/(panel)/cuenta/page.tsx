@@ -4,10 +4,10 @@ import { setPassword } from "../../actions";
 import {
   adminInputClass,
   adminButtonClass,
-  errorMessages,
-  successMessages,
 } from "../../types";
 import { KeyRound, ShieldCheck } from "lucide-react";
+import { FlashMessage } from "../../components/FlashMessage";
+import { PendingFieldset } from "../../components/PendingFieldset";
 
 export default async function AdminCuentaPage({
   searchParams,
@@ -28,10 +28,7 @@ export default async function AdminCuentaPage({
     <div className="max-w-2xl space-y-6">
       {/* Header Info */}
       <div>
-        <p className="text-[11px] font-black uppercase tracking-[.2em] text-[#009d9f]">
-          Radical 2.0 <span className="mx-1 text-[#a6bab5]">/</span> Perfil
-        </p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
+        <h1 className="text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
           Mi cuenta
         </h1>
         <p className="mt-2 text-sm text-[#69827e]">
@@ -40,20 +37,7 @@ export default async function AdminCuentaPage({
       </div>
 
       {/* Notifications */}
-      {(params.error || params.success) && (
-        <div
-          role="status"
-          className={`rounded-xl px-5 py-4 text-sm font-semibold ${
-            params.error
-              ? "bg-red-100 text-red-800"
-              : "bg-teal-100 text-teal-900"
-          }`}
-        >
-          {params.error
-            ? errorMessages[params.error] || "Ocurrió un error."
-            : successMessages[params.success || ""]}
-        </div>
-      )}
+      <FlashMessage error={params.error} success={params.success} />
 
       {/* Account Info Card */}
       <section className="rounded-3xl border border-[#dce5df] bg-white p-6 shadow-sm">
@@ -83,6 +67,7 @@ export default async function AdminCuentaPage({
         </p>
 
         <form action={setPassword} className="mt-5 space-y-4">
+          <PendingFieldset className="contents">
           <label className="block text-sm font-bold text-slate-700">
             Nueva contraseña
             <input
@@ -110,6 +95,7 @@ export default async function AdminCuentaPage({
           <button type="submit" className={adminButtonClass}>
             Guardar contraseña
           </button>
+          </PendingFieldset>
         </form>
       </section>
     </div>

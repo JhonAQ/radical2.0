@@ -66,9 +66,9 @@ export async function requestPasswordReset(form: FormData) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect("/admin?error=reset");
   const host =
     (await headers()).get("x-forwarded-host") || (await headers()).get("host");
-  if (host !== "radical2-0.vercel.app") redirect("/admin?error=reset_domain");
+  if (host !== "radical.ielp.org") redirect("/admin?error=reset_domain");
   const client = createClient(await cookies());
-  const callback = new URL("/auth/callback", "https://radical2-0.vercel.app");
+  const callback = new URL("/auth/callback", "https://radical.ielp.org");
   callback.searchParams.set("next", "/admin/reset");
   const { error } = await client.auth.resetPasswordForEmail(email, {
     redirectTo: callback.toString(),
@@ -78,7 +78,11 @@ export async function requestPasswordReset(form: FormData) {
 }
 
 function reviewLocation(form: FormData, id: string, result: string) {
-  const returnTo = form.get("return_to");
+  // En la cola de validación, el éxito pasa al siguiente comprobante; un error se queda en el actual.
+  const errorReturnTo = result.startsWith("error=") ? form.get("error_return_to") : null;
+  const candidate = String(errorReturnTo || form.get("return_to") || "");
+  // Solo rutas internas del panel.
+  const returnTo = candidate.startsWith("/admin") && !candidate.startsWith("//") ? candidate : null;
   const isPayments = form.get("view") === "payments";
   const params = new URLSearchParams();
   const query = String(form.get("filter_q") || "").slice(0, 100);
@@ -117,6 +121,10 @@ export async function review(form: FormData) {
     redirect(`/admin/inscripciones?error=review`);
   if (status === "rejected" && !note)
     redirect(reviewLocation(form, id, "error=note"));
+  if (context.role !== "master") {
+    const { data: current } = await context.client.from("registrations").select("status").eq("id", id).maybeSingle();
+    if (current?.status === "approved") redirect(reviewLocation(form, id, "error=master_only"));
+  }
   const { error } = await context.client.rpc("review_initial_registration", {
     p_id: id,
     p_status: status,
@@ -146,6 +154,10 @@ export async function reviewPayment(form: FormData) {
     redirect(`/admin/inscripciones?error=review`);
   if (status === "rejected" && !note)
     redirect(reviewLocation(form, registrationId, "error=note"));
+  if (context.role !== "master") {
+    const { data: current } = await context.client.from("registration_payments").select("status").eq("id", paymentId).maybeSingle();
+    if (current?.status === "approved") redirect(reviewLocation(form, registrationId, "error=master_only"));
+  }
   const { error } = await context.client.rpc("review_registration_payment", {
     p_id: paymentId,
     p_status: status,
@@ -361,7 +373,7 @@ export async function checkInRegistration(form: FormData) {
 }
 
 export async function updateWhatsappGroup(form: FormData) {
-  const context = await adminContext();
+  const context = await adminContext(true);
   if (!context) redirect("/admin?error=access");
   // Vacío = ocultar el enlace a los campistas.
   const url = String(form.get("whatsapp_group_url") || "").trim().replace(/\/$/, "").split("?")[0];
@@ -377,7 +389,7 @@ export async function updateWhatsappGroup(form: FormData) {
 }
 
 export async function updateCampSettings(form: FormData) {
-  const context = await adminContext();
+  const context = await adminContext(true);
   if (!context) redirect("/admin?error=access");
   // El admin elige el último día de preventa; vale hasta las 24:00 (hora de Lima, UTC-5 sin horario de verano),
   // es decir, el corte es las 00:00 del día siguiente.

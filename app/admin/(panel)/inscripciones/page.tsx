@@ -2,16 +2,14 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import {
-  statusLabels,
-  errorMessages,
-  successMessages,
   adminInputClass,
   adminButtonClass,
   type Registration,
   type RegistrationPayment,
 } from "../../types";
-import { ExportPanel } from "../../components/ExportPanel";
-import { Search, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, FileText, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { FlashMessage } from "../../components/FlashMessage";
+import { StatusBadge } from "../../components/StatusBadge";
 
 const PAGE_SIZE = 25;
 
@@ -122,33 +120,29 @@ export default async function AdminInscripcionesPage({
       <div className="flex flex-wrap items-end justify-between gap-4 pb-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
-            Padrón de inscripciones
+            Inscripciones
           </h1>
           <p className="mt-1 text-sm text-[#5f7a75]">
-            Directorio general y ficha de los participantes del campamento.
+            Quienes enviaron el formulario. Toca a una persona para ver su ficha completa.
           </p>
         </div>
 
         {/* Export Button */}
-        <ExportPanel />
+        <Link
+          href="/admin/reportes"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#0b2d36] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#08232a]"
+        >
+          <FileText size={15} className="text-[#ffc629]" aria-hidden />
+          <span>Reportes PDF y Excel</span>
+        </Link>
       </div>
 
       {/* ── Notifications ── */}
-      {(params.error || params.success || loadError) && (
-        <div
-          role="status"
-          className={`rounded-xl px-5 py-4 text-sm font-semibold ${
-            params.error || loadError
-              ? "bg-red-100 text-red-800"
-              : "bg-teal-100 text-teal-900"
-          }`}
-        >
-          {loadError
-            ? "No se pudieron cargar los registros."
-            : params.error
-              ? errorMessages[params.error] || "Ocurrió un error."
-              : successMessages[params.success || ""]}
-        </div>
+      <FlashMessage error={params.error} success={params.success} />
+      {loadError && (
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+          No se pudieron cargar los registros.
+        </p>
       )}
 
       {/* ── Table Card ── */}
@@ -227,8 +221,41 @@ export default async function AdminInscripcionesPage({
           </span>
         </div>
 
+        {/* Celular: tarjetas en lugar de tabla */}
+        <ul className="mt-3 divide-y divide-slate-100 sm:hidden">
+          {rows.map((r) => {
+            const totalPaid = r.amount + (addlTotals[r.id] || 0);
+            const balance = Math.max(0, r.price - totalPaid);
+            return (
+              <li key={`m-${r.id}`}>
+                <Link href={`/admin/inscripciones/${r.id}`} className="flex items-center gap-3 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-[#082e39]">
+                      {r.last_name}, {r.first_name}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      <span className="capitalize">{r.plan}</span> · S/ {totalPaid}
+                      {balance > 0 ? ` · debe S/ ${balance}` : " · pagado"}
+                    </span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <StatusBadge status={r.status} />
+                      {pendingPaymentIds.has(r.id) && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
+                          <AlertCircle size={11} aria-hidden />
+                          Abono por revisar
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  <ChevronRight size={16} className="shrink-0 text-slate-400" aria-hidden />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
         {/* Table */}
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3 hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -283,17 +310,7 @@ export default async function AdminInscripcionesPage({
                       )}
                     </td>
                     <td className="pr-4">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                          r.status === "approved"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : r.status === "rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {statusLabels[r.status] || r.status}
-                      </span>
+                      <StatusBadge status={r.status} size="md" />
                     </td>
                     <td className="text-right">
                       <Link
@@ -310,12 +327,15 @@ export default async function AdminInscripcionesPage({
             </tbody>
           </table>
 
-          {rows.length === 0 && (
-            <p className="py-14 text-center text-sm text-slate-500">
-              No hay inscripciones que coincidan con los filtros aplicados.
-            </p>
-          )}
         </div>
+
+        {rows.length === 0 && (
+          <p className="py-14 text-center text-sm text-slate-500">
+            {params.q || (params.status && params.status !== "all") || (params.plan && params.plan !== "all")
+              ? "No hay inscripciones que coincidan con los filtros."
+              : "Todavía no hay inscripciones."}
+          </p>
+        )}
 
         {/* ── Pagination ── */}
         {totalPages > 1 && (

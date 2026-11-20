@@ -7,8 +7,6 @@ import { AdminDialog } from "../../AdminDialog";
 import {
   adminInputClass,
   adminButtonClass,
-  errorMessages,
-  successMessages,
   type AdminUser,
 } from "../../types";
 import {
@@ -18,6 +16,8 @@ import {
   resetAdminPassword,
 } from "../../actions";
 import { UserPlus, Shield, Trash2 } from "lucide-react";
+import { FlashMessage } from "../../components/FlashMessage";
+import { PendingFieldset } from "../../components/PendingFieldset";
 
 export default async function AdminEquipoPage({
   searchParams,
@@ -73,10 +73,7 @@ export default async function AdminEquipoPage({
     <div className="max-w-3xl space-y-6">
       {/* Header Info */}
       <div>
-        <p className="text-[11px] font-black uppercase tracking-[.2em] text-[#009d9f]">
-          Radical 2.0 <span className="mx-1 text-[#a6bab5]">/</span> Equipo
-        </p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
+        <h1 className="text-3xl font-black tracking-tight text-[#0a3039] sm:text-4xl">
           Equipo administrador
         </h1>
         <p className="mt-2 text-sm text-[#69827e]">
@@ -85,20 +82,7 @@ export default async function AdminEquipoPage({
       </div>
 
       {/* Notifications */}
-      {(params.error || params.success) && (
-        <div
-          role="status"
-          className={`rounded-xl px-5 py-4 text-sm font-semibold ${
-            params.error
-              ? "bg-red-100 text-red-800"
-              : "bg-teal-100 text-teal-900"
-          }`}
-        >
-          {params.error
-            ? errorMessages[params.error] || "Ocurrió un error."
-            : successMessages[params.success || ""]}
-        </div>
-      )}
+      <FlashMessage error={params.error} success={params.success} />
 
       {/* Team Card */}
       <section className="rounded-3xl border border-[#dce5df] bg-white p-6 shadow-sm">
@@ -145,6 +129,7 @@ export default async function AdminEquipoPage({
                 </div>
                 {a.role === "admin" && (
                   <form action={removeAdmin}>
+                    <PendingFieldset className="contents">
                     <input type="hidden" name="id" value={a.user_id} />
                     <button
                       type="submit"
@@ -153,6 +138,7 @@ export default async function AdminEquipoPage({
                       <Trash2 size={13} />
                       <span>Quitar</span>
                     </button>
+                    </PendingFieldset>
                   </form>
                 )}
               </div>
@@ -162,6 +148,7 @@ export default async function AdminEquipoPage({
                   Asignar nueva contraseña
                 </summary>
                 <form action={resetAdminPassword} className="mt-3 space-y-2">
+                  <PendingFieldset className="contents">
                   <input type="hidden" name="id" value={a.user_id} />
                   <input
                     type="password"
@@ -184,6 +171,7 @@ export default async function AdminEquipoPage({
                   <button type="submit" className={`${adminButtonClass} text-xs py-2`}>
                     Actualizar contraseña
                   </button>
+                  </PendingFieldset>
                 </form>
               </details>
             </div>
@@ -217,6 +205,7 @@ export default async function AdminEquipoPage({
           </p>
 
           <form action={createAdmin} className="mt-5 space-y-3">
+            <PendingFieldset className="contents">
             <label className="block text-sm font-bold text-slate-700">
               Correo electrónico
               <input
@@ -242,6 +231,7 @@ export default async function AdminEquipoPage({
             <button type="submit" className={`${adminButtonClass} w-full`}>
               Crear administrador
             </button>
+            </PendingFieldset>
           </form>
 
           <details className="mt-6 border-t border-slate-200 pt-4 text-sm">
@@ -249,6 +239,7 @@ export default async function AdminEquipoPage({
               O dar acceso a una cuenta existente
             </summary>
             <form action={grantExistingAdmin} className="mt-3 flex flex-wrap gap-2">
+              <PendingFieldset className="contents">
               <input
                 type="email"
                 name="email"
@@ -259,6 +250,7 @@ export default async function AdminEquipoPage({
               <button type="submit" className={adminButtonClass}>
                 Dar acceso
               </button>
+              </PendingFieldset>
             </form>
           </details>
         </AdminDialog>

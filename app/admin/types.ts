@@ -75,7 +75,9 @@ export const errorMessages: Record<string, string> = {
     "El enlace de recuperación venció o ya fue utilizado. Solicita otro.",
   reset_service: "No se pudo enviar el enlace. Inténtalo más tarde.",
   reset_domain:
-    "Solicita el enlace desde radical2-0.vercel.app para abrirlo en el mismo navegador.",
+    "Solicita el enlace desde radical.ielp.org/admin para abrirlo en el mismo navegador.",
+  master_only:
+    "Solo la cuenta maestra puede cambiar un pago que ya fue aprobado.",
   access: "Esta cuenta no tiene acceso al panel.",
   review:
     "No se pudo actualizar la revisión. Revisa primero los abonos adicionales aprobados.",

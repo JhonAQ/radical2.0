@@ -21,6 +21,7 @@ import { checkInRegistration } from "../../actions";
 import { CashPaymentForm } from "../../components/CashPaymentForm";
 import { TicketScanner } from "../../components/TicketScanner";
 import { errorMessages, successMessages, type Registration } from "../../types";
+import { PendingFieldset } from "../../components/PendingFieldset";
 
 export const metadata = { title: "Escáner de entradas | Radical 2.0" };
 
@@ -265,6 +266,7 @@ export default async function EscanerPage({
           </section>
 
           <form action={checkInRegistration}>
+            <PendingFieldset className="contents">
             <input type="hidden" name="id" value={registration.id} />
             <input type="hidden" name="scanner_code" value={registration.ticket_code} />
             <button
@@ -278,6 +280,7 @@ export default async function EscanerPage({
               <DoorOpen size={20} aria-hidden />
               {lastCheckIn ? "Registrar ingreso otra vez" : "Registrar ingreso"}
             </button>
+            </PendingFieldset>
           </form>
 
           <CashPaymentForm

@@ -1,19 +1,15 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import {
-  statusLabels,
-  errorMessages,
-  successMessages,
-  type Registration,
-  type RegistrationPayment,
-} from "../../types";
+import { type Registration, type RegistrationPayment } from "../../types";
+import { FlashMessage } from "../../components/FlashMessage";
+import { StatusBadge } from "../../components/StatusBadge";
 import { review, reviewPayment } from "../../actions";
-import { ExportPanel } from "../../components/ExportPanel";
 import { ReceiptViewer } from "../../components/ReceiptViewer";
 import { ReviewResolutionForm } from "../../components/ReviewResolutionForm";
 import {
   Search,
+  FileText,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -42,34 +38,40 @@ export default async function AdminPagosPage({
 }) {
   const params = await searchParams;
   const client = createClient(await cookies());
+  const {
+    data: { user: viewer },
+  } = await client.auth.getUser();
+  const { data: viewerRole } = viewer
+    ? await client.from("admin_users").select("role").eq("user_id", viewer.id).maybeSingle()
+    : { data: null };
+  // Un pago ya aprobado solo lo cambia la cuenta maestra.
+  const isMaster = viewerRole?.role === "master";
 
   const page = Math.max(1, parseInt(params.page || "1", 10));
+  // Sin filtro explícito se abre la cola de pendientes (lo que tesorería tiene que atender).
+  const status = params.status === "approved" || params.status === "rejected" || params.status === "all" ? params.status : "pending";
 
   // ── Registrations lookup (lightweight: only needed fields) ──
   const { data: rawRows } = await client
     .from("registrations")
-    .select("id,first_name,last_name,email,amount,status,created_at,plan,phone,receipt_path,review_note");
+    .select("id,first_name,last_name,email,document,amount,status,created_at,plan,phone,receipt_path,review_note,payment_method");
   type PaymentRegistration = Pick<
     Registration,
-    | "id" | "first_name" | "last_name" | "email" | "amount" | "status"
-    | "created_at" | "plan" | "phone" | "receipt_path" | "review_note"
+    | "id" | "first_name" | "last_name" | "email" | "document" | "amount" | "status"
+    | "created_at" | "plan" | "phone" | "receipt_path" | "review_note" | "payment_method"
   >;
   const registrationMap: Record<string, PaymentRegistration> = Object.fromEntries(
     ((rawRows as PaymentRegistration[] | null) || []).map((r) => [r.id, r]),
   );
 
   // ── Payment items query ──
-  let paymentsQuery = client
+  const paymentsQuery = client
     .from("registration_payments")
-    .select("id,registration_id,amount,status,kind,created_at,receipt_path,review_note")
+    .select("id,registration_id,amount,status,kind,method,created_at,receipt_path,review_note")
     .order("created_at", { ascending: false });
 
-  if (params.status && params.status !== "all") {
-    paymentsQuery = paymentsQuery.eq("status", params.status);
-  }
-
   const { data: rawPayments } = await paymentsQuery.limit(2000);
-  const payments = (rawPayments as (RegistrationPayment & { receipt_path?: string })[]) || [];
+  const payments = (rawPayments as (RegistrationPayment & { receipt_path?: string | null; method?: string })[]) || [];
 
   // Build unified list (initial + additional)
   type UnifiedItem = {
@@ -85,13 +87,15 @@ export default async function AdminPagosPage({
     kind: string;
     date: string;
     reviewNote?: string;
+    document: string;
+    /** Efectivo registrado en persona: no hay foto que revisar. */
+    hasReceipt: boolean;
   };
 
   const unified: UnifiedItem[] = [];
 
   // Initial registrations
   for (const reg of Object.values(registrationMap)) {
-    if (params.status && params.status !== "all" && reg.status !== params.status) continue;
     unified.push({
       id: reg.id,
       registrationId: reg.id,
@@ -102,9 +106,11 @@ export default async function AdminPagosPage({
       plan: reg.plan || "",
       amount: reg.amount,
       status: reg.status,
-      kind: "Abono inicial",
+      kind: reg.payment_method === "efectivo" ? "Pago inicial en efectivo" : "Abono inicial",
       date: reg.created_at,
       reviewNote: reg.review_note || "",
+      document: reg.document || "",
+      hasReceipt: Boolean(reg.receipt_path),
     });
   }
 
@@ -122,9 +128,11 @@ export default async function AdminPagosPage({
       plan: reg?.plan || "",
       amount: p.amount,
       status: p.status,
-      kind: p.kind === "replacement" ? "Comprobante corregido" : "Abono adicional",
+      kind: p.kind === "replacement" ? "Comprobante corregido" : p.method === "efectivo" ? "Pago en efectivo" : "Abono adicional",
       date: p.created_at,
       reviewNote: p.review_note || "",
+      document: reg?.document || "",
+      hasReceipt: Boolean(p.receipt_path),
     });
   }
 
@@ -134,18 +142,21 @@ export default async function AdminPagosPage({
     .filter((i) => i.status === "pending")
     .reduce((acc, i) => acc + i.amount, 0);
   const totalApprovedCount = unified.filter((i) => i.status === "approved").length;
+  const totalApprovedAmount = unified
+    .filter((i) => i.status === "approved")
+    .reduce((acc, i) => acc + i.amount, 0);
 
   // Apply search filter
-  const filtered = params.q
-    ? unified.filter((p) =>
-        `${p.name} ${p.email}`
-          .toLowerCase()
-          .includes(params.q!.toLowerCase()),
-      )
-    : unified;
+  const fold = (v: string) => v.toLocaleLowerCase("es").normalize("NFD").replace(/\p{M}/gu, "");
+  const needle = fold((params.q ?? "").trim());
+  // Los contadores de arriba usan todo; la tabla, solo el estado elegido.
+  const inStatus = status === "all" ? unified : unified.filter((i) => i.status === status);
+  const filtered = needle
+    ? inStatus.filter((p) => fold(`${p.name} ${p.email} ${p.document}`).includes(needle))
+    : inStatus;
 
-  // Sort by date descending
-  filtered.sort((a, b) => b.date.localeCompare(a.date));
+  // La cola de pendientes se atiende por orden de llegada; el resto, lo más reciente primero.
+  filtered.sort((a, b) => (status === "pending" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)));
 
   // Paginate
   const totalCount = filtered.length;
@@ -164,7 +175,8 @@ export default async function AdminPagosPage({
     };
     const qs = new URLSearchParams();
     Object.entries(merged).forEach(([k, v]) => {
-      if (v && v !== "all" && !(k === "page" && v === "1")) qs.set(k, v);
+      // "all" se conserva en el estado: sin él se abriría la cola de pendientes.
+      if (v && (k === "status" || v !== "all") && !(k === "page" && v === "1")) qs.set(k, v);
     });
     return `/admin/pagos${qs.toString() ? `?${qs.toString()}` : ""}`;
   }
@@ -246,7 +258,7 @@ export default async function AdminPagosPage({
             plan: reg?.plan || "",
             amount: pay.amount,
             status: pay.status,
-            kind: pay.kind === "replacement" ? "Comprobante de reemplazo" : "Abono adicional",
+            kind: pay.kind === "replacement" ? "Comprobante corregido" : "Abono adicional",
             date: pay.created_at,
             note: pay.review_note || "",
             receiptUrl: signed.signedUrl,
@@ -257,97 +269,103 @@ export default async function AdminPagosPage({
     }
   }
 
+  // ── Cola: al resolver un comprobante se abre solo el siguiente de la lista ──
+  const queue = filtered.filter((i) => i.hasReceipt && i.status === "pending");
+  const inQueue = status === "pending" && activeReviewData !== null;
+  const currentIndex = activeReviewData ? queue.findIndex((i) => i.id === activeReviewData.id) : -1;
+  const nextItem = inQueue
+    ? (queue.slice(currentIndex + 1).find((i) => i.id !== activeReviewData?.id) ??
+      queue.find((i) => i.id !== activeReviewData?.id))
+    : undefined;
+  const listHref = buildHref({ review: undefined, kind: undefined });
+  const currentHref = activeReviewData
+    ? buildHref({ review: activeReviewData.id, kind: activeReviewData.isInitial ? "initial" : "additional" })
+    : listHref;
+  const nextHref = nextItem ? buildHref({ review: nextItem.id, kind: nextItem.kindRaw }) : null;
+
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
       <div className="flex flex-wrap items-end justify-between gap-4 pb-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0a3039]">
-            Validación de comprobantes
+            Validar comprobantes
           </h1>
           <p className="mt-1 text-sm text-[#5f7a75]">
-            Bandeja de tesorería para auditar y confirmar abonos bancarios.
+            Revisa cada comprobante y apruébalo u obsérvalo. Al terminar uno, se abre el siguiente.
           </p>
         </div>
 
-        <ExportPanel />
-      </div>
-
-      {/* ── Metric Summary Tiles ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div
-          className={`rounded-xl border p-4 shadow-sm ${
-            totalPendingCount > 0
-              ? "border-amber-200 bg-[#fffdf9]"
-              : "border-[#e2e8e4] bg-white"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#657d77]">
-              Comprobantes por revisar
-            </span>
-            <span
-              className={`grid size-7 place-items-center rounded-md ${
-                totalPendingCount > 0
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-slate-100 text-slate-600"
-              }`}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/reportes"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <FileText size={15} className="text-[#0f8f87]" aria-hidden />
+            <span>Reportes PDF y Excel</span>
+          </Link>
+          {status === "pending" && queue.length > 0 && (
+            <Link
+              href={buildHref({ review: queue[0].id, kind: queue[0].kindRaw })}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#008e87] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#007670]"
             >
-              <Clock size={15} />
-            </span>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-[#0a3039]">
-            {totalPendingCount}
-          </p>
-          <p className="text-[11px] text-[#7d948f]">En cola de auditoría</p>
-        </div>
-
-        <div className="rounded-xl border border-[#e2e8e4] bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#657d77]">
-              Monto pendiente por confirmar
-            </span>
-            <span className="grid size-7 place-items-center rounded-md bg-[#eaf3f0] text-[#0a524a]">
-              <Wallet size={15} />
-            </span>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-[#0a3039]">
-            S/ {totalPendingAmount}
-          </p>
-          <p className="text-[11px] text-[#7d948f]">Suma de comprobantes pendientes</p>
-        </div>
-
-        <div className="rounded-xl border border-[#e2e8e4] bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#657d77]">
-              Comprobantes aprobados
-            </span>
-            <span className="grid size-7 place-items-center rounded-md bg-emerald-50 text-emerald-700">
-              <CheckCheck size={15} />
-            </span>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-[#0a3039]">
-            {totalApprovedCount}
-          </p>
-          <p className="text-[11px] text-[#7d948f]">Dinero confirmado en cuenta</p>
+              Empezar a validar ({queue.length})
+              <ChevronRight size={16} aria-hidden />
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* ── Notifications ── */}
-      {(params.error || params.success) && (
-        <div
-          role="status"
-          className={`rounded-xl px-5 py-3.5 text-sm font-semibold ${
-            params.error
-              ? "bg-red-50 text-red-800 border border-red-200"
-              : "bg-teal-50 text-teal-900 border border-teal-200"
-          }`}
-        >
-          {params.error
-            ? errorMessages[params.error] || "Ocurrió un error al procesar el comprobante."
-            : successMessages[params.success || "Operación completada exitosamente."]}
-        </div>
+      {/* ── Resumen ── */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {[
+          {
+            label: "Por revisar",
+            value: String(totalPendingCount),
+            hint: "Comprobantes en la cola",
+            icon: Clock,
+            tone: totalPendingCount > 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600",
+            card: totalPendingCount > 0 ? "border-amber-200 bg-[#fffdf9]" : "border-[#e2e8e4] bg-white",
+          },
+          {
+            label: "Por confirmar",
+            value: `S/ ${totalPendingAmount}`,
+            hint: "Suma de lo pendiente",
+            icon: Wallet,
+            tone: "bg-[#eaf3f0] text-[#0a524a]",
+            card: "border-[#e2e8e4] bg-white",
+          },
+          {
+            label: "Aprobado",
+            value: `S/ ${totalApprovedAmount}`,
+            hint: totalApprovedCount === 1 ? "1 pago confirmado" : `${totalApprovedCount} pagos confirmados`,
+            icon: CheckCheck,
+            tone: "bg-emerald-50 text-emerald-700",
+            card: "border-[#e2e8e4] bg-white",
+          },
+        ].map(({ label, value, hint, icon: Icon, tone, card }) => (
+          <div key={label} className={`rounded-xl border p-3 shadow-sm sm:p-4 ${card}`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-[#657d77]">{label}</span>
+              <span className={`hidden size-7 place-items-center rounded-md sm:grid ${tone}`}>
+                <Icon size={15} aria-hidden />
+              </span>
+            </div>
+            <p className="mt-1 text-xl font-bold tabular-nums text-[#0a3039] sm:mt-2 sm:text-2xl">{value}</p>
+            <p className="hidden text-[11px] text-[#7d948f] sm:block">{hint}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Avisos (con la ventana abierta, el error se muestra dentro de ella) ── */}
+      {!activeReviewData && (
+        <FlashMessage
+          error={params.error}
+          success={params.success}
+          fallbackError="Ocurrió un error al procesar el comprobante."
+        />
       )}
+      {activeReviewData && !params.error && <FlashMessage success={params.success} />}
 
       {/* ── Table Card ── */}
       <section className="rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
@@ -357,7 +375,7 @@ export default async function AdminPagosPage({
             <Link
               href={buildHref({ status: "pending", page: "1" })}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                params.status === "pending" || (!params.status && totalPendingCount > 0)
+                status === "pending"
                   ? "bg-amber-100 text-amber-900 font-bold"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
@@ -367,7 +385,7 @@ export default async function AdminPagosPage({
             <Link
               href={buildHref({ status: "approved", page: "1" })}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                params.status === "approved"
+                status === "approved"
                   ? "bg-emerald-100 text-emerald-900 font-bold"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
@@ -377,17 +395,17 @@ export default async function AdminPagosPage({
             <Link
               href={buildHref({ status: "rejected", page: "1" })}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                params.status === "rejected"
+                status === "rejected"
                   ? "bg-red-100 text-red-900 font-bold"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              Observados
+              Observados ({unified.filter((i) => i.status === "rejected").length})
             </Link>
             <Link
               href={buildHref({ status: "all", page: "1" })}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                params.status === "all"
+                status === "all"
                   ? "bg-[#0a4249] text-white font-bold"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
@@ -398,7 +416,7 @@ export default async function AdminPagosPage({
 
           {/* Search */}
           <form className="flex items-center gap-2" method="GET">
-            {params.status && <input type="hidden" name="status" value={params.status} />}
+            <input type="hidden" name="status" value={status} />
             <div className="relative min-w-[200px]">
               <Search
                 size={14}
@@ -407,7 +425,7 @@ export default async function AdminPagosPage({
               <input
                 name="q"
                 defaultValue={params.q}
-                placeholder="Buscar participante..."
+                placeholder="Nombre, correo o DNI"
                 className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs outline-none focus:border-[#008e95]"
               />
             </div>
@@ -435,8 +453,44 @@ export default async function AdminPagosPage({
           )}
         </div>
 
+        {/* Celular: tarjetas en lugar de tabla */}
+        <ul className="mt-3 divide-y divide-slate-100 sm:hidden">
+          {paginatedItems.map((p) => (
+            <li key={`m-${p.kindRaw}-${p.id}`} className="py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/admin/inscripciones/${p.registrationId}`} className="block truncate text-sm font-semibold text-[#082e39] hover:underline">
+                    {p.name}
+                  </Link>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {p.kind} ·{" "}
+                    {new Date(p.date).toLocaleDateString("es-PE", { dateStyle: "short", timeZone: "America/Lima" })}
+                  </p>
+                </div>
+                <span className="shrink-0 text-base font-bold tabular-nums text-[#0b2d36]">S/ {p.amount}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <StatusBadge status={p.status} />
+                {!p.hasReceipt ? (
+                  <span className="text-xs font-semibold text-slate-500">Recibido en persona</span>
+                ) : (
+                  <Link
+                    href={buildHref({ review: p.id, kind: p.kindRaw })}
+                    className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3.5 text-xs font-bold shadow-sm ${
+                      p.status === "pending" ? "bg-[#008e87] text-white" : "border border-slate-200 bg-white text-slate-700"
+                    }`}
+                  >
+                    {p.status === "pending" ? "Validar" : "Ver comprobante"}
+                    <ChevronRight size={13} aria-hidden />
+                  </Link>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+
         {/* Table */}
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3 hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[660px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -481,17 +535,7 @@ export default async function AdminPagosPage({
                       </span>
                     </td>
                     <td className="pr-4">
-                      <span
-                        className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${
-                          p.status === "approved"
-                            ? "bg-emerald-50 text-emerald-800"
-                            : p.status === "rejected"
-                              ? "bg-red-50 text-red-800"
-                              : "bg-amber-50 text-amber-800"
-                        }`}
-                      >
-                        {statusLabels[p.status] || p.status}
-                      </span>
+                      <StatusBadge status={p.status} size="md" />
                     </td>
                     <td className="pr-4 text-xs text-slate-500">
                       {new Date(p.date).toLocaleDateString("es-PE", {
@@ -500,6 +544,11 @@ export default async function AdminPagosPage({
                       })}
                     </td>
                     <td className="text-right">
+                      {!p.hasReceipt ? (
+                        <span className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500">
+                          Recibido en persona
+                        </span>
+                      ) : (
                       <Link
                         href={buildHref({
                           review: p.id,
@@ -514,6 +563,7 @@ export default async function AdminPagosPage({
                         <span>{isPending ? "Validar comprobante" : "Ver comprobante"}</span>
                         <ChevronRight size={13} />
                       </Link>
+                      )}
                     </td>
                   </tr>
                 );
@@ -521,12 +571,15 @@ export default async function AdminPagosPage({
             </tbody>
           </table>
 
-          {paginatedItems.length === 0 && (
-            <div className="py-16 text-center text-sm text-slate-500">
-              No hay comprobantes que coincidan con los filtros aplicados.
-            </div>
-          )}
         </div>
+
+        {paginatedItems.length === 0 && (
+          <div className="py-16 text-center text-sm text-slate-500">
+            {status === "pending" && !needle
+              ? "No hay comprobantes por validar. ¡Todo al día!"
+              : "No hay comprobantes que coincidan con los filtros aplicados."}
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -569,12 +622,14 @@ export default async function AdminPagosPage({
                   {activeReviewData.name} — {activeReviewData.kind}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Verificación de comprobante bancario
+                  {inQueue && currentIndex >= 0
+                    ? `Comprobante ${currentIndex + 1} de ${queue.length} por validar`
+                    : "Verificación de comprobante"}
                 </p>
               </div>
               <Link
-                href={buildHref({ review: undefined, kind: undefined })}
-                className="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                href={listHref}
+                className="grid size-10 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                 aria-label="Cerrar modal"
               >
                 <X size={17} />
@@ -600,6 +655,9 @@ export default async function AdminPagosPage({
               {/* Right: Transfer details and action form */}
               <div className="flex flex-col justify-between p-6 bg-white space-y-5">
                 <div className="space-y-4">
+                  {params.error && (
+                    <FlashMessage error={params.error} fallbackError="No se pudo guardar. Inténtalo de nuevo." />
+                  )}
                   <div>
                     <h4 className="text-sm font-bold text-[#082e39]">
                       Detalles de la transferencia
@@ -658,6 +716,11 @@ export default async function AdminPagosPage({
 
                   {/* Form with interactive approval lock and conditional reversion */}
                   <div className="border-t border-slate-100 pt-4">
+                    {activeReviewData.status === "approved" && !isMaster ? (
+                      <p className="rounded-lg bg-emerald-50 p-3 text-xs font-semibold text-emerald-900">
+                        Este pago ya está aprobado. Si hay que corregirlo, pídeselo a la cuenta maestra.
+                      </p>
+                    ) : (
                     <ReviewResolutionForm
                       action={activeReviewData.isInitial ? review : reviewPayment}
                       isInitial={activeReviewData.isInitial}
@@ -666,21 +729,25 @@ export default async function AdminPagosPage({
                       currentStatus={activeReviewData.status}
                       initialNote={activeReviewData.note}
                       view="payments"
-                      returnTo={buildHref({ review: undefined, kind: undefined })}
-                      closeUrl={buildHref({ review: undefined, kind: undefined })}
+                      returnTo={nextHref ?? listHref}
+                      errorReturnTo={currentHref}
+                      closeUrl={nextHref ?? listHref}
+                      closeText={nextHref ? "Saltar por ahora" : "Revisar luego"}
+                      approveText={nextHref ? "Aprobar y pasar al siguiente" : undefined}
                       entityType="comprobante"
                       participantPhone={activeReviewData.phone}
                       participantFirstName={activeReviewData.name.split(" ")[0]}
                     />
+                    )}
                   </div>
                 </div>
 
                 <div className="text-center pt-2">
                   <Link
-                    href={buildHref({ review: undefined, kind: undefined })}
-                    className="text-xs text-slate-400 hover:text-slate-600 hover:underline"
+                    href={listHref}
+                    className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
                   >
-                    Volver a la bandeja de comprobantes
+                    Volver a la lista
                   </Link>
                 </div>
               </div>

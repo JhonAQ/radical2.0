@@ -4,9 +4,10 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import type { Registration, RegistrationPayment } from "../types";
-import { PrintButton } from "./PrintButton";
+import { PrintButton } from "../components/PrintButton";
 import { ArrowLeft } from "lucide-react";
 import { isMinorAtCamp } from "@/utils/minors";
+import { CAMP_CONFIG } from "@/config/site";
 import { ageFromBirth, decemberJanuaryBirthdays } from "@/utils/camper-report";
 
 export const metadata = {
@@ -115,8 +116,8 @@ export default async function AdminReportesPage({
       if (!acc[planKey]) {
         acc[planKey] = { count: 0, expected: 0, collected: 0 };
       }
-      acc[planKey].count += 1;
       if (r.status === "approved") {
+        acc[planKey].count += 1;
         acc[planKey].expected += r.price;
         const addl = additionalPaidByReg[r.id] || 0;
         acc[planKey].collected += r.amount + addl;
@@ -145,11 +146,11 @@ export default async function AdminReportesPage({
       <nav aria-label="Controles del reporte" className="no-print sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur shadow-sm">
         <div className="mx-auto flex max-w-[210mm] items-center justify-between gap-4">
           <Link
-            href="/admin/inscripciones"
+            href="/admin/reportes"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 transition hover:text-[#0b2d36]"
           >
             <ArrowLeft size={15} />
-            <span>Volver a inscripciones</span>
+            <span>Volver a reportes</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -201,7 +202,7 @@ export default async function AdminReportesPage({
                 <BrandLogo variant="secundario" width={145} />
               </div>
               <p className="mt-2.5 text-[11px] font-black uppercase tracking-[.25em] text-[#00aeb8]">
-                Campamento de Jóvenes · 2026
+                Campamento de Jóvenes · {CAMP_CONFIG.dates.year}
               </p>
               <h1 className="mt-1 font-blowbrush text-3xl tracking-wide text-[#0b2d36] sm:text-4xl">
                 {currentType === "todo-en-uno" && "DOSSIER EJECUTIVO Y LOGÍSTICA"}
@@ -239,7 +240,7 @@ export default async function AdminReportesPage({
                 <thead className="bg-[#0b2d36] text-[10px] uppercase tracking-wider text-white">
                   <tr>
                     <th className="p-2.5">Plan</th>
-                    <th className="p-2.5 text-center">Inscritos</th>
+                    <th className="p-2.5 text-center">Aprobados</th>
                     <th className="p-2.5 text-right">Meta Proyectada</th>
                     <th className="p-2.5 text-right">Recaudado</th>
                     <th className="p-2.5 text-right">Saldo Pendiente</th>
@@ -263,7 +264,7 @@ export default async function AdminReportesPage({
                   ))}
                   <tr className="bg-[#f8f4e9] font-bold text-slate-900">
                     <td className="p-2.5">TOTAL GENERAL</td>
-                    <td className="p-2.5 text-center">{totalRegistrations}</td>
+                    <td className="p-2.5 text-center">{approvedItems.length}</td>
                     <td className="p-2.5 text-right">S/ {totalExpected}</td>
                     <td className="p-2.5 text-right text-[#0a6b5e]">S/ {totalCollected}</td>
                     <td className="p-2.5 text-right text-[#d25500]">S/ {totalOutstanding}</td>
@@ -271,6 +272,13 @@ export default async function AdminReportesPage({
                 </tbody>
               </table>
             </div>
+
+            {totalRegistrations > approvedItems.length && (
+              <p className="mt-2 text-[10px] text-slate-500">
+                El balance solo considera inscripciones aprobadas. {totalRegistrations - approvedItems.length} en revisión u
+                observadas no se cuentan hasta validar su pago.
+              </p>
+            )}
 
             {/* Campistas con saldo pendiente */}
             <div className="mt-5 avoid-break">

@@ -1,5 +1,6 @@
 import { updateRegistrationData } from "../actions";
 import { adminInputClass, type Registration } from "../types";
+import { PendingFieldset } from "./PendingFieldset";
 
 const label = "block text-xs font-semibold text-slate-700";
 
@@ -13,6 +14,7 @@ export function RegistrationDataForm({ registration: r }: { registration: Regist
         </span>
       </summary>
       <form action={updateRegistrationData} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <PendingFieldset className="contents">
         <input type="hidden" name="id" value={r.id} />
         <label className={label}>Nombres
           <input className={`${adminInputClass} mt-1`} name="first_name" defaultValue={r.first_name} required maxLength={100} />
@@ -53,6 +55,7 @@ export function RegistrationDataForm({ registration: r }: { registration: Regist
             Guardar datos
           </button>
         </div>
+        </PendingFieldset>
       </form>
     </details>
   );

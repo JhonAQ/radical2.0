@@ -4,7 +4,7 @@ import { Download, ExternalLink } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { CAMP_CONFIG } from "@/config/site";
 import { TICKET_BASE_URL } from "@/utils/ticket";
-import { PrintButton } from "../../reportes/PrintButton";
+import { PrintButton } from "../../components/PrintButton";
 
 export const metadata = { title: "QR para abonar | Radical 2.0" };
 

@@ -5,9 +5,9 @@ import { DEFAULT_PREVENTA_DEADLINE, preventaDates } from "@/utils/preventa";
 import {
   adminButtonClass,
   adminInputClass,
-  errorMessages,
-  successMessages,
 } from "../../types";
+import { FlashMessage } from "../../components/FlashMessage";
+import { PendingFieldset } from "../../components/PendingFieldset";
 
 export const metadata = { title: "Configuración | Radical 2.0" };
 
@@ -18,6 +18,19 @@ export default async function ConfiguracionPage({
 }) {
   const params = await searchParams;
   const client = createClient(await cookies());
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  const { data: membership } = user
+    ? await client.from("admin_users").select("role").eq("user_id", user.id).maybeSingle()
+    : { data: null };
+  if (membership?.role !== "master") {
+    return (
+      <p className="max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+        La configuración del campamento solo la puede cambiar la cuenta maestra.
+      </p>
+    );
+  }
   const [{ data }, { data: privateSettings }] = await Promise.all([
     client.from("camp_settings").select("preventa_deadline").eq("id", true).maybeSingle(),
     client.from("camp_private_settings").select("whatsapp_group_url").eq("id", true).maybeSingle(),
@@ -31,17 +44,9 @@ export default async function ConfiguracionPage({
         <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">Configuración</h1>
         <p className="mt-1 text-sm text-[#5f7a75]">Ajustes que afectan a las inscripciones.</p>
       </div>
-      {params.error && (
-        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {errorMessages[params.error] ?? "Ocurrió un error."}
-        </p>
-      )}
-      {params.success && (
-        <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-          {successMessages[params.success] ?? "Guardado."}
-        </p>
-      )}
+      <FlashMessage error={params.error} success={params.success} />
       <form action={updateCampSettings} className="space-y-4 rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
+        <PendingFieldset className="contents">
         <label className="block text-sm font-semibold text-[#082e39]">
           Último día de la preventa
           <input
@@ -56,9 +61,11 @@ export default async function ConfiguracionPage({
           La preventa vale hasta las 12 de la noche de ese día (hora de Lima). Después, nadie podrá inscribirse con el plan Preventa; quienes tengan el formulario abierto verán un aviso y pasarán al plan Regular. Los textos de fechas de la página principal, el FAQ y el formulario se actualizan solos (la landing puede tardar hasta un minuto).
         </p>
         <button className={adminButtonClass}>Guardar</button>
+        </PendingFieldset>
       </form>
 
       <form action={updateWhatsappGroup} className="space-y-4 rounded-xl border border-[#e2e8e4] bg-white p-5 shadow-sm sm:p-6">
+        <PendingFieldset className="contents">
         <label className="block text-sm font-semibold text-[#082e39]">
           Grupo de WhatsApp de campistas
           <input
@@ -80,6 +87,7 @@ export default async function ConfiguracionPage({
           página pública. Déjalo vacío para ocultarlo. En WhatsApp: grupo → Invitar con enlace → Copiar enlace.
         </p>
         <button className={adminButtonClass}>Guardar enlace</button>
+        </PendingFieldset>
       </form>
     </div>
   );

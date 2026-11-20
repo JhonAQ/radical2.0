@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { AdminLoginForm } from "../components/AdminLoginForm";
 import { AdminNav } from "../components/AdminNav";
+import { SectionTabs } from "../components/SectionTabs";
 
 export const metadata = {
   title: "Administración | Radical 2.0",
@@ -57,7 +58,10 @@ export default async function AdminPanelLayout({
         pendingRegistrationsCount={pendingRegs || 0}
         pendingPaymentsCount={pendingPays || 0}
       />
-      <div className="mx-auto max-w-[1540px] px-4 pb-12 pt-7 sm:px-8 lg:px-10 lg:pt-9 print:p-0">
+      <div className="mx-auto max-w-[1540px] px-4 pb-28 pt-6 sm:px-8 lg:px-10 lg:pb-12 lg:pt-9 print:p-0">
+        <Suspense>
+          <SectionTabs isMaster={membership?.role === "master"} />
+        </Suspense>
         {children}
       </div>
     </div>

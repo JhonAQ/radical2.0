@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle, AlertTriangle, MessageCircle, RotateCcw, X } from "lucide-react";
 import { whatsappUrl } from "@/utils/whatsapp";
 import { adminInputClass } from "../types";
+import { PendingFieldset } from "./PendingFieldset";
 
 interface ReviewResolutionFormProps {
   action: (formData: FormData) => void | Promise<void>;
@@ -19,6 +20,12 @@ interface ReviewResolutionFormProps {
   entityType?: "comprobante" | "inscripcion";
   participantPhone?: string;
   participantFirstName?: string;
+  /** Texto del botón principal (p. ej. "Aprobar y siguiente" en la cola). */
+  approveText?: string;
+  /** A dónde volver si la acción falla (por defecto, returnTo). */
+  errorReturnTo?: string;
+  /** Texto del enlace neutral cuando está pendiente (por defecto, "Revisar luego"). */
+  closeText?: string;
 }
 
 export function ReviewResolutionForm({
@@ -34,15 +41,19 @@ export function ReviewResolutionForm({
   entityType = "comprobante",
   participantPhone = "",
   participantFirstName = "",
+  approveText,
+  errorReturnTo,
+  closeText = "Revisar luego",
 }: ReviewResolutionFormProps) {
   const [note, setNote] = useState(initialNote);
   const hasNote = note.trim().length > 0;
   const isAlreadyPending = currentStatus === "pending";
 
   const approveLabel =
-    entityType === "comprobante"
+    approveText ??
+    (entityType === "comprobante"
       ? "Aprobar comprobante (Confirmar dinero)"
-      : "Aprobar inscripción";
+      : "Aprobar inscripción");
   const rejectLabel =
     entityType === "comprobante" ? "Observar comprobante" : "Observar";
 
@@ -52,7 +63,7 @@ export function ReviewResolutionForm({
           participantPhone,
           `Hola ${participantFirstName}, te escribimos del equipo de Radical 2.0. Revisamos tu ${
             entityType === "comprobante" ? "comprobante" : "inscripción"
-          } y tiene una observación: ${note.trim()}\n\nPuedes corregirlo ingresando a https://radical2-0.vercel.app/mi-inscripcion`,
+          } y tiene una observación: ${note.trim()}\n\nPuedes corregirlo ingresando a https://radical.ielp.org/mi-inscripcion`,
         )
       : null;
 
@@ -60,6 +71,7 @@ export function ReviewResolutionForm({
     <form action={action} className="space-y-3.5">
       <input type="hidden" name="view" value={view} />
       {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
+      {errorReturnTo && <input type="hidden" name="error_return_to" value={errorReturnTo} />}
 
       {isInitial ? (
         <input type="hidden" name="id" value={id} />
@@ -103,14 +115,14 @@ export function ReviewResolutionForm({
         )}
       </div>
 
-      <div className="flex flex-col gap-2 pt-1">
+      <PendingFieldset className="flex flex-col gap-2 pt-1">
         {/* Botón de Aprobar: Solo activo si no hay nota de observación */}
         <button
           type="submit"
           name="status"
           value="approved"
           disabled={hasNote}
-          className={`w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold shadow-sm transition ${
+          className={`w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition ${
             hasNote
               ? "cursor-not-allowed bg-slate-200 text-slate-400 opacity-60"
               : "bg-[#008e87] text-white hover:bg-[#007670]"
@@ -146,7 +158,7 @@ export function ReviewResolutionForm({
             name="status"
             value="rejected"
             disabled={!hasNote}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition ${
+            className={`inline-flex items-center justify-center gap-1.5 min-h-11 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition ${
               hasNote
                 ? "border-red-300 bg-red-600 text-white hover:bg-red-700"
                 : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60"
@@ -167,10 +179,10 @@ export function ReviewResolutionForm({
             closeUrl ? (
               <Link
                 href={closeUrl}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-1.5 min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
               >
                 <X size={14} />
-                <span>Revisar luego</span>
+                <span>{closeText}</span>
               </Link>
             ) : (
               <div className="invisible" />
@@ -180,7 +192,7 @@ export function ReviewResolutionForm({
               type="submit"
               name="status"
               value="pending"
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200"
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200"
               title="Volver a poner este comprobante en la cola de pendientes"
             >
               <RotateCcw size={13} />
@@ -188,7 +200,7 @@ export function ReviewResolutionForm({
             </button>
           )}
         </div>
-      </div>
+      </PendingFieldset>
     </form>
   );
 }

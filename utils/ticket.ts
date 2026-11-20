@@ -3,7 +3,7 @@
  * nunca datos personales. Se apunta siempre al dominio de producción porque las
  * entradas se descargan e imprimen.
  */
-export const TICKET_BASE_URL = "https://radical2-0.vercel.app";
+export const TICKET_BASE_URL = "https://radical.ielp.org";
 
 /** "K7QX93FD2MHT" → "K7QX-93FD-2MHT" */
 export function formatTicketCode(code: string): string {

@@ -7,11 +7,10 @@ import {
   Users,
   Cake,
   ShieldAlert,
-  ChevronDown,
-  X,
   FileCheck2,
   ExternalLink,
   FileSpreadsheet,
+  Download,
 } from "lucide-react";
 
 type ReportType = "todo-en-uno" | "campistas" | "financiero" | "cumpleanos" | "menores";
@@ -32,272 +31,155 @@ const REPORT_OPTIONS: {
   },
   {
     type: "financiero",
-    label: "Reporte de Tesorería y Saldos",
-    description: "Balances por plan y lista de participantes con deuda pendiente.",
+    label: "Tesorería y saldos",
+    description: "Balance por plan y lista de quienes tienen saldo pendiente.",
     icon: DollarSign,
-  },
-  {
-    type: "cumpleanos",
-    label: "Cumpleaños de diciembre y enero",
-    description: "Campistas que cumplen años en esos meses, con su WhatsApp.",
-    icon: Cake,
   },
   {
     type: "menores",
     label: "Menores de edad y permisos",
-    description: "Menores al inicio del campamento, con casilla para marcar el permiso de viaje.",
+    description: "Menores al inicio del campamento, con casilla para el permiso de viaje.",
     icon: ShieldAlert,
+  },
+  {
+    type: "cumpleanos",
+    label: "Cumpleaños de diciembre y enero",
+    description: "Quienes cumplen años en esos meses, con su WhatsApp.",
+    icon: Cake,
   },
 ];
 
+const CSV_OPTIONS = [
+  { type: "general", label: "General" },
+  { type: "financiero", label: "Finanzas" },
+  { type: "campistas", label: "Campistas" },
+  { type: "menores", label: "Menores" },
+  { type: "cumpleanos", label: "Cumpleaños" },
+];
+
+const selectClass =
+  "w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-[#008e95]";
+
+/** Centro de reportes: PDF imprimibles y CSV, con filtros de estado y plan. */
 export function ExportPanel() {
-  const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
-  const [showCsv, setShowCsv] = useState(false);
   const [csvLoading, setCsvLoading] = useState<string | null>(null);
+  const [csvError, setCsvError] = useState(false);
 
   function openReport(type: ReportType) {
-    const params = new URLSearchParams({
-      type,
-      status: statusFilter,
-      plan: planFilter,
-      autoPrint: "true",
-    });
-    window.open(`/admin/reportes?${params.toString()}`, "_blank");
-    setOpen(false);
+    const params = new URLSearchParams({ type, status: statusFilter, plan: planFilter, autoPrint: "true" });
+    window.open(`/admin/imprimir?${params.toString()}`, "_blank");
   }
 
   async function downloadCsv(type: string) {
     setCsvLoading(type);
+    setCsvError(false);
     try {
-      const params = new URLSearchParams({
-        type,
-        status: statusFilter,
-        plan: planFilter,
-      });
-
+      const params = new URLSearchParams({ type, status: statusFilter, plan: planFilter });
       const res = await fetch(`/api/admin/export?${params.toString()}`);
       if (!res.ok) throw new Error("Error al generar el CSV");
-
       const blob = await res.blob();
-      const disposition = res.headers.get("content-disposition") || "";
-      const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] || `Radical2_${type}.csv`;
-
+      const match = (res.headers.get("content-disposition") || "").match(/filename="([^"]+)"/);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = match?.[1] || `Radical2_${type}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setOpen(false);
     } catch (err) {
       console.error(err);
-      alert("No se pudo descargar el CSV.");
+      setCsvError(true);
     } finally {
       setCsvLoading(null);
     }
   }
 
   return (
-    <div className="relative">
+    <div className="space-y-5">
+      {/* Filtros: aplican a todos los reportes y CSV */}
+      <section className="grid gap-3 rounded-xl border border-[#e2e8e4] bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-[#657d77]">Estado de la inscripción</span>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className={selectClass}>
+            <option value="all">Todos los estados</option>
+            <option value="approved">Solo aprobados</option>
+            <option value="pending">Solo pendientes</option>
+            <option value="rejected">Solo observados</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-[#657d77]">Plan</span>
+          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value as PlanFilter)} className={selectClass}>
+            <option value="all">Todos los planes</option>
+            <option value="preventa">Preventa</option>
+            <option value="regular">Regular</option>
+          </select>
+        </label>
+      </section>
+
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-lg bg-[#0b2d36] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#08232a]"
+        onClick={() => openReport("todo-en-uno")}
+        className="group flex w-full items-center gap-4 rounded-xl bg-[#0b2d36] p-4 text-left text-white shadow-sm transition hover:bg-[#07242c] sm:p-5"
       >
-        <Printer size={15} className="text-[#ffc629]" />
-        <span>Reportes PDF</span>
-        <ChevronDown
-          size={14}
-          className={`text-slate-300 transition-transform ${open ? "rotate-180" : ""}`}
-        />
+        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#ffc629] text-[#0b2d36]">
+          <FileCheck2 size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">Dossier completo</span>
+          <span className="mt-0.5 block text-xs text-slate-300">Tesorería, lista de campistas y cumpleaños en un solo PDF.</span>
+        </span>
+        <Printer size={18} className="shrink-0 text-[#ffc629] transition group-hover:translate-x-0.5" />
       </button>
 
-      {open && (
-        <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {REPORT_OPTIONS.map(({ type, label, description, icon: Icon }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => openReport(type)}
+            className="flex items-start gap-3 rounded-xl border border-[#e2e8e4] bg-white p-4 text-left shadow-sm transition hover:border-[#00aeb8]/40 hover:bg-[#f7fbfa]"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e7f4f2] text-[#008d98]">
+              <Icon size={17} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-[#0a3039]">{label}</span>
+              <span className="mt-0.5 block text-xs leading-snug text-[#657d77]">{description}</span>
+            </span>
+            <ExternalLink size={14} className="mt-1 shrink-0 text-slate-400" />
+          </button>
+        ))}
+      </div>
 
-          {/* Modal Dropdown */}
-          <div className="absolute right-0 top-full z-30 mt-2 w-[390px] max-w-[92vw] origin-top-right rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_50px_rgba(11,45,54,0.18)]">
-            <div className="mb-3.5 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-[#082e39]">
-                  Reportes oficiales
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="grid size-6 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Quick Filters */}
-            <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-[#f8f4e9] p-2.5">
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase text-[#0b2d36]">
-                  Estado
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 outline-none"
-                >
-                  <option value="all">Todos los estados</option>
-                  <option value="approved">Solo aprobados</option>
-                  <option value="pending">Solo pendientes</option>
-                  <option value="rejected">Solo observados</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase text-[#0b2d36]">
-                  Plan
-                </label>
-                <select
-                  value={planFilter}
-                  onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 outline-none"
-                >
-                  <option value="all">Todos los planes</option>
-                  <option value="preventa">Preventa</option>
-                  <option value="regular">Regular</option>
-                </select>
-              </div>
-            </div>
-
-            {/* ── HERO OPTION: DOSSIER COMPLETO ── */}
-            <div className="mb-3">
-              <button
-                type="button"
-                onClick={() => openReport("todo-en-uno")}
-                className="group relative flex w-full items-center justify-between rounded-xl bg-[#0b2d36] p-3.5 text-left text-white shadow-sm transition hover:bg-[#07242c]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="grid size-9 place-items-center rounded-lg bg-[#ffc629] text-[#0b2d36] shadow-sm">
-                    <FileCheck2 size={18} />
-                  </span>
-                  <div>
-                    <span className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-white">
-                      <span>Dossier Completo (Todo en uno)</span>
-                      <span className="rounded bg-[#ffc629] px-1.5 py-0.2 text-[9px] font-bold text-[#0b2d36]">
-                        OFICIAL
-                      </span>
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-slate-200 leading-tight">
-                      KPIs + Tesorería + Campistas + Cumpleaños
-                    </span>
-                  </div>
-                </div>
-                <Printer
-                  size={16}
-                  className="text-[#ffc629] transition group-hover:translate-x-0.5 shrink-0 ml-2"
-                />
-              </button>
-            </div>
-
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              O imprimir por componente individual:
-            </p>
-
-            {/* Individual PDF Component Reports */}
-            <div className="space-y-1.5">
-              {REPORT_OPTIONS.map(({ type, label, description, icon: Icon }) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => openReport(type)}
-                  className="flex w-full items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-[#00aeb8]/30 hover:bg-[#f4faf9]"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="shrink-0 text-[#008d98]">
-                      <Icon size={16} />
-                    </span>
-                    <div className="min-w-0">
-                      <span className="block truncate text-xs font-bold text-slate-900">
-                        {label}
-                      </span>
-                      <span className="block truncate text-[10px] text-slate-500 leading-tight">
-                        {description}
-                      </span>
-                    </div>
-                  </div>
-                  <ExternalLink size={13} className="shrink-0 text-slate-400 ml-2" />
-                </button>
-              ))}
-            </div>
-
-            {/* Optional CSV toggle */}
-            <div className="mt-3.5 border-t border-slate-100 pt-3">
-              <button
-                type="button"
-                onClick={() => setShowCsv((v) => !v)}
-                className="flex w-full items-center justify-between text-[11px] font-semibold text-slate-500 hover:text-slate-800"
-              >
-                <span className="flex items-center gap-1.5">
-                  <FileSpreadsheet size={13} />
-                  <span>¿Prefieres la data cruda en Excel (CSV)?</span>
-                </span>
-                <ChevronDown
-                  size={12}
-                  className={`transition-transform ${showCsv ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {showCsv && (
-                <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => downloadCsv("general")}
-                    disabled={csvLoading !== null}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    CSV General
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadCsv("financiero")}
-                    disabled={csvLoading !== null}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    CSV Finanzas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadCsv("campistas")}
-                    disabled={csvLoading !== null}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    CSV Campistas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadCsv("cumpleanos")}
-                    disabled={csvLoading !== null}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    CSV Cumpleaños
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadCsv("menores")}
-                    disabled={csvLoading !== null}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    CSV Menores
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+      <section className="rounded-xl border border-[#e2e8e4] bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-[#0a3039]">
+          <FileSpreadsheet size={16} className="text-[#0f8f87]" />
+          Datos para Excel (CSV)
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {CSV_OPTIONS.map(({ type, label }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => downloadCsv(type)}
+              disabled={csvLoading !== null}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            >
+              <Download size={13} />
+              {csvLoading === type ? "Descargando…" : label}
+            </button>
+          ))}
+        </div>
+        {csvError && (
+          <p role="alert" className="mt-2 text-xs font-semibold text-red-700">
+            No se pudo descargar el CSV. Intenta de nuevo.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

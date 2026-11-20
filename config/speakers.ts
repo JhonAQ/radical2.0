@@ -21,8 +21,20 @@ export type Speaker = {
   accent: "naranja" | "turquesa";
 };
 
-// Temas tomados del programa oficial. Falta la foto de Ruby Barrantes.
+// Temas tomados del programa oficial.
 export const SPEAKERS: Speaker[] = [
+  {
+    slug: "ruby-barrantes",
+    name: "Ruby Barrantes",
+    title: "Hna.",
+    display: ["Ruby", "Barrantes"],
+    role: "30 dic · Noche",
+    topic: "Introducción a Radical",
+    bio: "“De vuelta a la raíz, para un nuevo nivel.” Volver a lo esencial de la fe para empezar el campamento con el corazón dispuesto.",
+    image: { src: "/assets/ponentes/recortes/ruby-barrantes.webp", width: 653, height: 1000 },
+    fit: 0.85,
+    accent: "turquesa",
+  },
   {
     slug: "paola-vargas",
     name: "Paola Vargas",

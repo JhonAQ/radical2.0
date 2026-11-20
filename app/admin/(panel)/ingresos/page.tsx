@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { loadCheckInRoster, type RosterRow } from "@/utils/check-in-roster";
 import { isMinorAtCamp } from "@/utils/minors";
 import { formatTicketCode } from "@/utils/ticket";
-import { PrintButton } from "../../reportes/PrintButton";
+import { PrintButton } from "../../components/PrintButton";
 import { adminInputClass } from "../../types";
 
 export const metadata = { title: "Control de ingreso | Radical 2.0" };

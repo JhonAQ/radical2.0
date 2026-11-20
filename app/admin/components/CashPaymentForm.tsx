@@ -1,6 +1,7 @@
 import { Banknote } from "lucide-react";
 import { registerCashPayment } from "../actions";
 import { adminInputClass } from "../types";
+import { PendingFieldset } from "./PendingFieldset";
 
 /**
  * Registro de efectivo recibido en persona. Se aprueba al instante:
@@ -36,6 +37,7 @@ export function CashPaymentForm({
           : "La inscripción aún no está aprobada: el efectivo reemplaza al comprobante inicial y la inscripción queda aprobada."}
       </p>
       <form action={registerCashPayment} className="mt-4 grid gap-3">
+        <PendingFieldset className="contents">
         <input type="hidden" name="id" value={registrationId} />
         {scannerCode && <input type="hidden" name="scanner_code" value={scannerCode} />}
         <label className="block text-xs font-semibold text-slate-700">
@@ -75,6 +77,7 @@ export function CashPaymentForm({
           <Banknote size={16} />
           Registrar efectivo
         </button>
+        </PendingFieldset>
       </form>
     </section>
   );
