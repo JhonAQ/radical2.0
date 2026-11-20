@@ -47,7 +47,7 @@
 .registration-contact-form h2{font:400 24px var(--font-bebas);letter-spacing:.025em;margin:0 0 13px}
 .registration-emergency{margin-top:25px;border-radius:17px;background:#0b2d360b;padding:19px}
 .registration-next{position:relative;isolation:isolate;min-height:58px;min-width:225px;border-radius:0;background:transparent;box-shadow:none;font:400 25px var(--font-bebas);letter-spacing:.06em;text-shadow:0 1px 2px #92290055;transition:transform .2s,filter .2s}
-.registration-next:before{content:"";position:absolute;z-index:-1;inset:-5px -12px;background:url('/assets/elements/asset-boton-xd.png') center/100% 100% no-repeat}
+.registration-next:before{content:"";position:absolute;z-index:-1;inset:-5px -12px;background:url('/assets/elements/asset-boton-xd.webp') center/100% 100% no-repeat}
 .registration-next:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:none}
 .registration-next:active{transform:translateY(0)}
 @media(max-width:560px){.registration-progress{max-width:100%}.registration-progress-name{font-size:9px}.registration-heading h1{font-size:clamp(32px,9vw,45px)}.registration-form{padding:4px 0}.registration-form-grid{grid-template-columns:1fr;gap:15px}.registration-gender{grid-column:auto}.registration-gender label{font-size:12px}.registration-form-brush-left{left:-95px;top:-115px;width:160px}.registration-form-brush-right{right:-75px;top:-100px;width:150px}.registration-emergency{padding:15px}.registration-next{min-width:185px;min-height:56px;font-size:23px}.registration-next:before{inset:-4px -9px}}

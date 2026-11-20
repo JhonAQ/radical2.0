@@ -164,19 +164,19 @@ function Decor({ show, reduceMotion }: { show: boolean; reduceMotion: boolean })
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
       <motion.div {...slide(-60, -25, 0.1)} className="speakers-sway absolute left-[-4%] top-[-2%] w-[34%] max-w-[260px] sm:w-[24%]">
-        <Image src="/assets/elements/elem-palm-frond-leaf.webp" alt="" width={294} height={250} className="h-auto w-full rotate-[200deg] -scale-x-100" />
+        <Image src="/assets/elements/elem-palm-frond-leaf.webp" alt="" width={294} height={250} sizes="(min-width: 640px) 24vw, 34vw" className="h-auto w-full rotate-[200deg] -scale-x-100" />
       </motion.div>
       <motion.div {...slide(60, 25, 0.2)} className="speakers-sway speakers-sway--late absolute right-[-3%] top-[-3%] hidden w-[22%] max-w-[300px] lg:block">
-        <Image src="/assets/footer/palma-superior-derecha.webp" alt="" width={1400} height={933} className="h-auto w-full" />
+        <Image src="/assets/footer/palma-superior-derecha.webp" alt="" width={1400} height={933} sizes="(min-width: 1024px) 22vw, 1px" className="h-auto w-full" />
       </motion.div>
       <motion.div {...fade(0.3)} className="absolute left-[-3%] top-[30%] hidden w-[12%] lg:block">
-        <Image src="/assets/textures/t1-12-orange-short.webp" alt="" width={375} height={230} className="h-auto w-full rotate-[20deg]" />
+        <Image src="/assets/textures/t1-12-orange-short.webp" alt="" width={375} height={230} sizes="12vw" className="h-auto w-full rotate-[20deg]" />
       </motion.div>
       <motion.div {...fade(0.35)} className="absolute bottom-[3%] right-[-2%] w-[42%] max-w-[360px] sm:w-[26%]">
-        <Image src="/assets/textures/t1-11-teal-diagonal.webp" alt="" width={502} height={267} className="h-auto w-full -rotate-[8deg] opacity-90" />
+        <Image src="/assets/textures/t1-11-teal-diagonal.webp" alt="" width={502} height={267} sizes="(min-width: 640px) 26vw, 42vw" className="h-auto w-full -rotate-[8deg] opacity-90" />
       </motion.div>
       <motion.div {...fade(0.4)} className="absolute bottom-[12%] right-[10%] hidden w-[14%] lg:block">
-        <Image src="/assets/textures/t1-12-orange-short.webp" alt="" width={375} height={230} className="h-auto w-full rotate-[-12deg]" />
+        <Image src="/assets/textures/t1-12-orange-short.webp" alt="" width={375} height={230} sizes="14vw" className="h-auto w-full rotate-[-12deg]" />
       </motion.div>
     </div>
   );
@@ -236,7 +236,7 @@ function Stage({
     >
       {/* 1. Brochazos: la base de toda la composición; asoman a ambos lados del retrato */}
       <div className="pointer-events-none absolute left-[-14%] top-[16%] w-[128%] lg:left-[3%] lg:top-[-8%] lg:w-[101%]">
-        <Image src={`${UI}/brushes-fondo.webp`} alt="" width={1300} height={865} sizes="(min-width: 1024px) 700px, 100vw" className={`h-auto w-full ${show ? "speakers-paint speakers-paint--slow" : "opacity-0"}`} style={{ animationDelay: "0.1s" }} />
+        <Image src={`${UI}/brushes-fondo.webp`} alt="" quality={60} width={1300} height={865} sizes="(min-width: 1024px) 700px, 100vw" className={`h-auto w-full ${show ? "speakers-paint speakers-paint--slow" : "opacity-0"}`} style={{ animationDelay: "0.1s" }} />
       </div>
 
       {/* 2. Sol: detrás de la cabeza, cargado a la derecha; el ponente tapa su parte baja */}
@@ -246,7 +246,7 @@ function Stage({
           animate={show ? { opacity: 1, x: 0, rotate: 0 } : { opacity: 0, x: "60%", rotate: 50 }}
           transition={{ duration: reduceMotion ? 0 : 1.4, delay: reduceMotion ? 0 : 0.35, ease }}
         >
-          <Image src={`${UI}/sol-rayos.webp`} alt="" width={800} height={783} className="speakers-sun h-auto w-full" />
+          <Image src={`${UI}/sol-rayos.webp`} alt="" width={800} height={783} sizes="(min-width: 1024px) 420px, 55vw" className="speakers-sun h-auto w-full" />
         </motion.div>
       </div>
 
@@ -260,7 +260,7 @@ function Stage({
       >
         <div className="translate-x-[20px] -translate-y-[15px] -rotate-[30deg] lg:translate-y-[5px] lg:-rotate-[20deg]" style={{ transformOrigin: "47% 100%" }}>
           <div className="speakers-sway speakers-sway--slow" style={{ transformOrigin: "47% 100%" }}>
-            <Image src="/assets/elements/elem-palm-tree-medium-straight.webp" alt="" width={313} height={398} className="h-auto w-full" />
+            <Image src="/assets/elements/elem-palm-tree-medium-straight.webp" alt="" width={313} height={398} sizes="(min-width: 1024px) 36vw, 57vw" className="h-auto w-full" />
           </div>
         </div>
       </motion.div>
@@ -331,7 +331,7 @@ function Stage({
         >
           <div className="relative w-full">
             {/* En móvil el nombre lleva su propio brochazo delante del torso */}
-            <Image src={`${UI}/brushes-fondo.webp`} alt="" fill sizes="100vw" className="-z-10 scale-x-110 scale-y-[1.35] object-fill lg:hidden" />
+            <Image src={`${UI}/brushes-fondo.webp`} alt="" quality={60} fill sizes="100vw" className="-z-10 scale-x-110 scale-y-[1.35] object-fill lg:hidden" />
             <div className="relative px-[8%] pb-2 pt-3 text-right lg:p-0 lg:text-center">
               <Image src="/assets/elements/elem-crown-painted-gold.webp" alt="" width={146} height={137} className="mx-auto mb-1 hidden h-auto w-[8cqw] -translate-x-[23px] -rotate-[4deg] lg:block" />
               <div className="-translate-x-[5px] -translate-y-[5px] -rotate-[5deg] lg:translate-x-0 lg:translate-y-0">

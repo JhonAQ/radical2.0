@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
+import { blurProps } from "@/utils/blur-placeholders";
 
 const MotionImage = motion.create(Image);
 
@@ -133,42 +134,44 @@ export function Activities() {
         </defs>
       </svg>
       <Image
-        src="/assets/activities/brush-background.png"
+        src="/assets/activities/brush-background.webp"
         alt=""
         fill
         sizes="100vw"
         className="-z-10 hidden scale-[1.2] object-cover object-center lg:block lg:translate-x-[4%] lg:scale-[1.56]"
-      />
+       quality={60} />
       <Image
-        src="/assets/activities/brush-background-mobile.png"
+        src="/assets/activities/brush-background-mobile.webp"
         alt=""
         fill
         sizes="100vw"
         className="-z-10 scale-x-[1.2] scale-y-[1.1] object-cover object-center lg:hidden"
-      />
+       quality={60} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-14 bg-gradient-to-b from-transparent via-white/35 to-white sm:hidden" />
       <MotionImage
         initial={{ opacity: 0, x: -28, y: 18, scale: 0.92, rotate: -14 }}
         animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 } : { opacity: 0, x: -28, y: 18, scale: 0.92, rotate: -14 }}
         transition={{ duration: reduceMotion ? 0 : 1.1, delay: reduceMotion ? 0 : 0.14, ease: [0.18, 0.82, 0.24, 1] }}
-        src="/assets/activities/leaf-corner-left.png"
+        src="/assets/activities/leaf-corner-left.webp"
         alt=""
         aria-hidden="true"
         width={768}
+        sizes="(min-width: 1024px) 260px, (min-width: 640px) 192px, 173px"
         height={1024}
         className="pointer-events-none absolute bottom-[182px] -left-3 z-0 h-[13.2rem] w-[10.8rem] object-contain sm:bottom-6 sm:-left-12 sm:h-64 sm:w-48 lg:bottom-10 lg:h-80 lg:w-60"
-      />
+       quality={60} />
       <MotionImage
         initial={{ opacity: 0, x: 28, y: 14, scale: 0.92, rotate: 14 }}
         animate={sectionIsInView || reduceMotion ? { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 } : { opacity: 0, x: 28, y: 14, scale: 0.92, rotate: 14 }}
         transition={{ duration: reduceMotion ? 0 : 1.1, delay: reduceMotion ? 0 : 0.34, ease: [0.18, 0.82, 0.24, 1] }}
-        src="/assets/activities/leaf-corner-right.png"
+        src="/assets/activities/leaf-corner-right.webp"
         alt=""
         aria-hidden="true"
         width={768}
+        sizes="(min-width: 1024px) 260px, (min-width: 640px) 192px, 173px"
         height={1024}
         className="pointer-events-none absolute bottom-[182px] -right-3 z-0 h-[13.2rem] w-[10.8rem] object-contain sm:bottom-6 sm:-right-12 sm:h-64 sm:w-48 lg:bottom-16 lg:h-80 lg:w-60"
-      />
+       quality={60} />
       <div className="relative z-10 mx-auto max-w-7xl translate-y-5 px-5 sm:translate-y-0 sm:px-8 lg:grid lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] lg:items-center lg:gap-4">
         <motion.div
           initial={{ opacity: reduceMotion ? 1 : 0, clipPath: reduceMotion ? "inset(0 0 0 0)" : "inset(0 100% 0 0)" }}
@@ -178,14 +181,14 @@ export function Activities() {
         >
           <h2 id="activities-heading" className="sr-only">Actividades Next Level</h2>
           <Image
-            src="/assets/activities/activities-title.png"
+            src="/assets/activities/activities-title.webp"
             alt=""
             width={1672}
             height={941}
             sizes="(max-width: 1024px) 231px, 215px"
             className="h-auto w-[min(48vw,190px)] drop-shadow-[0_2px_8px_rgba(3,24,32,0.9)] sm:w-[min(60vw,231px)] lg:w-[215px]"
           />
-          <Image src="/assets/activities/activities-arrow.png" alt="" width={2172} height={724} sizes="169px" className="-mt-2 h-auto w-[min(32vw,130px)] sm:-mt-3 sm:w-[min(44vw,169px)]" />
+          <Image src="/assets/activities/activities-arrow.webp" alt="" width={2172} height={724} sizes="169px" className="-mt-2 h-auto w-[min(32vw,130px)] sm:-mt-3 sm:w-[min(44vw,169px)]" />
         </motion.div>
 
         <motion.div
@@ -233,7 +236,7 @@ export function Activities() {
                     transition={{ duration: reduceMotion ? 0 : 0.72, delay: reduceMotion ? 0 : 0.38 + (relativeOffset === 0 ? 0 : relativeOffset < 0 ? 0.16 : 0.32), ease: [0.22, 1, 0.36, 1] }}
                     className="absolute inset-0"
                   >
-                    <Image src={activity.image} alt={activity.alt} fill sizes="200px" className="object-cover" />
+                    <Image src={activity.image} alt={activity.alt} {...blurProps(activity.image)} fill sizes="200px" className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#031820]/95 via-[#031820]/10 to-transparent" />
                     <h3 className="absolute inset-x-4 bottom-4 px-1 text-center font-edosz text-[13px] uppercase leading-tight text-white drop-shadow-md">
                       {activity.title}
@@ -266,7 +269,7 @@ export function Activities() {
                 className="activities-carousel-card group relative aspect-[4/5] basis-[238px] shrink-0 snap-start overflow-hidden bg-azul-profundo lg:basis-[calc((100%_-_4rem)/5)]"
                 style={{ clipPath: `url(#activity-organic-${index % 3 === 2 ? "b" : "a"})` }}
               >
-                <Image src={activity.image} alt={activity.alt} fill sizes="(max-width: 640px) 200px, (max-width: 1024px) 310px, 22vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045] motion-reduce:transition-none" />
+                <Image src={activity.image} alt={activity.alt} {...blurProps(activity.image)} fill sizes="(max-width: 640px) 200px, (max-width: 1024px) 310px, 22vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045] motion-reduce:transition-none" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#031820]/95 via-[#031820]/10 to-transparent" />
                 <h3 className="absolute inset-x-3 bottom-3 max-w-[calc(100%-1.5rem)] font-edosz text-[13px] uppercase leading-tight text-white drop-shadow-md sm:inset-x-3 sm:bottom-4 sm:text-xl lg:text-base xl:text-lg">
                   {activity.title}

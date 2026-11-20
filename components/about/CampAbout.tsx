@@ -47,7 +47,7 @@ function ExperiencesArtwork({
         className="relative mb-1 aspect-[1698/926] w-full select-none sm:mb-3"
       >
         <Image
-          src="/assets/about/radical-worship-transforming-experiences.png"
+          src="/assets/about/radical-worship-transforming-experiences.webp"
           alt="Experiencias reales que transforman en Radical 2.0"
           fill
           sizes="(max-width: 672px) 100vw, (max-width: 1023px) 672px, 492px"
@@ -204,7 +204,7 @@ export function CampAbout() {
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 672px"
                 className="object-contain object-center pointer-events-none select-none scale-[1.25] sm:scale-100"
-              />
+               quality={60} />
             </div>
           </div>
 

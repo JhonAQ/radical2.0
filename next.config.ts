@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
-    qualities: [75, 95],
+    // AVIF pesa ~20-30 % menos que WebP; los navegadores que no lo soportan reciben WebP.
+    formats: ["image/avif", "image/webp"],
+    // 60: texturas y fondos decorativos, donde la compresión no se nota.
+    qualities: [60, 75, 95],
   },
   turbopack: {
     rules: {

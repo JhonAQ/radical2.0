@@ -8,6 +8,9 @@ import { HeroEventDetails } from "./HeroEventDetails";
 import { HeroCta } from "./HeroCta";
 import { HeroScrollCue } from "./HeroScrollCue";
 
+// Mismo srcset en la versión de celular y la de computadora: el navegador descarga el logo una sola vez.
+const HERO_LOGO_SIZES = "(min-width: 1024px) 500px, (min-width: 768px) 430px, (min-width: 640px) 380px, 85vw";
+
 export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +97,7 @@ export function Hero() {
               variant="principal"
               priority
               width={550}
+              sizes={HERO_LOGO_SIZES}
               className="w-full h-auto object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)] animate-float"
             />
           </div>
@@ -118,7 +122,8 @@ export function Hero() {
             <BrandLogo
               variant="principal"
               priority
-              width={500}
+              width={550}
+              sizes={HERO_LOGO_SIZES}
               className="w-full h-auto object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)]"
             />
           </div>

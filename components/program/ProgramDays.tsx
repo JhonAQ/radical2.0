@@ -47,7 +47,7 @@ export function ProgramDays() {
           animate={sectionIsInView && !reduceMotion ? { y: [0, -4, 0], rotate: [0, 1, 0] } : { y: 0, rotate: 0 }}
           transition={{ duration: reduceMotion ? 0 : 6.5, delay: reduceMotion ? 0 : 1.1, repeat: reduceMotion ? 0 : Infinity, ease: "easeInOut" }}
         >
-          <Image src="/assets/elements/elem-crown-painted-gold.webp" alt="" width={145} height={137} className="h-auto w-full rotate-12 opacity-70" />
+          <Image src="/assets/elements/elem-crown-painted-gold.webp" alt="" width={145} height={137} sizes="144px" className="h-auto w-full rotate-12 opacity-70" />
         </motion.div>
       </motion.div>
 

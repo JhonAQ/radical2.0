@@ -61,8 +61,8 @@ function clearLocalDraft(userId: string) {
 }
 
 const plans = {
-  preventa: { name: "Preventa", price: 200, brush: "/assets/elements/brush-planes-amarillo.png", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
-  regular: { name: "Regular", price: 250, brush: "/assets/elements/brush-planes-turquesa.png", desktopBrush: "/assets/elements/brush-planes-turquesa.png" },
+  preventa: { name: "Preventa", price: 200, brush: "/assets/elements/brush-planes-amarillo.webp", desktopBrush: "/assets/elements/elem-brush-banner-orange.webp" },
+  regular: { name: "Regular", price: 250, brush: "/assets/elements/brush-planes-turquesa.webp", desktopBrush: "/assets/elements/brush-planes-turquesa.webp" },
 } as const;
 const benefits = ["Hospedaje", "Alimentación completa", "Programación y materiales", "Amistad del evento", "Acceso a todas las actividades"];
 const yapePhoneNumber = process.env.NEXT_PUBLIC_YAPE_PHONE || "";
@@ -680,23 +680,23 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
         </div>
       </div>
       <div className="registration-ambient" aria-hidden="true">
-        <Image className="registration-ambient-sand" src="/assets/footer/arena-footer.webp" alt="" width={2172} height={244} />
+        <Image sizes="(max-width: 767px) 180vw, 100vw" className="registration-ambient-sand" src="/assets/footer/arena-footer.webp" alt="" width={2172} height={244}  quality={60} />
         <div className="registration-ambient-left-scene">
-          <Image className="registration-scene-left-bush" src="/assets/footer/arbustos-izquierda.webp" alt="" width={1400} height={933} />
-          <Image className="registration-scene-left-foliage" src="/assets/footer/follaje-lateral-izquierdo.webp" alt="" width={933} height={1400} />
-          <Image className="registration-scene-left-rocks" src="/assets/footer/rocas-izquierda.webp" alt="" width={1400} height={1050} />
-          <Image className="registration-scene-left-flower" src="/assets/elements/elem-hibiscus-flower-red.webp" alt="" width={385} height={382} />
+          <Image sizes="320px" className="registration-scene-left-bush" src="/assets/footer/arbustos-izquierda.webp" alt="" width={1400} height={933} />
+          <Image sizes="160px" className="registration-scene-left-foliage" src="/assets/footer/follaje-lateral-izquierdo.webp" alt="" width={933} height={1400} />
+          <Image sizes="240px" className="registration-scene-left-rocks" src="/assets/footer/rocas-izquierda.webp" alt="" width={1400} height={1050} />
+          <Image sizes="50px" className="registration-scene-left-flower" src="/assets/elements/elem-hibiscus-flower-red.webp" alt="" width={385} height={382} />
         </div>
         <div className="registration-ambient-right-scene">
-          <Image className="registration-scene-right-palm" src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} />
-          <Image className="registration-scene-right-foliage" src="/assets/footer/follaje-lateral-izquierdo.webp" alt="" width={933} height={1400} />
-          <Image className="registration-scene-right-bush" src="/assets/footer/arbustos-inferiores-derechos.webp" alt="" width={1400} height={933} />
-          <Image className="registration-scene-right-rocks" src="/assets/footer/rocas-extremo-derecho.webp" alt="" width={1400} height={467} />
-          <Image className="registration-scene-surfboard" src="/assets/footer/tabla-surf.webp" alt="" width={933} height={1400} />
-          <Image className="registration-scene-backpack" src="/assets/footer/mochila-radical.webp" alt="" width={1199} height={1312} />
-          <Image className="registration-scene-lantern" src="/assets/footer/lampara-radical.webp" alt="" width={933} height={1400} />
+          <Image sizes="270px" className="registration-scene-right-palm" src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} />
+          <Image sizes="110px" className="registration-scene-right-foliage" src="/assets/footer/follaje-lateral-izquierdo.webp" alt="" width={933} height={1400} />
+          <Image sizes="320px" className="registration-scene-right-bush" src="/assets/footer/arbustos-inferiores-derechos.webp" alt="" width={1400} height={933} />
+          <Image sizes="310px" className="registration-scene-right-rocks" src="/assets/footer/rocas-extremo-derecho.webp" alt="" width={1400} height={467} />
+          <Image sizes="150px" className="registration-scene-surfboard" src="/assets/footer/tabla-surf.webp" alt="" width={933} height={1400} />
+          <Image sizes="90px" className="registration-scene-backpack" src="/assets/footer/mochila-radical.webp" alt="" width={1199} height={1312} />
+          <Image sizes="45px" className="registration-scene-lantern" src="/assets/footer/lampara-radical.webp" alt="" width={933} height={1400} />
         </div>
-        <Image className="registration-ambient-birds" src="/assets/elements/elem-flying-birds-flock.webp" alt="" width={459} height={190} />
+        <Image sizes="160px" className="registration-ambient-birds" src="/assets/elements/elem-flying-birds-flock.webp" alt="" width={459} height={190} />
       </div>
       <div className="registration-corners" aria-hidden="true">
         <Image className="registration-corner registration-corner-palm" src="/assets/registration/corner-palm.webp" alt="" width={1536} height={1024} sizes="(min-width: 1440px) 470px, 32vw" />

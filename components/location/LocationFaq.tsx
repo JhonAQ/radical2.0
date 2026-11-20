@@ -10,6 +10,7 @@ import { AnimatedSeabird } from "@/components/common/AnimatedSeabird";
 import { preventaDates } from "@/utils/preventa";
 import { buildFaq } from "@/config/faq";
 import "./LocationFaq.css";
+import { blurProps } from "@/utils/blur-placeholders";
 
 const faqIcons = [BusFront, Wallet, BadgeCheck, Layers3, UsersRound];
 const buildQuestions = (lastDay: string) =>
@@ -63,7 +64,7 @@ export function LocationFaq({ preventaDeadline }: { preventaDeadline: string }) 
       <div className="location-content relative z-10 mx-auto flex max-w-[1500px] flex-col gap-16 px-5 pt-16 pb-5 sm:px-8 sm:pt-20 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 lg:px-12 lg:pt-16 lg:pb-36 xl:gap-16">
         <section id="lugar" aria-labelledby="location-heading" className="min-w-0 scroll-mt-40 lg:border-r lg:border-azul-profundo/20 lg:pr-8">
           <div aria-hidden="true" className="location-brush-background">
-            <Image src="/assets/activities/brush-background-mobile.png" alt="" fill sizes="100vw" className="object-cover object-center" style={{ transform: "translateY(-37px) scaleX(1.2) scaleY(1.1)" }} />
+            <Image src="/assets/activities/brush-background-mobile.webp" alt="" fill sizes="100vw" className="object-cover object-center" style={{ transform: "translateY(-37px) scaleX(1.2) scaleY(1.1)" }}  quality={60} />
             <div className="location-brush-fade" />
           </div>
           <SectionHeading id="location-heading" text="¿Dónde será?" tone="yellow" />
@@ -74,7 +75,7 @@ export function LocationFaq({ preventaDeadline }: { preventaDeadline: string }) 
           <div className="location-visuals">
             <motion.div {...reveal(0.14, 20)} initial={reduceMotion ? false : { opacity: 0, y: 20, rotate: -4 }} whileInView={{ opacity: 1, y: 0, rotate: 0 }} className="min-w-0">
               <div className="location-photo" aria-label="Campamento nocturno en CAMPEL">
-                <Image src="/assets/location/campel-noche.webp" alt="Mesas iluminadas durante una noche de campamento en CAMPEL" fill sizes="(min-width: 1024px) 260px, (min-width: 768px) 45vw, 90vw" className="object-cover object-center" />
+                <Image src="/assets/location/campel-noche.webp" {...blurProps("/assets/location/campel-noche.webp")} alt="Mesas iluminadas durante una noche de campamento en CAMPEL" fill sizes="(min-width: 1024px) 260px, (min-width: 768px) 45vw, 90vw" className="object-cover object-center" />
               </div>
             </motion.div>
             <motion.div {...reveal(0.28, 16)} initial={reduceMotion ? false : { opacity: 0, y: 16, rotate: 4 }} whileInView={{ opacity: 1, y: 0, rotate: 0 }} className="min-w-0">

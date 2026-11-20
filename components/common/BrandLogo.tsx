@@ -9,6 +9,8 @@ interface BrandLogoProps {
   width?: number;
   height?: number;
   alt?: string;
+  /** Ancho real en pantalla; evita descargar una versión más grande de la necesaria. */
+  sizes?: string;
 }
 
 export function BrandLogo({
@@ -18,6 +20,7 @@ export function BrandLogo({
   width,
   height,
   alt = "Radical 2.0 · Next Level · Viviendo Radikalmente",
+  sizes,
 }: BrandLogoProps) {
   const logo = BRAND_LOGOS[variant];
 
@@ -33,6 +36,7 @@ export function BrandLogo({
       width={targetWidth}
       height={targetHeight}
       priority={priority}
+      sizes={sizes}
       className={`h-auto object-contain ${className}`}
     />
   );

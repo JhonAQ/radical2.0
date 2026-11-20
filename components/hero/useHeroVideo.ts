@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import media from "./hero-media.json";
 
-type Connection = EventTarget & { saveData?: boolean; effectiveType?: string };
+type Connection = EventTarget & { saveData?: boolean; effectiveType?: string; downlink?: number };
 
 export function useHeroVideo() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,13 @@ export function useHeroVideo() {
     let cancelScheduled: (() => void) | undefined;
     let cancelFrame: (() => void) | undefined;
 
-    const allowed = () => manualRequestedRef.current || (!reducedMotion.matches && !connection?.saveData && !["slow-2g", "2g"].includes(connection?.effectiveType ?? ""));
+    // Con ahorro de datos o conexión lenta (3G o menos de ~1 Mbps) se queda la imagen fija; el video se puede pedir con el botón.
+    const slowConnection = () =>
+      ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "") ||
+      (typeof connection?.downlink === "number" && connection.downlink > 0 && connection.downlink < 1);
+    const allowed = () => manualRequestedRef.current || (!reducedMotion.matches && !connection?.saveData && !slowConnection());
+    // El video espera a que la página termine de cargar para no quitarle ancho de banda a las imágenes.
+    let pageLoaded = document.readyState === "complete";
     const currentMedia = () => desktop.matches ? media.desktop : media.mobile;
 
     function cancelPending() {
@@ -74,7 +80,7 @@ export function useHeroVideo() {
         video!.pause();
         return;
       }
-      if ((!posterReady && !manualRequestedRef.current) || failed) return;
+      if (((!posterReady || !pageLoaded) && !manualRequestedRef.current) || failed) return;
       if (source) {
         play();
         return;
@@ -179,6 +185,11 @@ export function useHeroVideo() {
       updatePlayback();
     };
     observer.observe(host);
+    const onPageLoad = () => {
+      pageLoaded = true;
+      updatePlayback();
+    };
+    if (!pageLoaded) window.addEventListener("load", onPageLoad, { once: true });
     poster.addEventListener("load", imageLoaded);
     document.addEventListener("visibilitychange", updatePlayback);
     desktop.addEventListener("change", breakpointChanged);
@@ -194,6 +205,7 @@ export function useHeroVideo() {
       generation++;
       cancelPending();
       observer.disconnect();
+      window.removeEventListener("load", onPageLoad);
       poster.removeEventListener("load", imageLoaded);
       document.removeEventListener("visibilitychange", updatePlayback);
       desktop.removeEventListener("change", breakpointChanged);

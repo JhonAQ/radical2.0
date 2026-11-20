@@ -58,7 +58,7 @@ export function FooterBeachScene() {
   return (
     <div className="footer-beach-scene" aria-hidden="true" data-revealed={visible || Boolean(reduceMotion)}>
       <div ref={triggerRef} className="footer-beach-animation-trigger" />
-      <Image src={`${asset}arena-footer.webp`} alt="" width={2172} height={244} sizes="100vw" className="footer-beach-sand" />
+      <Image src={`${asset}arena-footer.webp`} alt="" width={2172} height={244} sizes="100vw" className="footer-beach-sand"  quality={60} />
 
       {birdFlocks.map((flock, index) => <BirdFlock key={flock.className} {...flock} flockIndex={index} />)}
 

@@ -58,7 +58,7 @@ export function PackingList() {
           animate={sectionIsInView && !reduceMotion ? { y: [0, -5, 0], rotate: [0, 1, 0] } : { y: 0, rotate: 0 }}
           transition={{ duration: reduceMotion ? 0 : 7.2, delay: reduceMotion ? 0 : 1.05, repeat: reduceMotion ? 0 : Infinity, ease: "easeInOut" }}
         >
-          <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} className="h-auto w-full scale-x-[-1]" />
+          <Image src="/assets/elements/elem-palm-tree-tall-curved.webp" alt="" width={346} height={544} sizes="(min-width: 640px) 214px, 160px" className="h-auto w-full scale-x-[-1]" />
         </motion.div>
       </motion.div>
       <motion.div
@@ -68,7 +68,7 @@ export function PackingList() {
         className="pointer-events-none absolute bottom-[-24px] -left-28 z-0 w-64 sm:w-80 lg:hidden"
       >
         <div className="-rotate-12 opacity-80">
-          <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} className="h-auto w-full" />
+          <Image src="/assets/textures/t1-01-teal-wide.webp" alt="" width={732} height={252} sizes="(min-width: 640px) 320px, 256px" className="h-auto w-full" />
         </div>
       </motion.div>
       <motion.div
@@ -78,7 +78,7 @@ export function PackingList() {
         className="pointer-events-none absolute bottom-[-8px] right-0 z-0 w-64 sm:w-80 lg:hidden"
       >
         <div className="rotate-[-8deg] scale-y-[-1] opacity-80">
-          <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} className="h-auto w-full" />
+          <Image src="/assets/textures/t1-02-orange-yellow-wide.webp" alt="" width={756} height={212} sizes="(min-width: 640px) 320px, 256px" className="h-auto w-full" />
         </div>
       </motion.div>
 
