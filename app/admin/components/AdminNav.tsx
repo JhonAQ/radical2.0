@@ -81,7 +81,7 @@ export function AdminNav({
             href: "/admin/configuracion",
             label: "Ajustes",
             icon: SlidersHorizontal,
-            active: startsWithAny("/admin/configuracion", "/admin/equipo", "/admin/cuenta"),
+            active: startsWithAny("/admin/configuracion", "/admin/invitaciones", "/admin/equipo", "/admin/cuenta"),
             badge: 0,
           },
         ]

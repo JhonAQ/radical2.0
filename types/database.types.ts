@@ -109,6 +109,87 @@ export type Database = {
           },
         ]
       }
+      registration_deletions: {
+        Row: {
+          deleted_at: string
+          deleted_by: string | null
+          document: string
+          email: string
+          full_name: string
+          id: number
+          registration_id: string
+          snapshot: Json
+          user_id: string | null
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by?: string | null
+          document: string
+          email: string
+          full_name: string
+          id?: never
+          registration_id: string
+          snapshot: Json
+          user_id?: string | null
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string | null
+          document?: string
+          email?: string
+          full_name?: string
+          id?: never
+          registration_id?: string
+          snapshot?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      registration_invites: {
+        Row: {
+          amount_per_person: number
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          label: string
+          note: string
+          plan: string
+          receipt_path: string
+          revoked_at: string | null
+          slots: number
+          token: string
+        }
+        Insert: {
+          amount_per_person: number
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          label: string
+          note: string
+          plan: string
+          receipt_path: string
+          revoked_at?: string | null
+          slots: number
+          token: string
+        }
+        Update: {
+          amount_per_person?: number
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string
+          note?: string
+          plan?: string
+          receipt_path?: string
+          revoked_at?: string | null
+          slots?: number
+          token?: string
+        }
+        Relationships: []
+      }
       registration_payments: {
         Row: {
           amount: number
@@ -236,6 +317,7 @@ export type Database = {
           gender: string
           id: string
           last_name: string
+          invite_id: string | null
           original_receipt_path: string | null
           payment_method: string
           payment_type: string
@@ -264,6 +346,7 @@ export type Database = {
           gender: string
           id?: string
           last_name: string
+          invite_id?: string | null
           original_receipt_path?: string | null
           payment_method?: string
           payment_type: string
@@ -292,6 +375,7 @@ export type Database = {
           gender?: string
           id?: string
           last_name?: string
+          invite_id?: string | null
           original_receipt_path?: string | null
           payment_method?: string
           payment_type?: string
@@ -307,7 +391,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "registrations_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "registration_invites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       todos: {
         Row: {
@@ -340,6 +432,7 @@ export type Database = {
         Args: { p_registration_id: string }
         Returns: string
       }
+      admin_delete_registration: { Args: { p_id: string }; Returns: string[] }
       admin_register_cash_payment: {
         Args: { p_amount: number; p_note?: string; p_registration_id: string }
         Returns: undefined
@@ -361,6 +454,30 @@ export type Database = {
         Returns: undefined
       }
       get_camp_whatsapp_group: { Args: never; Returns: string }
+      get_registration_invite: {
+        Args: { p_token: string }
+        Returns: {
+          amount_per_person: number
+          plan: string
+          slots_left: number
+          state: string
+        }[]
+      }
+      redeem_registration_invite: {
+        Args: {
+          p_birth_date: string
+          p_document: string
+          p_emergency_name: string
+          p_emergency_phone: string
+          p_emergency_relation: string
+          p_first_name: string
+          p_gender: string
+          p_last_name: string
+          p_phone: string
+          p_token: string
+        }
+        Returns: string
+      }
       review_initial_registration: {
         Args: { p_id: string; p_note?: string; p_status: string }
         Returns: undefined

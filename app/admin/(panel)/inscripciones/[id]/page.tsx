@@ -10,7 +10,8 @@ import { CamperReceiptModal } from "../../../components/CamperReceiptModal";
 import { RegistrationDataForm } from "../../../components/RegistrationDataForm";
 import { CashPaymentForm } from "../../../components/CashPaymentForm";
 import { ReviewResolutionForm } from "../../../components/ReviewResolutionForm";
-import { review, reviewPayment } from "../../../actions";
+import { deleteRegistration, review, reviewPayment } from "../../../actions";
+import { ConfirmSubmitButton } from "../../../components/ConfirmSubmitButton";
 import {
   statusLabels,
   type Registration,
@@ -654,6 +655,23 @@ export default async function AdminInscripcionDetailPage({
                 />
               </div>
             </details>
+          )}
+
+          {isMaster && (
+            <form action={deleteRegistration} className="rounded-xl border border-red-200 bg-white p-5 shadow-sm sm:p-6">
+              <input type="hidden" name="id" value={registration.id} />
+              <h2 className="text-sm font-bold text-red-800">Eliminar inscripción</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Borra la inscripción con sus abonos, historial e ingresos. La cuenta de Google sigue existiendo y podrá volver a
+                inscribirse. Se guarda una copia interna de lo eliminado.
+              </p>
+              <ConfirmSubmitButton
+                message={`¿Eliminar la inscripción de ${registration.first_name} ${registration.last_name}? Se borran sus abonos e historial y no se puede deshacer.`}
+                className="mt-3 inline-flex min-h-9 items-center rounded-lg bg-red-600 px-3 text-xs font-bold text-white hover:bg-red-700"
+              >
+                Eliminar inscripción
+              </ConfirmSubmitButton>
+            </form>
           )}
         </div>
       </div>

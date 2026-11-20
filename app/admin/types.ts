@@ -100,6 +100,13 @@ export const errorMessages: Record<string, string> = {
   cash: "No se pudo registrar el efectivo. El monto no puede superar el saldo pendiente; si la inscripción aún no está aprobada, debe ser de S/ 50 como mínimo.",
   checkin: "No se pudo registrar el ingreso. Vuelve a escanear la entrada e inténtalo otra vez.",
   ticket: "Ese código no corresponde a ninguna entrada. Revisa que esté bien escrito.",
+  invite_input:
+    "Revisa la invitación: nombre, detalle, abono entre S/ 50 y el precio del plan, de 1 a 20 cupos y una fecha de vencimiento futura.",
+  invite_receipt: "Sube la captura del pago (JPG, PNG o WebP, hasta 3,5 MB).",
+  invite_create: "No se pudo guardar la invitación. Inténtalo de nuevo.",
+  delete_registration: "No se pudo eliminar la inscripción.",
+  delete_account: "No se pudo eliminar la cuenta.",
+  delete_account_admin: "Esa cuenta es del equipo administrador: retírale el acceso desde Equipo.",
   payment_review:
     "No se pudo actualizar el abono. Comprueba que no supere el saldo pendiente y que la inscripción esté aprobada.",
 };
@@ -118,6 +125,10 @@ export const successMessages: Record<string, string> = {
   admin_password: "Contraseña de la cuenta administradora actualizada.",
   admin: "Administrador creado. Comparte sus credenciales por un canal seguro.",
   removed: "Acceso de administrador retirado.",
+  invite: "Invitación creada. Copia el enlace y envíalo.",
+  invite_revoked: "Invitación desactivada. El enlace ya no sirve.",
+  registration_deleted: "Inscripción eliminada.",
+  account_deleted: "Cuenta eliminada.",
 };
 
 export const adminInputClass =

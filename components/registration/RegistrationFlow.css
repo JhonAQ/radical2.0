@@ -1018,3 +1018,10 @@
 .registration-whatsapp-text{display:grid;gap:2px;flex:1;min-width:0}
 .registration-whatsapp-text strong{font-size:14px;font-weight:800}
 .registration-whatsapp-text span{font-size:12px;line-height:1.4;color:#2f6146}
+
+/* Inscripción por invitación: el abono ya lo recibió el equipo. */
+.registration-invite-paid{display:flex;align-items:flex-start;gap:16px}
+.registration-invite-paid-icon{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#dcf6f0;color:#008d98}
+.registration-invite-paid strong{display:block;font-size:17px;font-weight:900;color:#0b2d36}
+.registration-invite-paid p{margin-top:8px;color:#5c7374;font-size:13px;line-height:1.6}
+.registration-invite-paid p b{color:#0b2d36}

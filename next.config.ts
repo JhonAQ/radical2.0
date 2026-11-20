@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["10.174.213.249"],
+  experimental: {
+    // La captura del pago de una invitación se sube con una Server Action (Vercel admite hasta 4,5 MB).
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   async headers() {
     return [{
       source: "/assets/hero/video/:path*",

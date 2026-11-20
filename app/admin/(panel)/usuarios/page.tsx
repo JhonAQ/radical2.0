@@ -1,11 +1,14 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, Trash2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { serviceClient } from "@/utils/supabase/service";
 import { adminInputClass } from "../../types";
 import { StatusBadge } from "../../components/StatusBadge";
+import { FlashMessage } from "../../components/FlashMessage";
+import { ConfirmSubmitButton } from "../../components/ConfirmSubmitButton";
+import { deleteAccount } from "../../actions";
 
 export const metadata = { title: "Cuentas | Radical 2.0" };
 
@@ -72,7 +75,7 @@ function Tags({ row }: { row: Row }) {
 export default async function UsuariosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ver?: string; q?: string }>;
+  searchParams: Promise<{ ver?: string; q?: string; error?: string; success?: string }>;
 }) {
   const params = await searchParams;
   const view: View = params.ver === "sin" || params.ver === "con" ? params.ver : "todos";
@@ -87,6 +90,8 @@ export default async function UsuariosPage({
     ? await client.from("admin_users").select("role").eq("user_id", user.id).maybeSingle()
     : { data: null };
   if (!user || !membership) return null;
+  const isMaster = membership.role === "master";
+  const returnTo = `/admin/usuarios?${new URLSearchParams({ ...(view !== "todos" ? { ver: view } : {}), ...(q ? { q } : {}) }).toString()}`;
 
   const admin = serviceClient();
   if (!admin) {
@@ -143,6 +148,7 @@ export default async function UsuariosPage({
         <h1 className="text-2xl font-bold tracking-tight text-[#0a3039] sm:text-3xl">{titles[view].title}</h1>
         <p className="mt-1 max-w-2xl text-sm text-[#5f7a75]">{titles[view].description}</p>
       </div>
+      <FlashMessage error={params.error} success={params.success} />
 
       <section className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
@@ -177,6 +183,7 @@ export default async function UsuariosPage({
               <th className="hidden px-4 py-2.5 font-semibold sm:table-cell">Inscripción</th>
               <th className="hidden px-4 py-2.5 font-semibold md:table-cell">Cuenta creada</th>
               <th className="hidden px-4 py-2.5 font-semibold lg:table-cell">Último ingreso</th>
+              {isMaster && <th className="w-10"><span className="sr-only">Eliminar</span></th>}
               <th className="w-8" aria-hidden />
             </tr>
           </thead>
@@ -218,6 +225,27 @@ export default async function UsuariosPage({
                 <td className="hidden px-4 py-2.5 text-xs text-[#52716f] lg:table-cell">
                   {r.lastSignInAt ? timeFmt.format(new Date(r.lastSignInAt)) : "—"}
                 </td>
+                {isMaster && (
+                  <td className="px-1 py-2.5">
+                    {!r.role && r.id !== user.id && (
+                      <form action={deleteAccount} className="relative z-10">
+                        <input type="hidden" name="id" value={r.id} />
+                        <input type="hidden" name="return_to" value={returnTo} />
+                        <ConfirmSubmitButton
+                          ariaLabel={`Eliminar la cuenta de ${r.name || r.email}`}
+                          message={
+                            r.registration
+                              ? `¿Eliminar la cuenta ${r.email}? También se borra su inscripción con sus abonos e historial. No se puede deshacer.`
+                              : `¿Eliminar la cuenta ${r.email}? No se puede deshacer.`
+                          }
+                          className="grid size-8 place-items-center rounded-lg text-[#9cb2ac] hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 size={15} aria-hidden />
+                        </ConfirmSubmitButton>
+                      </form>
+                    )}
+                  </td>
+                )}
                 <td className="pr-3 text-[#9cb2ac]">{r.registration && <ChevronRight size={15} aria-hidden />}</td>
               </tr>
             ))}

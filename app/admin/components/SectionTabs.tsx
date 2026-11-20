@@ -35,11 +35,12 @@ export function SectionTabs({ isMaster }: { isMaster: boolean }) {
         { href: "/admin/qr-abonos", label: "QR para abonar", active: pathname === "/admin/qr-abonos" },
       ],
     };
-  } else if (isMaster && ["/admin/configuracion", "/admin/equipo", "/admin/cuenta"].includes(pathname)) {
+  } else if (isMaster && ["/admin/configuracion", "/admin/invitaciones", "/admin/equipo", "/admin/cuenta"].includes(pathname)) {
     section = {
       label: "Ajustes",
       tabs: [
         { href: "/admin/configuracion", label: "Configuración", active: pathname === "/admin/configuracion" },
+        { href: "/admin/invitaciones", label: "Invitaciones", active: pathname === "/admin/invitaciones" },
         { href: "/admin/equipo", label: "Equipo", active: pathname === "/admin/equipo" },
         { href: "/admin/cuenta", label: "Mi cuenta", active: pathname === "/admin/cuenta" },
       ],

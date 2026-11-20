@@ -10,6 +10,8 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 import { createClient } from "@/utils/supabase/client";
 import { WhatsAppMark } from "@/components/common/WhatsAppMark";
 import { preventaDates } from "@/utils/preventa";
+import type { InviteInfo } from "@/utils/invite";
+import { redeemInvite, type RedeemResult } from "@/app/inscripcion/actions";
 
 import "./RegistrationFlow.css";
 
@@ -193,13 +195,23 @@ function RegistrationProgress({ currentStep, className }: { currentStep: number;
   })}</nav>;
 }
 
-export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName }: { preventaDeadline: string; initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string }) {
+const inviteErrors: Record<Exclude<RedeemResult, { ok: true }>["error"], string> = {
+  invite: "Tu enlace de invitación ya no es válido. Pide uno nuevo a quien te lo envió.",
+  full: "Ya se usaron todos los cupos de tu enlace de invitación. Escríbele a quien te lo envió.",
+  closed: "Tu enlace de invitación venció o fue desactivado. Escríbele a quien te lo envió.",
+  registered: "Esta cuenta ya tiene una inscripción.",
+  document: "Ese documento ya tiene una inscripción. Si es tuyo, entra con la cuenta con la que te inscribiste.",
+  data: "Revisa tus datos: documento de 6 a 12 caracteres, fecha de nacimiento y teléfonos válidos.",
+  unknown: "No pudimos enviar tu inscripción. Inténtalo de nuevo en un momento.",
+};
+
+export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEmail, avatarUrl, initialFirstName, initialLastName, invite = null }: { preventaDeadline: string; initialPlan: PlanId | null; userId: string; userEmail: string; avatarUrl: string | null; initialFirstName: string; initialLastName: string; invite?: InviteInfo | null }) {
   const [step, setStep] = useState(0);
   const [whatsappGroupUrl, setWhatsappGroupUrl] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const navigationLocked = useRef(false);
   const navigationTimer = useRef<number | null>(null);
-  const [plan, setPlan] = useState<PlanId | null>(() => Number.isFinite(Date.parse(preventaDeadline)) && Date.now() >= Date.parse(preventaDeadline) && (initialPlan ?? "preventa") === "preventa" ? "regular" : initialPlan ?? "preventa");
+  const [plan, setPlan] = useState<PlanId | null>(() => invite ? invite.plan : Number.isFinite(Date.parse(preventaDeadline)) && Date.now() >= Date.parse(preventaDeadline) && (initialPlan ?? "preventa") === "preventa" ? "regular" : initialPlan ?? "preventa");
   const [participant, setParticipant] = useState<Participant>({ firstName: initialFirstName, lastName: initialLastName, document: "", birthDate: "", gender: "" });
   const [contact, setContact] = useState<Contact>({ phone: "", email: userEmail, emergencyName: "", emergencyRelation: "", emergencyPhone: "" });
   const [payment, setPayment] = useState<"reserve" | "full">("reserve");
@@ -224,12 +236,12 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
   const dates = preventaDates(preventaDeadline);
   const preventaDeadlineMs = Date.parse(preventaDeadline);
   const [preventaClosed, setPreventaClosed] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs);
-  const [preventaNotice, setPreventaNotice] = useState(() => Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs && initialPlan === "preventa");
+  const [preventaNotice, setPreventaNotice] = useState(() => !invite && Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs && initialPlan === "preventa");
   const [birthDateInvalid, setBirthDateInvalid] = useState(false);
   const [permitAck, setPermitAck] = useState(false);
   const isMinor = isMinorAtCamp(participant.birthDate);
   const selected = plan ? plans[plan] : null;
-  const amount = payment === "reserve" ? Math.min(reserveAmount, selected?.price ?? reserveAmount) : selected?.price ?? 0;
+  const amount = invite ? invite.amount : payment === "reserve" ? Math.min(reserveAmount, selected?.price ?? reserveAmount) : selected?.price ?? 0;
   const remaining = selected ? selected.price - amount : 0;
   const dataComplete = Object.values(participant).every((value) => value.trim()) && /^[a-zA-Z0-9]{6,12}$/.test(participant.document.replace(/\s/g, "")) && !Number.isNaN(Date.parse(participant.birthDate)) && (!isMinor || permitAck);
   const contactComplete = Object.values(contact).every((value) => value.trim()) && /^\d{9,15}$/.test(contact.phone.replace(/[\s+()-]/g, "")) && /^\d{9,15}$/.test(contact.emergencyPhone.replace(/[\s+()-]/g, ""));
@@ -251,6 +263,8 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
   } : {};
 
   const closePreventa = useEffectEvent(() => {
+    // Con invitación el plan ya está pagado: la preventa se respeta aunque cierre.
+    if (invite) return;
     setPreventaClosed(true);
     setPlan((current) => (current === "preventa" ? "regular" : current));
     if (registrationId === null) setPreventaNotice(true);
@@ -300,7 +314,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
           const draft = JSON.parse(saved) as Partial<RegistrationDraft>;
           if (draft.version === 1) {
             if (Number.isInteger(draft.step) && (draft.step ?? -1) >= 0 && (draft.step ?? 6) <= 5) setStep(Math.min(draft.step!, 4));
-            if (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular") setPlan(draft.plan === "preventa" && Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs ? "regular" : draft.plan);
+            if (!invite && (draft.plan === null || draft.plan === "preventa" || draft.plan === "regular")) setPlan(draft.plan === "preventa" && Number.isFinite(preventaDeadlineMs) && Date.now() >= preventaDeadlineMs ? "regular" : draft.plan);
             if (draft.participant && Object.values(draft.participant).every((value) => typeof value === "string")) setParticipant(draft.participant);
             if (draft.contact && Object.values(draft.contact).every((value) => typeof value === "string")) setContact({ ...draft.contact, email: userEmail });
             if (draft.payment === "reserve" || draft.payment === "full") setPayment(draft.payment);
@@ -326,6 +340,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
     }
     void restoreDraft();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- la invitación no cambia durante la sesión
   }, [userEmail, userId, preventaDeadlineMs]);
 
   useEffect(() => {
@@ -443,7 +458,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
       setValidationStep(step);
       return;
     }
-    if (step === 3 && (!receiptPreviewUrl || Boolean(receiptError) || (payment === "reserve" && (!selected || !Number.isFinite(reserveAmount) || reserveAmount < 50 || reserveAmount > selected.price)))) {
+    if (step === 3 && !invite && (!receiptPreviewUrl || Boolean(receiptError) || (payment === "reserve" && (!selected || !Number.isFinite(reserveAmount) || reserveAmount < 50 || reserveAmount > selected.price)))) {
       setPaymentError(!receiptPreviewUrl || receiptError ? "Sube el comprobante de pago para continuar." : `El abono debe ser desde S/50 y no superar S/${selected?.price ?? 0}.`);
       return;
     }
@@ -456,6 +471,30 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
       if (!plan || !selected) { setStep(0); setValidationStep(0); return; }
       if (!dataComplete || invalidDate) { setBirthDateInvalid(invalidDate); setStep(1); setValidationStep(1); return; }
       if (!contactComplete) { setStep(2); setValidationStep(2); return; }
+      if (invite) {
+        if (submitLock.current) return;
+        submitLock.current = true;
+        setSubmitting(true);
+        setSubmitError("");
+        try {
+          const result = await redeemInvite({ firstName: participant.firstName.trim(), lastName: participant.lastName.trim(), document: participant.document.replace(/\s/g, ""), birthDate: participant.birthDate, gender: participant.gender, phone: contact.phone.trim(), emergencyName: contact.emergencyName.trim(), emergencyRelation: contact.emergencyRelation, emergencyPhone: contact.emergencyPhone.trim() });
+          if (!result.ok) {
+            setSubmitError(inviteErrors[result.error]);
+            return;
+          }
+          setRegistrationStatus("approved");
+          setRegistrationId(result.id);
+          clearLocalDraft(userId);
+          setStep(5);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          setSubmitError("No pudimos conectar con el servidor. Tus datos siguen guardados en este dispositivo; inténtalo de nuevo.");
+        } finally {
+          submitLock.current = false;
+          setSubmitting(false);
+        }
+        return;
+      }
       if (!receiptBlobRef.current || !receiptPreviewUrl || receiptError || (payment === "reserve" && (!Number.isInteger(reserveAmount) || reserveAmount < 50 || reserveAmount > selected.price))) {
         setStep(3); setPaymentError("Revisa el monto y vuelve a subir tu comprobante para continuar."); return;
       }
@@ -560,7 +599,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
               <RegistrationProgress currentStep={step} className="registration-progress--mobile" />
               <div className="registration-heading">
                 <h1 id="registration-title" aria-label={titles[step].replace("\n", " ")}><StaggeredTitle text={titles[step]} /></h1>
-                <p>{subtitles[step]}</p>
+                <p>{invite && step === 0 ? "Tu plan ya está definido por tu invitación." : invite && step === 3 ? "Tu abono ya fue recibido por el equipo." : subtitles[step]}</p>
                 <div className="registration-film-reels-slot">
                   <CampFilmReels />
                 </div>
@@ -568,8 +607,8 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
 
               {step === 0 && <div className="registration-plans" role="radiogroup" aria-label="Plan de inscripción">
                 {(Object.entries(plans) as [PlanId, typeof plans[PlanId]][]).map(([id, item]) => (
-                  <label key={id} className={`registration-plan ${plan === id ? "is-selected" : ""}`} style={id === "preventa" && preventaClosed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}>
-                    <input type="radio" name="registration-plan" value={id} checked={plan === id} disabled={id === "preventa" && preventaClosed} onChange={() => setPlan(id)} />
+                  <label key={id} className={`registration-plan ${plan === id ? "is-selected" : ""}`} style={(invite ? id !== invite.plan : id === "preventa" && preventaClosed) ? { opacity: 0.55, cursor: "not-allowed" } : undefined}>
+                    <input type="radio" name="registration-plan" value={id} checked={plan === id} disabled={invite ? id !== invite.plan : id === "preventa" && preventaClosed} onChange={() => { if (!invite) setPlan(id); }} />
                     <span className="registration-plan-watermark" aria-hidden="true">
                       <span className="registration-plan-watermark-birds">
                         <Image className="registration-plan-bird registration-plan-bird-1" src="/assets/elements/elem-flying-bird-single-1.webp" alt="" width={170} height={81} sizes="34px" />
@@ -591,7 +630,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                     <span className="registration-plan-check"><Check size={16} strokeWidth={3} /></span>
                     <strong>{item.name}</strong>
                     <span className="registration-plan-price"><small>S/</small>{item.price}</span>
-                    <span className="registration-plan-date">{id === "preventa" ? `Hasta el ${dates.lastDay}` : `Desde el ${dates.firstRegularDay}`}</span>
+                    <span className="registration-plan-date">{invite?.plan === id ? "Asignado por tu invitación" : id === "preventa" ? `Hasta el ${dates.lastDay}` : `Desde el ${dates.firstRegularDay}`}</span>
                     <span className="registration-plan-benefits">{benefits.map((benefit) => <span key={benefit}><Check size={15} strokeWidth={3} />{benefit}</span>)}</span>
                     <span className="registration-plan-selector" aria-hidden="true"><span /></span>
                   </label>
@@ -621,7 +660,16 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                 <div className="registration-emergency"><h2>Contacto de emergencia</h2><div className="registration-form-grid"><label className={contactErrors.emergencyName ? "registration-field-invalid" : ""}><span className="registration-field-label"><UserRound /> Nombre completo</span><input aria-required="true" aria-invalid={contactErrors.emergencyName ? true : undefined} aria-describedby={contactErrors.emergencyName ? "emergency-name-error" : undefined} autoComplete="off" value={contact.emergencyName} onChange={(e) => updateContact("emergencyName", e.target.value)} placeholder="Nombre y apellidos" /><FieldValidationMessage id="emergency-name-error" message={contactErrors.emergencyName} /></label><label className={contactErrors.emergencyRelation ? "registration-field-invalid" : ""}><span className="registration-field-label"><UsersRound /> Parentesco</span><select aria-required="true" aria-invalid={contactErrors.emergencyRelation ? true : undefined} aria-describedby={contactErrors.emergencyRelation ? "emergency-relation-error" : undefined} value={contact.emergencyRelation} onChange={(e) => updateContact("emergencyRelation", e.target.value)}><option value="">Selecciona</option><option>Madre</option><option>Padre</option><option>Familiar</option><option>Apoderado</option><option>Otro</option></select><FieldValidationMessage id="emergency-relation-error" message={contactErrors.emergencyRelation} /></label><label className={`registration-field-wide ${contactErrors.emergencyPhone ? "registration-field-invalid" : ""}`}><span className="registration-field-label"><Phone /> Celular de emergencia</span><input aria-required="true" aria-invalid={contactErrors.emergencyPhone ? true : undefined} aria-describedby={contactErrors.emergencyPhone ? "emergency-phone-error" : undefined} type="tel" value={contact.emergencyPhone} onChange={(e) => updateContact("emergencyPhone", e.target.value)} placeholder="+51 987 987 654" /><FieldValidationMessage id="emergency-phone-error" message={contactErrors.emergencyPhone} /></label></div></div>
               </form>}
 
-              {step === 3 && <div className="registration-payment-composition">
+              {step === 3 && invite && <div className="registration-review registration-invite-paid" role="status">
+                <span className="registration-invite-paid-icon"><CheckCircle2 size={28} aria-hidden /></span>
+                <div>
+                  <strong>Tu abono de S/{invite.amount} ya está registrado</strong>
+                  <p>El equipo recibió tu pago, así que no necesitas pagar ni subir comprobante. Al enviar el formulario tu inscripción queda aprobada.</p>
+                  {remaining > 0 && <p>Te quedará un saldo de <b>S/{remaining}</b>, que podrás pagar desde tu espacio cuando quieras.</p>}
+                </div>
+              </div>}
+
+              {step === 3 && !invite && <div className="registration-payment-composition">
                 <div className="registration-payment-method"><div className="registration-payment-info"><div><strong>2. Paga con Plin</strong><p>{yapePhoneNumber ? "Escanea el QR o usa el número de celular." : "Escanea el QR para realizar tu pago."}</p></div></div><Image className="registration-payment-qr" src="/assets/registration/payment-qr.png" alt="Código QR de Plin para realizar el pago de inscripción" width={220} height={222} /><div className="registration-yape-details">{yapeHolder && <strong>{yapeHolder}</strong>}{yapePhoneNumber && <div className="registration-yape-number"><span>{yapePhoneNumber}</span><button type="button" onClick={() => void copyYapePhone()}><Copy size={14} />{yapePhoneCopied ? "Copiado" : "Copiar"}</button></div>}<a href="/assets/registration/payment-qr.png" download="qr-plin-inscripcion.png"><Download size={15} />Descargar QR</a></div></div>
                 <div className="registration-payment">
                   <div className="registration-payment-options">
@@ -644,7 +692,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                 <div className="registration-review-row"><span>Correo</span><strong>{contact.email}</strong></div>
                 <div className="registration-review-row"><span>Emergencia</span><strong>{contact.emergencyName} · {contact.emergencyRelation}<br />{contact.emergencyPhone}</strong></div>
                 <div className="registration-review-row"><span>Plan</span><strong>{selected?.name} · S/{selected?.price}</strong></div>
-                <div className="registration-review-row"><span>Primer abono</span><strong>S/{amount}</strong></div>
+                <div className="registration-review-row"><span>Primer abono</span><strong>S/{amount}{invite ? " · ya pagado" : ""}</strong></div>
                 <div className="registration-review-row"><span>Saldo posterior</span><strong>S/{remaining}</strong></div>
                 <label className={`registration-consent ${showStepErrors && !consent ? "registration-field-invalid" : ""}`}><input type="checkbox" aria-invalid={showStepErrors && !consent ? true : undefined} aria-describedby={showStepErrors && !consent ? "consent-error" : undefined} checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>Revisé mis datos y autorizo su uso para gestionar mi inscripción.</span>{showStepErrors && !consent && <FieldValidationMessage id="consent-error" message="Confirma que revisaste la información." />}</label>
                 {submitError && <p className="registration-error" role="alert">{submitError}</p>}
@@ -654,7 +702,7 @@ export function RegistrationFlow({ preventaDeadline, initialPlan, userId, userEm
                 <div className="registration-ticket-icon"><Ticket size={38} /></div>
                 <span className="registration-preview-tag">INSCRIPCIÓN ENVIADA</span>
                 <h2>{registrationStatus === "approved" ? "¡Tu inscripción fue aprobada!" : registrationStatus === "rejected" ? "Tu comprobante necesita revisión" : "Estamos revisando tu inscripción"}</h2>
-                <p>{registrationStatus === "rejected" ? "Comunícate con el equipo para revisar tu comprobante." : "El equipo revisará tu comprobante y actualizará el estado de tu inscripción."}</p>
+                <p>{registrationStatus === "rejected" ? "Comunícate con el equipo para revisar tu comprobante." : registrationStatus === "approved" ? "Tu cupo está asegurado. Desde tu espacio puedes ver tu entrada y pagar el saldo." : "El equipo revisará tu comprobante y actualizará el estado de tu inscripción."}</p>
                 {registrationStatus === "rejected" && reviewNote && <p>Nota del equipo: {reviewNote}</p>}
                 <div className="registration-ticket-status"><Clock3 size={19} /><span>{registrationStatus === "approved" ? "Pago aprobado" : registrationStatus === "rejected" ? "Comprobante observado" : "Pendiente de revisión"}</span></div>
                 {whatsappGroupUrl && registrationStatus !== "rejected" && <a href={whatsappGroupUrl} target="_blank" rel="noopener noreferrer" className="registration-whatsapp">

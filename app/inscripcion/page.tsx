@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { RegistrationFlow } from "@/components/registration/RegistrationFlow";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { INVITE_COOKIE, isInviteToken, type InviteInfo } from "@/utils/invite";
 
 export const metadata: Metadata = {
   title: "Inscripción",
@@ -12,7 +14,8 @@ export const metadata: Metadata = {
 export default async function RegistrationPage({ searchParams }: {
   searchParams: Promise<{ plan?: string | string[] }>;
 }) {
-  const supabase = createClient(await cookies());
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
@@ -45,7 +48,34 @@ export default async function RegistrationPage({ searchParams }: {
     .maybeSingle();
   const preventaDeadline = settings?.preventa_deadline ?? "2026-12-16T00:00:00-05:00";
 
+  // Invitación con pago ya recibido (llega por /invitacion/<código>, que deja el código en una cookie).
+  const inviteToken = cookieStore.get(INVITE_COOKIE)?.value;
+  let invite: InviteInfo | null = null;
+  if (isInviteToken(inviteToken)) {
+    const { data } = await supabase.rpc("get_registration_invite", { p_token: inviteToken });
+    const row = Array.isArray(data) ? data[0] : null;
+    if (row && (row.plan === "preventa" || row.plan === "regular")) {
+      invite = { plan: row.plan, amount: row.amount_per_person, slotsLeft: row.slots_left, state: row.state as InviteInfo["state"] };
+    }
+  }
+  if (invite && invite.state !== "open") {
+    const reason = invite.state === "full"
+      ? "Ya se usaron todos los cupos de este enlace."
+      : invite.state === "expired"
+        ? "Este enlace ya venció."
+        : "Este enlace fue desactivado.";
+    return (
+      <main className="grid min-h-svh place-items-center bg-[#faf7ed] px-6 text-[#0b2d36]">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-2xl font-black">El enlace de invitación no está disponible</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[#49676c]">{reason} Si ya pagaste, escríbele a quien te envió el enlace para que te ayude.</p>
+          <Link href="/invitacion/salir" className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-[#ffc629] px-5 font-bold">Inscribirme de forma normal</Link>
+        </div>
+      </main>
+    );
+  }
+
   const { plan } = await searchParams;
   const selectedPlan = typeof plan === "string" && (plan === "preventa" || plan === "regular") ? plan : null;
-  return <RegistrationFlow preventaDeadline={preventaDeadline} initialPlan={selectedPlan} userId={user.id} userEmail={user.email ?? ""} avatarUrl={avatarUrl} initialFirstName={firstName} initialLastName={lastName} />;
+  return <RegistrationFlow preventaDeadline={preventaDeadline} initialPlan={selectedPlan} userId={user.id} userEmail={user.email ?? ""} avatarUrl={avatarUrl} initialFirstName={firstName} initialLastName={lastName} invite={invite} />;
 }

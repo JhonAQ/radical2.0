@@ -412,3 +412,125 @@ export async function updateCampSettings(form: FormData) {
   revalidatePath("/", "layout");
   redirect("/admin/configuracion?success=settings");
 }
+
+// ─── Invitaciones con pago ya recibido (solo cuenta maestra) ─────────────────
+
+const receiptTypes: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+export async function createInvite(form: FormData) {
+  const context = await adminContext(true);
+  if (!context) redirect("/admin?error=access");
+  const label = String(form.get("label") || "").trim().slice(0, 100);
+  const note = String(form.get("note") || "").trim().slice(0, 500);
+  const plan = String(form.get("plan") || "");
+  const amount = Number(form.get("amount"));
+  const slots = Number(form.get("slots"));
+  const expiresRaw = String(form.get("expires") || "");
+  const receipt = form.get("receipt");
+  const price = plan === "preventa" ? 200 : plan === "regular" ? 250 : 0;
+  if (
+    !label || !note || !price ||
+    !Number.isInteger(amount) || amount < 50 || amount > price ||
+    !Number.isInteger(slots) || slots < 1 || slots > 20
+  )
+    redirect("/admin/invitaciones?error=invite_input");
+  // Vence al final del día elegido (hora de Lima).
+  const expires = /^\d{4}-\d{2}-\d{2}$/.test(expiresRaw) ? new Date(`${expiresRaw}T23:59:59-05:00`) : null;
+  if (expires && (Number.isNaN(expires.getTime()) || expires.getTime() <= Date.now()))
+    redirect("/admin/invitaciones?error=invite_input");
+  if (!(receipt instanceof File) || !receiptTypes[receipt.type] || receipt.size === 0 || receipt.size > 3.5 * 1024 * 1024)
+    redirect("/admin/invitaciones?error=invite_receipt");
+
+  const path = `${context.user.id}/invitacion-${crypto.randomUUID()}.${receiptTypes[receipt.type]}`;
+  const { error: uploadError } = await context.client.storage
+    .from("registration-receipts")
+    .upload(path, receipt, { contentType: receipt.type });
+  if (uploadError) redirect("/admin/invitaciones?error=invite_receipt");
+
+  const token = Buffer.from(crypto.getRandomValues(new Uint8Array(18))).toString("base64url");
+  const { data, error } = await context.client
+    .from("registration_invites")
+    .insert({
+      token,
+      label,
+      note,
+      plan,
+      amount_per_person: amount,
+      slots,
+      receipt_path: path,
+      expires_at: expires ? expires.toISOString() : null,
+      created_by: context.user.id,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    await context.client.storage.from("registration-receipts").remove([path]);
+    redirect("/admin/invitaciones?error=invite_create");
+  }
+  revalidatePath("/admin/invitaciones");
+  redirect(`/admin/invitaciones?success=invite&nuevo=${data.id}`);
+}
+
+export async function revokeInvite(form: FormData) {
+  const context = await adminContext(true);
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/invitaciones?error=invite_create");
+  const { error } = await context.client
+    .from("registration_invites")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("revoked_at", null);
+  revalidatePath("/admin/invitaciones");
+  redirect(`/admin/invitaciones?${error ? "error=invite_create" : "success=invite_revoked"}`);
+}
+
+// ─── Eliminar inscripciones y cuentas (solo cuenta maestra) ──────────────────
+
+/** Borra la inscripción (con abonos, historial e ingresos) y los comprobantes que ya nadie usa. */
+async function removeRegistration(context: NonNullable<Awaited<ReturnType<typeof adminContext>>>, id: string) {
+  const { data: paths, error } = await context.client.rpc("admin_delete_registration", { p_id: id });
+  if (error) return false;
+  const service = serviceClient();
+  if (service && paths?.length) await service.storage.from("registration-receipts").remove(paths);
+  return true;
+}
+
+export async function deleteRegistration(form: FormData) {
+  const context = await adminContext(true);
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/inscripciones?error=delete_registration");
+  const ok = await removeRegistration(context, id);
+  revalidatePath("/admin", "layout");
+  revalidatePath("/mi-inscripcion", "layout");
+  if (!ok) redirect(`/admin/inscripciones/${id}?error=delete_registration`);
+  redirect("/admin/inscripciones?success=registration_deleted");
+}
+
+export async function deleteAccount(form: FormData) {
+  const context = await adminContext(true);
+  if (!context) redirect("/admin?error=access");
+  const id = String(form.get("id") || "");
+  const back = String(form.get("return_to") || "/admin/usuarios");
+  const returnTo = back.startsWith("/admin/usuarios") ? back : "/admin/usuarios";
+  const sep = returnTo.includes("?") ? "&" : "?";
+  if (!/^[0-9a-f-]{36}$/i.test(id) || id === context.user.id) redirect(`${returnTo}${sep}error=delete_account`);
+  const service = serviceClient();
+  if (!service) redirect(`${returnTo}${sep}error=configuration`);
+  // Las cuentas del equipo se gestionan desde Equipo.
+  const { data: member } = await service.from("admin_users").select("user_id").eq("user_id", id).maybeSingle();
+  if (member) redirect(`${returnTo}${sep}error=delete_account_admin`);
+
+  const { data: registration } = await service.from("registrations").select("id").eq("user_id", id).maybeSingle();
+  if (registration && !(await removeRegistration(context, registration.id)))
+    redirect(`${returnTo}${sep}error=delete_account`);
+
+  // Supabase no borra una cuenta que aún tiene archivos: se limpian sus comprobantes.
+  const { data: files } = await service.storage.from("registration-receipts").list(id, { limit: 1000 });
+  if (files?.length) await service.storage.from("registration-receipts").remove(files.map((f) => `${id}/${f.name}`));
+
+  const { error } = await service.auth.admin.deleteUser(id);
+  revalidatePath("/admin", "layout");
+  redirect(`${returnTo}${sep}${error ? "error=delete_account" : "success=account_deleted"}`);
+}
