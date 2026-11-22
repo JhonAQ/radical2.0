@@ -31,6 +31,7 @@ export function RadicalPlaylist() {
   const swipeStart = useRef<{ pointerId: number; y: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [isOutsideHero, setIsOutsideHero] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [audioFailed, setAudioFailed] = useState(false);
@@ -41,6 +42,17 @@ export function RadicalPlaylist() {
   const [attempt, setAttempt] = useState(0);
   const track = tracks[selectedIndex ?? 0];
   const videoId = track.videoId;
+
+  useEffect(() => {
+    const hero = document.getElementById("inicio");
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsOutsideHero(!entry.isIntersecting);
+    });
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -117,16 +129,18 @@ export function RadicalPlaylist() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[100] lg:inset-x-6 lg:bottom-6" onKeyDown={(event) => { if (isOpen && event.key === "Escape") closePlayer(); }}>
+    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-[101] flex justify-end lg:inset-x-6 lg:bottom-23" onKeyDown={(event) => { if (isOpen && event.key === "Escape") closePlayer(); }}>
       <button
         ref={triggerRef}
         type="button"
+        aria-label="Playlist Radical"
         aria-expanded={isOpen}
         aria-controls={isOpen ? "playlist-radical" : undefined}
+        disabled={!isOutsideHero}
         onClick={() => isOpen ? closePlayer() : setIsOpen(true)}
-        className="pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full bg-amarillo px-4 text-sm font-bold text-azul-profundo shadow-[0_8px_24px_rgba(11,45,54,0.25)] transition-colors hover:bg-crema focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-turquesa"
+        className={`grid size-11 place-items-center rounded-full bg-amarillo text-azul-profundo shadow-[0_8px_24px_rgba(11,45,54,0.25)] transition-[opacity,transform,background-color] duration-200 hover:bg-crema focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-turquesa motion-reduce:transition-none ${isOutsideHero ? "pointer-events-auto opacity-100" : "translate-y-2 opacity-0"}`}
       >
-        <Headphones aria-hidden="true" className="size-5" /> Playlist Radical
+        <Headphones aria-hidden="true" className="size-5" />
       </button>
 
       <dialog ref={dialogRef}
@@ -136,7 +150,7 @@ export function RadicalPlaylist() {
           const rect = event.currentTarget.getBoundingClientRect();
           if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) closePlayer();
         }}
-        id="playlist-radical" inert={!isOpen} data-open={isOpen} aria-labelledby="playlist-heading" className="radical-player-panel pointer-events-auto absolute bottom-[calc(100%+0.75rem)] left-0 flex max-h-[min(38rem,calc(100dvh-6.25rem-env(safe-area-inset-bottom)))] w-full max-w-[25rem] flex-col overflow-hidden rounded-2xl bg-azul-profundo text-crema shadow-[0_14px_40px_rgba(11,45,54,0.36)]">
+        id="playlist-radical" inert={!isOpen} data-open={isOpen} aria-labelledby="playlist-heading" className="radical-player-panel pointer-events-auto absolute right-0 bottom-[calc(100%+0.75rem)] flex max-h-[min(38rem,calc(100dvh-10rem-env(safe-area-inset-bottom)))] w-full max-w-[25rem] flex-col overflow-hidden rounded-2xl bg-azul-profundo text-crema shadow-[0_14px_40px_rgba(11,45,54,0.36)]">
           <div className="radical-sheet-header flex shrink-0 items-center justify-between gap-3 border-b border-crema/20 px-4 py-2"
             onPointerDown={startDrag}
             onPointerMove={moveDrag}
