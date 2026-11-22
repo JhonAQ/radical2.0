@@ -138,9 +138,9 @@ export function RadicalPlaylist() {
         aria-controls={isOpen ? "playlist-radical" : undefined}
         disabled={!isOutsideHero}
         onClick={() => isOpen ? closePlayer() : setIsOpen(true)}
-        className={`grid size-11 place-items-center rounded-full bg-amarillo text-azul-profundo shadow-[0_8px_24px_rgba(11,45,54,0.25)] transition-[opacity,transform,background-color] duration-200 hover:bg-crema focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-turquesa motion-reduce:transition-none ${isOutsideHero ? "pointer-events-auto opacity-100" : "translate-y-2 opacity-0"}`}
+        className={`grid size-14 place-items-center rounded-full bg-amarillo text-azul-profundo shadow-[0_8px_24px_rgba(11,45,54,0.25)] transition-[opacity,transform,background-color] duration-200 hover:bg-crema focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-turquesa motion-reduce:transition-none ${isOutsideHero ? "pointer-events-auto opacity-100" : "translate-y-2 opacity-0"}`}
       >
-        <Headphones aria-hidden="true" className="size-5" />
+        <Headphones aria-hidden="true" className="size-6" />
       </button>
 
       <dialog ref={dialogRef}
