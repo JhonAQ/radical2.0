@@ -3,6 +3,7 @@ import { Hero } from "@/components/hero/Hero";
 import { HeroDivider } from "@/components/hero/HeroDivider";
 import { CampAbout } from "@/components/about/CampAbout";
 import { Activities } from "@/components/activities/Activities";
+import { RadicalPlaylist } from "@/components/music/RadicalPlaylist";
 import { ProgramDays } from "@/components/program/ProgramDays";
 import { PackingList } from "@/components/packing/PackingList";
 import { ProgramPackingAmbient } from "@/components/program/ProgramPackingAmbient";
@@ -109,6 +110,7 @@ export default async function HomePage() {
         <LocationFaq preventaDeadline={preventaDeadline} />
       </main>
       <Footer />
+      <RadicalPlaylist />
       <WhatsAppFloating />
     </>
   );

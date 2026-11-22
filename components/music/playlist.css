@@ -1,0 +1,79 @@
+.radical-player-panel {
+  transform-origin: bottom left;
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), visibility 240ms;
+}
+.radical-player-panel[data-open="false"] {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(10px) scale(.97);
+  pointer-events: none;
+}
+.radical-transport button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+.radical-transport button:hover { transform: scale(1.06); }
+.radical-transport button:active { transform: scale(.94); }
+.radical-transport button:focus-visible { outline: 2px solid var(--radical-teal); outline-offset: 3px; }
+.radical-track-title { animation: radical-track-in 220ms ease-out; }
+@keyframes radical-track-in {
+  from { opacity: .3; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radical-player-panel, .radical-transport button { transition: none; }
+  .radical-track-title { animation: none; }
+  .radical-transport button:hover, .radical-transport button:active { transform: none; }
+}
+
+dialog.radical-player-panel {
+  margin: 0;
+  top: auto;
+  right: auto;
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), display 240ms allow-discrete, overlay 240ms allow-discrete;
+}
+dialog.radical-player-panel:not([open]) { display: none; }
+
+@media (max-width: 767px) {
+  html:has(.radical-player-panel:modal) { overflow: hidden; }
+  dialog.radical-player-panel {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(36rem, 72dvh);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: 1.5rem 1.5rem 0 0;
+    transform-origin: bottom center;
+    transform: translateY(var(--sheet-offset, 0px));
+  }
+  .radical-player-panel::backdrop { background: rgb(3 19 24 / 60%); }
+  .radical-player-panel[data-open="false"] { transform: translateY(100%); }
+  .radical-player-panel[data-dragging="true"] { transition: none; }
+  .radical-sheet-header { position: relative; padding-top: 1rem; touch-action: none; }
+  .radical-sheet-header::before {
+    content: "";
+    position: absolute;
+    top: .45rem;
+    left: 50%;
+    width: 2.5rem;
+    height: .25rem;
+    border-radius: 1rem;
+    background: rgb(248 241 227 / 45%);
+    transform: translateX(-50%);
+  }
+}
+@starting-style {
+  dialog.radical-player-panel[open] { opacity: 0; transform: translateY(10px); }
+  @media (max-width: 767px) {
+    dialog.radical-player-panel[open] { transform: translateY(100%); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.radical-player-panel { transition: none; }
+}
