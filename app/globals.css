@@ -158,6 +158,51 @@ body {
   .mobile-menu-panel { animation: none; }
 }
 
+/* Cinta de alerta de la preventa (arriba del navbar) */
+.urgency-tape {
+  display: block;
+  height: 1.75rem;
+  overflow: hidden;
+  background: #ffc629;
+  color: #111;
+}
+.urgency-tape-track {
+  display: flex;
+  width: max-content;
+  animation: urgency-tape-scroll 28s linear infinite;
+}
+.urgency-tape:hover .urgency-tape-track { animation-play-state: paused; }
+/* Las rayas van en cada grupo: viajan con el texto y la cinta entera se ve en movimiento */
+.urgency-tape-group {
+  display: flex;
+  height: 1.75rem;
+  background:
+    repeating-linear-gradient(-45deg, #111 0 8px, #ffc629 8px 16px) top / 100% 3px no-repeat,
+    repeating-linear-gradient(-45deg, #111 0 8px, #ffc629 8px 16px) bottom / 100% 3px no-repeat,
+    #ffc629;
+}
+.urgency-tape-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-inline: 1.5rem;
+  font-family: var(--font-bebas), sans-serif;
+  font-size: 1rem;
+  line-height: 1.75rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.urgency-tape-icon { font-family: system-ui, sans-serif; font-size: 0.8rem; }
+@keyframes urgency-tape-scroll {
+  to { transform: translateX(-50%); }
+}
+/* Con la cinta visible, los anclajes bajan lo que ocupa */
+html:has(.urgency-tape) { scroll-padding-top: 6.75rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .urgency-tape-track { animation: none; }
+}
+
 /* Organic brush mask utility matching the moodboard reference */
 .brush-masked-frame {
   -webkit-mask-image: url('/assets/textures/camp-exact-brush-mask.png');

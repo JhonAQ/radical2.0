@@ -11,7 +11,7 @@ import { HeroScrollCue } from "./HeroScrollCue";
 // Mismo srcset en la versión de celular y la de computadora: el navegador descarga el logo una sola vez.
 const HERO_LOGO_SIZES = "(min-width: 1024px) 500px, (min-width: 768px) 430px, (min-width: 640px) 380px, 85vw";
 
-export function Hero() {
+export function Hero({ withAlert = false }: { withAlert?: boolean } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -78,7 +78,7 @@ export function Hero() {
       {/* Difuminación suave inferior en mobile para transición fluida */}
       <div className="sm:hidden absolute bottom-0 left-0 right-0 h-[20%] bg-gradient-to-t from-azul-profundo/40 to-transparent z-[5] pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-5 sm:px-6 h-full flex flex-col pt-16 sm:pt-20 md:pt-24 pb-5 sm:pb-8">
+      <div className={`relative z-10 w-full max-w-6xl mx-auto px-5 sm:px-6 h-full flex flex-col ${withAlert ? "pt-23 sm:pt-27 md:pt-31" : "pt-16 sm:pt-20 md:pt-24"} pb-5 sm:pb-8`}>
 
         {/* El título del sitio es el logo (imagen): este h1 lo da en texto a Google y lectores de pantalla */}
         <h1 className="sr-only">

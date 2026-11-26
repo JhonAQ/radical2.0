@@ -22,3 +22,9 @@ export function preventaDates(deadline: string) {
     lastDayInput: limaDay(last, { year: "numeric", month: "2-digit", day: "2-digit" }).split("/").reverse().join("-"),
   };
 }
+
+/** true mientras la preventa sigue abierta (antes del corte). */
+export function isPreventaOpen(deadline: string, now = new Date()) {
+  const end = new Date(deadline).getTime();
+  return now.getTime() < (Number.isNaN(end) ? new Date(DEFAULT_PREVENTA_DEADLINE).getTime() : end);
+}

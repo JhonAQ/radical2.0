@@ -17,7 +17,7 @@ const emptySubscribe = () => () => {};
  * - Menú móvil renderizado en un portal a document.body con estado React,
  *   condicionado por `isOpen`. Sin mutación imperativa del DOM.
  */
-export function Navbar() {
+export function Navbar({ alert }: { alert?: React.ReactNode } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const registered = useHasRegistration();
   const ctaHref = registered ? "/mi-inscripcion" : CAMP_CONFIG.registrationUrl;
@@ -100,8 +100,9 @@ export function Navbar() {
   return (
     <>
       {/* ── HEADER ── */}
-      <header className={`fixed inset-x-0 top-0 z-40 py-2 transition-all duration-300 ${isScrolled ? "bg-azul-profundo/55 shadow-md backdrop-blur-sm" : "bg-gradient-to-b from-azul-profundo/85 via-azul-profundo/30 to-transparent"}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+      <header className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ${isScrolled ? "bg-azul-profundo/55 shadow-md backdrop-blur-sm" : "bg-gradient-to-b from-azul-profundo/85 via-azul-profundo/30 to-transparent"}`}>
+        {alert}
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
           {/* Logo */}
           <Link href="#inicio" className="flex items-center">
             <BrandLogo variant="secundario" width={110} priority className="w-28 h-auto" />

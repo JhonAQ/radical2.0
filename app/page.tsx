@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/layout/Navbar";
+import { UrgencyTape } from "@/components/layout/UrgencyTape";
 import { Hero } from "@/components/hero/Hero";
 import { HeroDivider } from "@/components/hero/HeroDivider";
 import { CampAbout } from "@/components/about/CampAbout";
@@ -14,7 +15,7 @@ import { Footer } from "@/components/layout/Footer";
 import { WhatsAppFloating } from "@/components/common/WhatsAppFloating";
 import type { Metadata } from "next";
 import { getPreventaDeadline } from "@/utils/preventa-server";
-import { preventaDates } from "@/utils/preventa";
+import { isPreventaOpen, preventaDates } from "@/utils/preventa";
 import { buildFaq } from "@/config/faq";
 import { CAMP_CONFIG } from "@/config/site";
 
@@ -80,21 +81,32 @@ function structuredData(preventaDeadline: string) {
       acceptedAnswer: { "@type": "Answer", text: answer },
     })),
   };
-  const site = { "@type": "WebSite", "@id": `${SITE_URL}/#sitio`, name: CAMP_CONFIG.name, url: SITE_URL, inLanguage: "es" };
+  // alternateName ayuda a que Google muestre "Radical 2.0" y no el nombre de ielp.org.
+  const site = {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}/#sitio`,
+    name: CAMP_CONFIG.name,
+    alternateName: ["Radical Camp", "Campamento Radical 2.0"],
+    url: SITE_URL,
+    inLanguage: "es",
+  };
   // "<" escapado: el JSON va dentro de un <script>.
   return JSON.stringify({ "@context": "https://schema.org", "@graph": [site, event, faq] }).replace(/</g, "\\u003c");
 }
 
 export default async function HomePage() {
   const preventaDeadline = await getPreventaDeadline();
+  // La cinta solo se muestra mientras la preventa sigue abierta.
+  const preventaOpen = isPreventaOpen(preventaDeadline);
+  const tapeMessage = `Preventa S/200 solo hasta el ${preventaDates(preventaDeadline).lastDay} — después sube a S/250 — ¡inscríbete ya!`;
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData(preventaDeadline) }} />
       {/* Fuera de <main>: el header fijo y el portal del menú quedan
           inmunes al recorte horizontal y al apilado del contenido */}
-      <Navbar />
+      <Navbar alert={preventaOpen ? <UrgencyTape message={tapeMessage} /> : undefined} />
       <main className="relative min-h-screen overflow-x-clip bg-azul-profundo text-white">
-        <Hero />
+        <Hero withAlert={preventaOpen} />
         <HeroDivider />
         <CampAbout />
         <Activities />
