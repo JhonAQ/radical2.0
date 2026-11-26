@@ -57,9 +57,10 @@ export const viewport: Viewport = {
 };
 
 // Texto e imagen que muestran WhatsApp, Facebook, etc. al compartir el enlace.
+// ~155 caracteres: Google corta las descripciones más largas.
 const shareDescription =
-  "Campamento de verano del 30 de diciembre al 3 de enero en Campel Mejía, Arequipa. Adoración, comunidad y playa. ¡Inscríbete!";
-const homeTitle = "Radical 2.0 · Campamento de verano juvenil en Arequipa (30 dic – 3 ene)";
+  "Campamento cristiano de jóvenes en la playa de Mejía, Arequipa, del 30 de diciembre al 3 de enero. Adoración, enseñanza y Año Nuevo 2027 juntos. ¡Inscríbete!";
+const homeTitle = "Radical 2.0 | Campamento Nacional de Jóvenes 2027";
 
 export const metadata: Metadata = {
   // Dominio público: las redes necesitan URLs absolutas para la imagen de vista previa.
